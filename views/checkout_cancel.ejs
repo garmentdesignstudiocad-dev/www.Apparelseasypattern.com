@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Payment Cancelled - Garment Pattern Store</title>
+
+  <link rel="stylesheet" href="/css/styles.css">
+
+  <style>
+    .cancel-page {
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px;
+    }
+
+    .cancel-card {
+      width: 100%;
+      max-width: 650px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 45px 30px;
+      text-align: center;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+    }
+
+    .cancel-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 25px;
+      border-radius: 50%;
+      background: #fff3cd;
+      color: #b58105;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: bold;
+    }
+
+    .cancel-card h1 {
+      margin: 0 0 15px;
+      font-size: 32px;
+      color: #173f67;
+    }
+
+    .cancel-card p {
+      margin: 10px 0;
+      color: #666;
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .order-id {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 12px 18px;
+      background: #f4f7fa;
+      border-radius: 8px;
+      color: #173f67;
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .cancel-actions {
+      margin-top: 28px;
+    }
+
+    .cancel-actions a {
+      display: inline-block;
+      padding: 13px 24px;
+      margin: 5px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .primary-btn {
+      background: #173f67;
+      color: #ffffff;
+    }
+
+    .secondary-btn {
+      background: #eef2f6;
+      color: #173f67;
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+<link rel="stylesheet" href="/css/customer-experience.css"><%- include('partials/theme') %></head>
+
+<body><%- include('partials/header') %>
+
+  <main class="cancel-page">
+
+    <div class="cancel-card">
+
+      <div class="cancel-icon">
+        !
+      </div>
+
+      <h1>
+        Payment Cancelled
+      </h1>
+
+      <p>
+        Your payment was cancelled.
+        No payment has been completed.
+      </p>
+
+      <% if (orderId) { %>
+
+        <div class="order-id">
+          <strong>Order ID:</strong>
+          <%= orderId %>
+        </div>
+
+      <% } %>
+
+      <p>
+        Your cart is still available.
+        You can return to your cart and try the payment again.
+      </p>
+
+      <div class="cancel-actions">
+
+        <% if(canVisit('/cart')){ %><a
+          href="/cart"
+          class="primary-btn"
+        >
+          Return to Cart
+        </a><% } %>
+
+        <% if(canVisit('/products')){ %><a
+          href="/products"
+          class="secondary-btn"
+        >
+          Continue Shopping
+        </a><% } %>
+
+      </div>
+
+    </div>
+
+  </main>
+
+<%- include('partials/footer') %><script src="/js/main.js"></script></body>
+</html>

@@ -1,0 +1,7 @@
+<% if(typeof skipSharedSeo === 'undefined' || !skipSharedSeo){ %><%- include('seo-meta') %><% } %>
+<% if (siteSettings.favicon_url) { %><link rel="icon" href="<%= siteSettings.favicon_url %>"><% } %>
+<% if ([siteSettings.main_font, siteSettings.heading_font].some(font => ['Poppins', 'Inter'].includes(font))) { %>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap">
+<% } %>
+<style>:root { <% for (const [name, value] of Object.entries(themeVariables)) { %><%- name %>:<%- value %>;<% } %> }</style>
+<link rel="stylesheet" href="/css/storefront-theme.css">

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> - <%= product.name %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-product-files-page">
+    <%- include('../partials/admin_header') %>
+    <main class="container">
+      <section class="section">
+        <div class="admin-hero">
+          <div>
+            <h1>Files for: <%= product.name %></h1>
+            <p class="muted">Manage pattern files for this product.</p>
+          </div>
+          <div class="admin-quick-actions">
+            <a href="/admin/products/<%= product._id %>/files#add-form" class="btn primary">Add File</a>
+            <a href="/admin/products" class="btn ghost">Back to Products</a>
+          </div>
+        </div>
+
+        <% if (message) { %>
+          <div class="alert"><%= message %></div>
+        <% } %>
+
+        <% if (fileForm) { %>
+          <section id="add-form" class="card" style="margin-bottom:1rem;padding:1rem">
+            <h3><%= editingFile ? 'Edit File' : 'Add File' %></h3>
+            <form method="POST" action="<%= editingFile ? ('/admin/products/' + product._id + '/files/' + editingFile._id + '/edit') : ('/admin/products/' + product._id + '/files') %>">
+              <label>File Name<input name="file_name" required value="<%= fileForm.file_name || '' %>"></label>
+              <label>File Type<input name="file_type" required value="<%= fileForm.file_type || '' %>"></label>
+              <label>File Price<input name="file_price" type="number" step="0.01" value="<%= fileForm.file_price || 0 %>"></label>
+              <label><input type="checkbox" name="active" <%= fileForm.active ? 'checked' : '' %>> Active</label>
+              <div style="margin-top:0.5rem"><button class="btn primary" type="submit">Save File</button></div>
+            </form>
+          </section>
+        <% } %>
+
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:0.75rem">File Name</th>
+              <th style="padding:0.75rem">Type</th>
+              <th style="padding:0.75rem">Price</th>
+              <th style="padding:0.75rem">Status</th>
+              <th style="padding:0.75rem">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% files.forEach(function(f){ %>
+              <tr style="border-top:1px solid rgba(0,0,0,0.06)">
+                <td style="padding:0.75rem"><%= f.file_name %></td>
+                <td style="padding:0.75rem;text-align:center"><%= f.file_type %></td>
+                <td style="padding:0.75rem;text-align:center"><%= formatCurrency ? formatCurrency(f.file_price) : f.file_price %></td>
+                <td style="padding:0.75rem;text-align:center"><%= f.active ? 'Active' : 'Inactive' %></td>
+                <td style="padding:0.75rem;text-align:center">
+                  <a class="btn small" href="/admin/products/<%= product._id %>/files/<%= f._id %>/edit">Edit</a>
+                  <form method="POST" action="/admin/products/<%= product._id %>/files/<%= f._id %>/toggle" style="display:inline">
+                    <button class="btn small" type="submit"><%= f.active ? 'Deactivate' : 'Activate' %></button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <%- include('../partials/footer') %>
+  </body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-dashboard-page">
+    <%- include('../partials/admin_header') %>
+    <main class="container admin-dashboard-main">
+      <section class="admin-hero">
+        <div>
+          <p class="eyebrow">Admin Portal</p>
+          <h1>Manage Files for <%= product.name %></h1>
+          <p class="muted">Add and edit pattern files for this product.</p>
+        </div>
+        <div class="admin-quick-actions">
+          <a href="/admin/products" class="btn ghost">Back to Products</a>
+        </div>
+      </section>
+
+      <% if (message) { %>
+        <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>"><%= message %></div>
+      <% } %>
+
+      <section class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-body">
+          <h3><%= editingFile ? 'Edit Pattern File' : 'Add Pattern File' %></h3>
+          <form method="POST" action="<%= editingFile ? '/admin/products/' + product._id + '/files/' + editingFile._id + '/edit' : '/admin/products/' + product._id + '/files' %>" class="auth-form" style="margin-top:1rem;">
+            <label>
+              <span>File Name</span>
+              <input type="text" name="file_name" value="<%= fileForm.file_name || '' %>" required />
+            </label>
+            <label>
+              <span>File Type</span>
+              <input type="text" name="file_type" value="<%= fileForm.file_type || '' %>" required />
+            </label>
+            <label>
+              <span>File Price</span>
+              <input type="number" step="0.01" min="0" name="file_price" value="<%= fileForm.file_price || 0 %>" required />
+            </label>
+            <label>
+              <span>Active</span>
+              <input type="checkbox" name="active" <%= fileForm.active === false ? '' : 'checked' %> />
+            </label>
+            <div class="admin-quick-actions">
+              <button class="btn primary" type="submit"><%= editingFile ? 'Update File' : 'Add File' %></button>
+              <% if (editingFile) { %>
+                <a href="/admin/products/<%= product._id %>/files" class="btn ghost">Cancel</a>
+              <% } %>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h3>Current Files</h3>
+          <% if (files.length) { %>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% files.forEach(function(item) { %>
+                    <tr>
+                      <td><%= item.file_name %></td>
+                      <td><%= item.file_type %></td>
+                      <td><%= formatCurrency(item.file_price) %></td>
+                      <td><%= item.active ? 'Active' : 'Inactive' %></td>
+                      <td>
+                        <div class="admin-inline-actions">
+                          <a href="/admin/products/<%= product._id %>/files/<%= item._id %>/edit" class="btn small primary">Edit</a>
+                          <form method="POST" action="/admin/products/<%= product._id %>/files/<%= item._id %>/toggle" style="display:inline;">
+                            <button class="btn small ghost" type="submit"><%= item.active ? 'Deactivate' : 'Activate' %></button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="muted">No files added for this product yet.</p>
+          <% } %>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer') %>
+  </body>
+</html>

@@ -1,0 +1,128 @@
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
+module.exports=async function({models,request,token,course,book,adminCsrf,gateway}){
+  const {Receipt,NotificationLog:Log,Order,Customer,Product,CourseBooking,Webinar,WebinarRegistration,SiteSettings,NotificationSettings}=models;
+  const notifications=require('../services/notificationService');
+  const receipts=require('../services/receiptService');
+  assert.equal(await Receipt.countDocuments(),4,'One receipt per verified paid access record.');
+  assert.equal(await Log.countDocuments({event:{$regex:'payment_success$'}}),8,'One payment message per channel and reference.');
+  const receipt=await Receipt.findOne({reference_type:'course_registration',reference_id:course.id}).select('+token').lean();
+  assert.equal(receipt.total_paise,19900);assert.equal(receipt.customer_name,'Access Learner');assert.equal(receipt.payment_status,'Paid');
+  assert.equal((await request(`/receipts/for/course_registration/${course.id}`,null,'intruder')).status,403);
+  const receiptLink=await request(`/receipts/for/course_registration/${course.id}`,null,'course');assert.equal(receiptLink.status,303);
+  const rendered=await request(receiptLink.location);assert.equal(rendered.status,200);for(const label of ['Subtotal','Discount','GST','Delivery Charge','Amount Paid','Razorpay Payment','Print / Save as PDF'])assert.ok(rendered.html.includes(label));
+  assert.equal((await request('/receipts/'+'0'.repeat(64))).status,404);
+  const before=await Log.countDocuments();await notifications.flush('course_registration',course.id);assert.equal(await Log.countDocuments(),before);
+  // A manual paid label without a verifier timestamp cannot mint a receipt.
+  const unverified=await CourseBooking.create({name:'Unverified',email:'unverified@example.test',whatsapp:'+919876543210',course_id:(await CourseBooking.findById(course.id)).course_id,course_name:'Unverified',preferred_date:'2030-01-01',preferred_time:'14:00',mode:'Online',submission_key:'unverified',payment_status:'Paid',amount_paise:19900,razorpay_payment_id:'pay_unverified'});
+  assert.equal(await receipts.ensure('course_registration',unverified._id),null);
+  // Provider request contracts use mocked fetch: no actual email or WhatsApp is sent.
+  const requests=[];
+  const providers=require('../services/notificationProviders').createProviders({env:{EMAIL_HOST:'smtp.gmail.com',EMAIL_PORT:'587',EMAIL_SECURE:'false',EMAIL_USER:'test@example.test',EMAIL_PASSWORD:'mock-app-password',EMAIL_FROM:'Studio <billing@example.test>',WHATSAPP_ACCESS_TOKEN:'secret-meta-token',WHATSAPP_PHONE_NUMBER_ID:'123456',WHATSAPP_API_VERSION:'v23.0',WHATSAPP_TEMPLATE_NAME:'studio_service_update',WHATSAPP_TEMPLATE_LANGUAGE:'en'},createTransport:options=>{assert.equal(options.requireTLS,true);return {sendMail:async message=>{requests.push({message});return {accepted:[message.to],messageId:message.messageId};}};},fetchImpl:async(url,options)=>{requests.push({url,options});return {ok:true,status:200,json:async()=>url.includes('resend')?{id:'email_mock'}:{messages:[{id:'wamid_mock'}]}};}});
+  const dispatch=notifications.createDispatcher(providers);
+  const email=await Log.findOne({reference_id:course.id,channel:'email',event:'course_payment_success'});
+  const whatsapp=await Log.findOne({reference_id:course.id,channel:'whatsapp',event:'course_payment_success'});
+  await Promise.all([dispatch(email._id),dispatch(email._id)]);assert.equal(requests.length,1,'Atomic claim prevents concurrent duplicate sending.');
+  await dispatch(whatsapp._id);assert.equal(requests.length,2);
+  assert.match(requests[0].message.messageId,/^<[a-f0-9]{64}@notifications.local>$/);
+  assert.match(requests[0].message.text,/https:\/\/studio.example.test\/receipts\//);
+  const wa=JSON.parse(requests[1].options.body);assert.equal(wa.type,'template');assert.equal(wa.messaging_product,'whatsapp');assert.equal(wa.template.components[0].parameters.length,6);
+  assert.equal((await Log.findById(email._id)).status,'sent');assert.equal((await Log.findById(whatsapp._id)).provider_response_id,'wamid_mock');
+  const failed=await Log.findOne({status:'queued',channel:'email'});
+  const bad=notifications.createDispatcher({email:async()=>{throw new Error('secret-provider-token');},whatsapp:async()=>{throw new Error('secret-provider-token');}});
+  await bad(failed._id);assert.equal((await Log.findById(failed._id)).status,'failed');assert.ok(!(await Log.findById(failed._id)).error_message.includes('secret-provider-token'));
+  assert.equal((await CourseBooking.findById(course.id)).payment_status,'Paid');
+  assert.equal((await request(`/admin/notifications/${failed._id}/retry`,{_csrf:'wrong'},'admin')).status,403);
+  assert.equal((await request(`/admin/notifications/${failed._id}/retry`,{_csrf:adminCsrf},'admin')).status,303);
+  assert.equal((await Log.findById(failed._id)).status,'queued');await dispatch(failed._id);assert.equal((await Log.findById(failed._id)).status,'sent');
+  const uncertain=await Log.findOne({status:'queued',channel:'whatsapp'});
+  await notifications.createDispatcher({whatsapp:async()=>{throw Object.assign(new Error('timeout'),{uncertain:true});}})(uncertain._id);
+  await assert.rejects(()=>notifications.retry(uncertain._id),/provider logs/);await notifications.retry(uncertain._id,true);
+  assert.equal((await Log.findById(uncertain._id)).status,'queued');
+  // Actual product callback preserves totals and creates exactly one receipt and message pair.
+  await NotificationSettings.updateOne({_id:'default'},{$set:{admin_new_order_alert:true}});process.env.ADMIN_NOTIFICATION_EMAIL='owner@example.test';
+  const customer=await Customer.create({name:'Product Customer',email:'product-notify@example.test',phone:'+919876543210'});
+  const product=await Product.create({name:'Receipt Pattern',slug:'receipt-pattern',active:true});
+  const order=await Order.create({customer_id:customer._id,items:[{product_id:product._id,product_name:product.name,quantity:2,unit_price:500,total_price:1000}],subtotal:1000,tax_amount:180,delivery_charge:50,grand_total:1230,razorpay_order_id:'order_productnotify',payment_reference:'order_productnotify'});
+  const productPayment={id:'pay_productnotify',order_id:order.razorpay_order_id,amount:123000,currency:'INR',status:'captured',captured:true};
+  const originalFetch=gateway.payments.fetch;gateway.payments.fetch=async id=>id==='pay_productnotify'?productPayment:originalFetch(id);
+  const callback={razorpay_order_id:order.razorpay_order_id,razorpay_payment_id:'pay_productnotify',razorpay_signature:crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update('order_productnotify|pay_productnotify').digest('hex')};
+  assert.equal((await request('/checkout/razorpay-callback',{...callback,razorpay_signature:'0'.repeat(64)},'product')).status,400);assert.equal(await Receipt.countDocuments({reference_id:order._id}),0);
+  productPayment.status='authorized';assert.equal((await request('/checkout/razorpay-callback',callback,'product')).status,409);assert.equal(await Receipt.countDocuments({reference_id:order._id}),0);productPayment.status='captured';
+  assert.equal((await request('/checkout/razorpay-callback',callback,'product')).status,302);assert.equal((await request('/checkout/razorpay-callback',callback,'product')).status,302);
+  const productReceipt=await Receipt.findOne({reference_id:order._id});assert.equal(productReceipt.subtotal_paise,100000);assert.equal(productReceipt.gst_paise,18000);assert.equal(productReceipt.delivery_paise,5000);assert.equal(productReceipt.total_paise,123000);assert.equal(productReceipt.items[0].quantity,2);
+  assert.equal(await Log.countDocuments({reference_id:order._id,event:'admin_successful_payment',destination:'owner@example.test'}),1);
+  assert.equal(await Receipt.countDocuments({reference_id:order._id}),1);assert.equal(await Log.countDocuments({reference_id:order._id,event:'order_payment_success'}),2);
+  const productMessages=await Log.find({reference_id:order._id,event:'order_payment_success'});
+  const productSendStart=requests.length;
+  for(const row of productMessages)await dispatch(row._id);
+  assert.equal(requests.length,productSendStart+2);
+  await Promise.all([request('/checkout/razorpay-callback',callback,'product'),request('/checkout/razorpay-callback',callback,'product')]);
+  for(const row of await Log.find({reference_id:order._id,event:'order_payment_success'}))await dispatch(row._id);
+  assert.equal(requests.length,productSendStart+2,'Callbacks after delivery must not resend either channel.');
+  assert.equal((await request(`/admin/orders/${order._id}/status`,{status:'shipped'},'admin')).status,303);
+  assert.equal(await Log.countDocuments({reference_id:order._id,event:'order_status_update'}),0);
+  assert.equal((await request(`/admin/orders/${order._id}/status`,{status:'shipped'},'admin')).status,303);assert.equal(await Log.countDocuments({reference_id:order._id,event:'order_status_update'}),0);
+  const webinar=await Webinar.findOne({slug:'access-webinar'});webinar.starts_at=new Date(Date.now()+3600000);await webinar.save();
+  await notifications.reminders();await notifications.reminders();assert.equal(await Log.countDocuments({event:'webinar_reminder'}),2);
+  await WebinarRegistration.updateOne({webinar_id:webinar._id},{$set:{registration_status:'Cancelled'}});await notifications.reminders();assert.equal(await Log.countDocuments({event:'webinar_reminder'}),2);
+  const stale=await Log.findOne({event:'webinar_reminder',channel:'email'});const sentBefore=requests.length;await dispatch(stale._id);assert.equal((await Log.findById(stale._id)).status,'skipped');assert.equal(requests.length,sentBefore,'Cancelled reminders must not be sent.');
+  await WebinarRegistration.updateOne({webinar_id:webinar._id},{$set:{registration_status:'Confirmed'}});
+  const nextDate=new Date(Date.now()+3*86400000).toISOString().slice(0,10);
+  const schedule={_csrf:adminCsrf,title:webinar.title,slug:webinar.slug,description:'Schedule update',speaker:'Studio',date:nextDate,start_time:'14:00',duration_minutes:'60',price:'',mode:'Online',meeting_platform:'Zoom',meeting_link:'https://example.test/new-private-meeting',max_seats:'0',active:'on',registration_open:'on'};
+  assert.equal((await request(`/admin/webinars/${webinar._id}/edit`,schedule,'admin')).status,303);
+  const registration=await WebinarRegistration.findOne({webinar_id:webinar._id});await notifications.flush('webinar_registration',registration._id);
+  assert.equal(await Log.countDocuments({reference_id:registration._id,event:'webinar_status_update'}),2);
+  const scheduleLog=await Log.findOne({reference_id:registration._id,event:'webinar_status_update'});assert.ok(!scheduleLog.message.includes('new-private-meeting'));
+  const oldReminder=await Log.findOne({event:'webinar_reminder',channel:'whatsapp'});await dispatch(oldReminder._id);assert.equal((await Log.findById(oldReminder._id)).status,'skipped');
+  const consulting=await models.ConsultationBooking.findOne();assert.equal((await request(`/admin/access-records/consulting/${consulting._id}/status`,{_csrf:adminCsrf,status:'Completed'},'admin')).status,303);assert.equal(await Log.countDocuments({reference_id:consulting._id,event:'consulting_status_update'}),2);
+
+  // Website settings persist valid links, reject unsafe URLs, and independently hide book/footer sections.
+  let page=await request('/books');assert.match(page.html,/Connect with Ganesh Subramani on LinkedIn/);assert.match((await request('/books/digital-book')).html,/Follow Garment Design Studio on LinkedIn/);
+  assert.ok((await SiteSettings.findOne({key:'default'})).linkedin_personal_url.includes('s-s-ganesh'));
+  const website=await request('/admin/settings/website',null,'admin'),csrf=token(website.html);
+  const fields={_csrf:csrf,store_name:'Receipt Studio',linkedin_personal_url:'https://www.linkedin.com/in/test-author',linkedin_business_url:'https://www.linkedin.com/company/test-studio',linkedin_show_books:'on',linkedin_show_footer:'on'};
+  for(const badUrl of ['javascript:alert(1)','http://www.linkedin.com/in/unsafe','https://linkedin.com.evil.example/in/a','https://user:password@linkedin.com/in/a'])assert.equal((await request('/admin/settings/website',{...fields,linkedin_personal_url:badUrl},'admin')).status,400);
+  assert.equal((await request('/admin/settings/website',fields,'admin')).status,302);assert.match((await request('/books/digital-book')).html,/https:\/\/www.linkedin.com\/in\/test-author/);
+  await request('/admin/settings/website',{...fields,linkedin_show_books:'',linkedin_show_footer:''},'admin');page=await request('/books');assert.ok(!page.html.includes('test-author'));assert.ok(!(await request('/books/digital-book')).html.includes('test-author'));
+  await request('/admin/settings/website',{...fields,linkedin_show_footer:''},'admin');page=await request('/books');assert.match(page.html,/Connect with Ganesh/);assert.ok(!page.html.includes('linkedin-footer'));
+  // Issued business/customer/amount snapshots stay immutable after website or catalog changes.
+  assert.equal((await receipts.ensure('course_registration',course.id)).business_name,receipt.business_name);
+  assert.equal((await request('/admin/notifications?channel=email&status=sent&event=course_payment_success',null,'admin')).status,200);
+  assert.equal((await request('/admin/settings/notifications',null,'admin')).status,200);
+  assert.equal((await request('/admin/notifications',null,'intruder')).location,'/admin/login');
+  assert.equal((await request('/admin/settings/notifications',null,'intruder')).location,'/admin/login');
+  const readinessEnv={EMAIL_HOST:'smtp.example.test',EMAIL_PORT:'587',EMAIL_SECURE:'false',EMAIL_USER:'readiness-user@example.test',EMAIL_PASSWORD:'readiness-secret-password',EMAIL_FROM:'readiness-from@example.test',WHATSAPP_PHONE_NUMBER_ID:'123456789123456',WHATSAPP_ACCESS_TOKEN:'readiness-secret-token',WHATSAPP_API_VERSION:'v23.0',WHATSAPP_TEMPLATE_NAME:'readiness_template'};
+  const savedEnv=Object.fromEntries(Object.keys(readinessEnv).map(key=>[key,process.env[key]]));
+  try{
+    Object.assign(process.env,readinessEnv);
+    const readyPage=await request('/admin/settings/notifications',null,'admin');
+    assert.match(readyPage.html,/present \(connection not verified\)/);
+    assert.match(readyPage.html,/present \(provider not verified\)/);
+    const logPage=await request('/admin/notifications',null,'admin');
+    for(const key of ['EMAIL_USER','EMAIL_PASSWORD','EMAIL_FROM','WHATSAPP_PHONE_NUMBER_ID','WHATSAPP_ACCESS_TOKEN']){
+      assert.ok(!readyPage.html.includes(readinessEnv[key]),key+' must not appear in settings HTML');
+      assert.ok(!logPage.html.includes(readinessEnv[key]),key+' must not appear in logs HTML');
+    }
+    delete process.env.EMAIL_PASSWORD;delete process.env.WHATSAPP_ACCESS_TOKEN;
+    const incompletePage=await request('/admin/settings/notifications',null,'admin');
+    assert.match(incompletePage.html,/SMTP configuration: incomplete/);
+    assert.match(incompletePage.html,/WhatsApp configuration: incomplete/);
+  }finally{for(const [key,value] of Object.entries(savedEnv)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+  const enquiryPage=await request('/classes/enquiry',null,'enquiry');
+  const enquiry={_csrf:token(enquiryPage.html),name:'Enquiry Customer',email:'enquiry@example.test',whatsapp:'9791753067',location:'Chennai',interested_course:'Pattern Making',experience:'Beginner',preferred_timing:'Evenings',message:'Course details please'};
+  assert.equal((await request('/classes/enquiry',enquiry,'enquiry')).status,303);
+  const lead=await models.Lead.findOne({email:enquiry.email});
+  await notifications.flush('course_enquiry',lead._id);
+  assert.equal(await Log.countDocuments({reference_id:lead._id,event:'course_enquiry_created'}),2);
+  assert.equal(await Log.countDocuments({reference_id:lead._id,event:'admin_course_enquiry'}),1);
+  assert.equal((await Log.findOne({reference_id:lead._id,channel:'whatsapp'})).destination,'+919791753067');
+  for(const event of ['admin_webinar_registration','admin_book_purchase','admin_consulting_booking','admin_successful_payment','admin_notification_failed'])assert.ok(await Log.exists({event}),event);
+  await NotificationSettings.updateOne({_id:'default'},{$set:{event_course_enquiry_created:false}});
+  await notifications.enqueue('course_enquiry',lead._id,{key:'disabled-event',event:'created'});
+  assert.equal(await Log.countDocuments({reference_id:lead._id,event:'course_enquiry_created',status:'skipped'}),2);
+  const settingsPage=await request('/admin/settings/notifications',null,'admin');
+  assert.equal((await request('/admin/settings/notifications',{_csrf:token(settingsPage.html),email_enabled:'on',payment_confirmation:'on',order_updates:'on'},'admin')).status,303);assert.equal((await NotificationSettings.findById('default')).whatsapp_enabled,false);
+  const whatsappPending=await Log.findOne({status:'queued',channel:'whatsapp'});await dispatch(whatsappPending._id);assert.equal((await Log.findById(whatsappPending._id)).status,'skipped');
+  console.log('PASS: five payment receipt types; immutable receipt totals/privacy; email and official Meta request payloads; duplicate/concurrent sends; failed and uncertain retries; product status messages; reminder deduplication; admin filters/settings; persisted LinkedIn URL validation and books/footer visibility. All sends mocked.');
+};

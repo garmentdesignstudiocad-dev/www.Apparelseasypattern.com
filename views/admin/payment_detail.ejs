@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-payment-detail">
+    <%- include('../partials/admin_header') %>
+    <main class="container">
+      <section class="admin-hero">
+        <div>
+          <h1>Payment Details</h1>
+          <p class="muted">Payment <strong><%= payment._id %></strong></p>
+        </div>
+        <div class="admin-quick-actions">
+          <a href="/admin/payments" class="btn ghost">Back to Payments</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h3>Payment Information</h3>
+          <p><strong>Payment ID:</strong> <%= payment._id %></p>
+          <p><strong>Provider:</strong> <%= payment.payment_provider || '—' %></p>
+          <p><strong>Payment Reference:</strong> <%= payment.payment_id || '—' %></p>
+          <p><strong>Status:</strong> <%= payment.payment_status || 'unknown' %></p>
+          <p><strong>Amount:</strong> <%= formatCurrency(payment.amount || 0) %> <%= payment.currency || 'INR' %></p>
+          <p><strong>Date:</strong> <%= new Date(payment.createdAt).toLocaleString() %></p>
+
+          <h4>Related Order</h4>
+          <% if (order) { %>
+            <p><strong>Order:</strong> <a href="/admin/orders/<%= order._id %>">#<%= order._id %></a></p>
+            <p><strong>Order Status:</strong> <%= order.order_status %></p>
+            <p><strong>Online Payment Total:</strong> <%= formatCurrency(order.grand_total || 0) %></p>
+          <% } else { %>
+            <p class="muted">No related order available.</p>
+          <% } %>
+
+          <% if(order?.delivery_flow_version!==2 && order?.courier_payment_separate && order.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %><p>Courier: <%= order.courier_name || 'Not recorded' %></p><p>Courier Charge: <%= formatCurrency(order.delivery_charge || 0) %> - Pay Separately / Pay on Delivery</p><% } %><h4>Customer</h4>
+          <% if (customer) { %>
+            <p><strong><%= customer.name %></strong> — <%= customer.email %></p>
+          <% } else { %>
+            <p class="muted">Customer information not available.</p>
+          <% } %>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer') %>
+  </body>
+</html>

@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title><%= title || 'Shopping Cart' %> — Garment Pattern Store</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/customer-experience.css">
+
+  <style>
+
+    /* =====================================================
+       PREMIUM CART PAGE
+    ===================================================== */
+
+    :root {
+      --cart-ink: #19161a;
+      --cart-muted: #817980;
+      --cart-line: #e7e0d9;
+      --cart-bg: #f7f4ef;
+      --cart-white: #fff;
+      --cart-brown: #6d4d37;
+      --cart-gold: #b68a55;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--cart-bg);
+      color: var(--cart-ink);
+      font-family: "DM Sans", Arial, sans-serif;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    .cart-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(18px);
+
+      border-bottom: 1px solid var(--cart-line);
+    }
+
+    .cart-nav {
+      width: min(1180px, calc(100% - 40px));
+      height: 74px;
+      margin: auto;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cart-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cart-logo {
+      width: 38px;
+      height: 38px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 11px;
+
+      color: #fff;
+      background: linear-gradient(135deg, #29211c, #76533b);
+
+      font-family: "Playfair Display", serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cart-brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+    }
+
+    .cart-brand-text strong {
+      font-size: 13px;
+    }
+
+    .cart-brand-text small {
+      margin-top: 4px;
+
+      color: #999198;
+
+      font-size: 7px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .cart-nav-links {
+      display: flex;
+      gap: 27px;
+    }
+
+    .cart-nav-links a {
+      color: #676168;
+
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .cart-nav-links a:hover {
+      color: var(--cart-ink);
+    }
+
+    .cart-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cart-signin {
+      color: #686168;
+
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .cart-nav-button {
+      padding: 10px 15px;
+
+      border-radius: 9px;
+
+      color: #fff;
+
+      background: var(--cart-ink);
+
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       MAIN
+    ===================================================== */
+
+    .cart-page {
+      width: min(1180px, calc(100% - 40px));
+      margin: auto;
+
+      padding: 48px 0 90px;
+    }
+
+    .cart-heading {
+      margin-bottom: 34px;
+    }
+
+    .cart-kicker {
+      display: block;
+
+      margin-bottom: 10px;
+
+      color: var(--cart-brown);
+
+      font-size: 8px;
+      font-weight: 800;
+
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .cart-heading h1 {
+      margin: 0;
+
+      font-family: "Playfair Display", serif;
+
+      font-size: clamp(42px, 5vw, 58px);
+      line-height: .95;
+
+      letter-spacing: -1.5px;
+    }
+
+    .cart-heading p {
+      margin: 13px 0 0;
+
+      color: var(--cart-muted);
+
+      font-size: 12px;
+    }
+
+    /* =====================================================
+       CART LAYOUT
+    ===================================================== */
+
+    .cart-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+
+      gap: 28px;
+
+      align-items: start;
+    }
+
+    /* =====================================================
+       CART ITEMS
+    ===================================================== */
+
+    .cart-items {
+      display: grid;
+      gap: 13px;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: 115px minmax(0,1fr) auto;
+
+      gap: 20px;
+
+      padding: 18px;
+
+      border: 1px solid var(--cart-line);
+      border-radius: 17px;
+
+      background: rgba(255,255,255,.88);
+
+      box-shadow:
+        0 10px 35px rgba(45,30,20,.045);
+    }
+
+    .cart-item-image {
+      width: 115px;
+      height: 135px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      overflow: hidden;
+
+      border-radius: 13px;
+
+      background:
+        radial-gradient(
+          circle at 50% 25%,
+          rgba(255,255,255,.8),
+          transparent 30%
+        ),
+        linear-gradient(
+          145deg,
+          #eee5dc,
+          #d8ccc0
+        );
+    }
+
+    .cart-item-image img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+    }
+
+    .cart-placeholder-shirt {
+      width: 62px;
+      height: 85px;
+
+      border: 1px solid rgba(75,55,42,.45);
+
+      clip-path: polygon(
+        29% 0,
+        44% 0,
+        50% 12%,
+        56% 0,
+        71% 0,
+        100% 18%,
+        82% 38%,
+        75% 27%,
+        75% 100%,
+        25% 100%,
+        25% 27%,
+        18% 38%,
+        0 18%
+      );
+    }
+
+    /* =====================================================
+       ITEM INFO
+    ===================================================== */
+
+    .cart-item-info {
+      min-width: 0;
+
+      padding-top: 3px;
+    }
+
+    .cart-item-category {
+      margin-bottom: 7px;
+
+      color: var(--cart-brown);
+
+      font-size: 7px;
+      font-weight: 800;
+
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .cart-item-name {
+      margin: 0;
+
+      font-family: "Playfair Display", serif;
+
+      font-size: 25px;
+      line-height: 1;
+    }
+
+    .cart-item-description {
+      max-width: 460px;
+
+      margin: 9px 0 13px;
+
+      color: var(--cart-muted);
+
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    /* =====================================================
+       SELECTED OPTIONS
+    ===================================================== */
+
+    .cart-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .cart-option {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 7px 9px;
+
+      border: 1px solid #e5ddd5;
+      border-radius: 7px;
+
+      color: #675b53;
+
+      background: #faf8f5;
+
+      font-size: 7px;
+      font-weight: 700;
+    }
+
+    .cart-option-price {
+      margin-left: 4px;
+
+      color: #a07a4e;
+    }
+
+    /* Existing database files/addons */
+
+    .cart-extra-list {
+      margin-top: 9px;
+    }
+
+    .cart-extra-list span {
+      display: inline-block;
+
+      margin-right: 5px;
+      margin-bottom: 5px;
+
+      padding: 5px 7px;
+
+      border-radius: 6px;
+
+      color: #81777d;
+
+      background: #f2eee9;
+
+      font-size: 7px;
+    }
+
+    /* =====================================================
+       QUANTITY
+    ===================================================== */
+
+    .cart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+
+      margin-top: 15px;
+    }
+
+    .cart-control-label {
+      color: #91888e;
+
+      font-size: 7px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+      letter-spacing: .7px;
+    }
+
+    .cart-quantity {
+      display: flex;
+      align-items: center;
+
+      overflow: hidden;
+
+      border: 1px solid #ddd4cb;
+      border-radius: 8px;
+
+      background: #fff;
+    }
+
+    .cart-quantity button {
+      width: 28px;
+      height: 28px;
+
+      padding: 0;
+
+      border: 0;
+
+      color: #51463e;
+      background: #fff;
+
+      cursor: pointer;
+
+      font-size: 13px;
+    }
+
+    .cart-quantity input {
+      width: 36px;
+      height: 28px;
+
+      padding: 0;
+
+      border: 0;
+      border-left: 1px solid #eee7e0;
+      border-right: 1px solid #eee7e0;
+
+      outline: 0;
+
+      color: #302923;
+
+      background: #fff;
+
+      text-align: center;
+
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       PRICE + REMOVE
+    ===================================================== */
+
+    .cart-item-side {
+      min-width: 105px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      text-align: right;
+    }
+
+    .cart-item-price-label {
+      display: block;
+
+      margin-bottom: 5px;
+
+      color: #9c9398;
+
+      font-size: 6px;
+      font-weight: 800;
+
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .cart-item-price {
+      font-family: "Playfair Display", serif;
+
+      font-size: 22px;
+    }
+
+    .cart-remove {
+      padding: 7px 9px;
+
+      border: 0;
+
+      color: #9b7470;
+
+      background: transparent;
+
+      cursor: pointer;
+
+      font-size: 7px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+      letter-spacing: .7px;
+    }
+
+    .cart-remove:hover {
+      color: #9b3732;
+    }
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .cart-summary {
+      position: sticky;
+      top: 100px;
+
+      padding: 24px;
+
+      border: 1px solid var(--cart-line);
+      border-radius: 18px;
+
+      background: #fff;
+
+      box-shadow:
+        0 18px 45px rgba(45,30,20,.07);
+    }
+
+    .summary-kicker {
+      display: block;
+
+      margin-bottom: 7px;
+
+      color: var(--cart-brown);
+
+      font-size: 7px;
+      font-weight: 800;
+
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .summary-title {
+      margin: 0 0 22px;
+
+      font-family: "Playfair Display", serif;
+
+      font-size: 27px;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 10px 0;
+
+      border-bottom: 1px solid #eee8e2;
+
+      color: #777078;
+
+      font-size: 9px;
+    }
+
+    .summary-row strong {
+      color: #302923;
+    }
+
+    .summary-total {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      padding-top: 20px;
+    }
+
+    .summary-total span {
+      color: #80767c;
+
+      font-size: 8px;
+      font-weight: 800;
+
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .summary-total strong {
+      font-family: "Playfair Display", serif;
+
+      font-size: 30px;
+    }
+
+    .checkout-button {
+      width: 100%;
+
+      margin-top: 20px;
+
+      padding: 15px 18px;
+
+      border: 0;
+      border-radius: 10px;
+
+      color: #fff;
+
+      background:
+        linear-gradient(
+          135deg,
+          #2a211c,
+          #715039
+        );
+
+      cursor: pointer;
+
+      font-size: 9px;
+      font-weight: 800;
+
+      letter-spacing: .5px;
+
+      transition: .2s ease;
+    }
+
+    .checkout-button:hover {
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 10px 25px rgba(45,30,20,.18);
+    }
+
+    .continue-shopping {
+      display: block;
+
+      margin-top: 13px;
+
+      color: #796f75;
+
+      text-align: center;
+
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .continue-shopping:hover {
+      color: var(--cart-ink);
+    }
+
+    .secure-note {
+      margin-top: 20px;
+
+      padding-top: 16px;
+
+      border-top: 1px solid #eee8e2;
+
+      color: #9a9196;
+
+      font-size: 7px;
+      line-height: 1.6;
+
+      text-align: center;
+    }
+
+    /* =====================================================
+       EMPTY CART
+    ===================================================== */
+
+    .empty-cart {
+      max-width: 600px;
+
+      margin: 40px auto 80px;
+
+      padding: 70px 30px;
+
+      border: 1px solid var(--cart-line);
+      border-radius: 22px;
+
+      background: #fff;
+
+      text-align: center;
+
+      box-shadow:
+        0 20px 55px rgba(45,30,20,.06);
+    }
+
+    .empty-icon {
+      width: 65px;
+      height: 65px;
+
+      display: grid;
+      place-items: center;
+
+      margin: 0 auto 22px;
+
+      border-radius: 18px;
+
+      color: #fff;
+
+      background:
+        linear-gradient(
+          135deg,
+          #2b221d,
+          #79563d
+        );
+
+      font-family: "Playfair Display", serif;
+
+      font-size: 24px;
+    }
+
+    .empty-cart h2 {
+      margin: 0;
+
+      font-family: "Playfair Display", serif;
+
+      font-size: 32px;
+    }
+
+    .empty-cart p {
+      margin: 10px 0 25px;
+
+      color: var(--cart-muted);
+
+      font-size: 11px;
+    }
+
+    .shop-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 13px 20px;
+
+      border-radius: 9px;
+
+      color: #fff;
+
+      background: var(--cart-ink);
+
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+
+    .cart-footer {
+      margin-top: 20px;
+
+      background: #171419;
+      color: #fff;
+    }
+
+    .cart-footer-inner {
+      width: min(1180px, calc(100% - 40px));
+      margin: auto;
+
+      padding: 50px 0 22px;
+    }
+
+    .cart-footer-grid {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr 1fr 1fr;
+
+      gap: 40px;
+
+      padding-bottom: 35px;
+    }
+
+    .cart-footer-brand strong {
+      display: block;
+
+      margin-bottom: 10px;
+
+      font-family: "Playfair Display", serif;
+
+      font-size: 19px;
+    }
+
+    .cart-footer-brand p {
+      max-width: 300px;
+
+      margin: 0;
+
+      color: rgba(255,255,255,.5);
+
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .cart-footer-column h4 {
+      margin: 0 0 13px;
+
+      font-size: 8px;
+
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .cart-footer-column a,
+    .cart-footer-column span {
+      display: block;
+
+      margin-bottom: 8px;
+
+      color: rgba(255,255,255,.5);
+
+      font-size: 8px;
+    }
+
+    .cart-footer-bottom {
+      display: flex;
+      justify-content: space-between;
+
+      padding-top: 17px;
+
+      border-top: 1px solid rgba(255,255,255,.08);
+
+      color: rgba(255,255,255,.32);
+
+      font-size: 7px;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 950px) {
+
+      .cart-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-summary {
+        position: relative;
+        top: auto;
+      }
+
+      .cart-nav-links {
+        display: none;
+      }
+
+    }
+
+    @media (max-width: 650px) {
+
+      .cart-nav,
+      .cart-page,
+      .cart-footer-inner {
+        width: calc(100% - 26px);
+      }
+
+      .cart-brand-text {
+        display: none;
+      }
+
+      .cart-signin {
+        display: none;
+      }
+
+      .cart-item {
+        grid-template-columns: 80px minmax(0,1fr);
+
+        gap: 13px;
+      }
+
+      .cart-item-image {
+        width: 80px;
+        height: 105px;
+      }
+
+      .cart-item-side {
+        grid-column: 1 / -1;
+
+        min-width: 0;
+
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .cart-item-price {
+        font-size: 20px;
+      }
+
+      .cart-footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-footer-bottom {
+        flex-direction: column;
+        gap: 7px;
+      }
+
+    }
+
+  </style>
+<%- include('partials/theme') %></head>
+
+
+<body>
+
+
+  <!-- =====================================================
+       HEADER
+  ===================================================== -->
+
+  <%- include('partials/header') %>
+
+
+  <!-- =====================================================
+       MAIN
+  ===================================================== -->
+
+  <main class="cart-page">
+
+
+    <div class="cart-heading">
+
+      <span class="cart-kicker">
+        YOUR SELECTION
+      </span>
+
+      <h1><%= siteSettings.cart_heading %></h1>
+
+      <p>
+        Review your garment patterns and selected services before checkout.
+      </p>
+
+    </div>
+
+
+    <% if (typeof cart !== 'undefined' && cart && cart.length) { %>
+
+
+      <div class="cart-layout">
+
+
+        <!-- =================================================
+             CART ITEMS
+        ================================================= -->
+
+        <section class="cart-items">
+
+
+          <% cart.forEach(function(item, index) { %>
+
+
+            <article class="cart-item">
+
+
+              <!-- IMAGE -->
+
+              <div class="cart-item-image">
+
+                <% if (item.image) { %>
+
+                  <img
+                    src="<%= item.image %>"
+                    alt="<%= item.name %>"
+                  >
+
+                <% } else { %>
+
+                  <div class="cart-placeholder-shirt"></div>
+
+                <% } %>
+
+              </div>
+
+
+              <!-- INFO -->
+
+              <div class="cart-item-info">
+
+                <div class="cart-item-category">
+                  GARMENT PATTERN
+                </div>
+
+
+                <h2 class="cart-item-name">
+                  <%= item.name %>
+                </h2>
+
+
+                <p class="cart-item-description">
+
+                  <%= item.description || 'Professional garment pattern prepared for accurate construction and production.' %>
+
+                </p>
+
+
+                <!-- Selected options -->
+
+                <div class="cart-options">
+
+
+                  <% if (item.selected_files && item.selected_files.length) { %>
+
+                    <% item.selected_files.forEach(function(file) { %>
+
+                      <span class="cart-option">
+
+                        <%= file.file_name %>
+
+                        <span class="cart-option-price">
+                          +₹<%= Number(file.file_price || 0).toLocaleString('en-IN') %>
+                        </span>
+
+                      </span>
+
+                    <% }) %>
+
+                  <% } %>
+
+
+                  <% if (item.selected_addons && item.selected_addons.length) { %>
+
+                    <% item.selected_addons.forEach(function(addon) { %>
+
+                      <span class="cart-option">
+
+                        <%= addon.name %>
+
+                        <span class="cart-option-price">
+                          +₹<%= Number(addon.price || 0).toLocaleString('en-IN') %>
+                        </span>
+
+                      </span>
+
+                    <% }) %>
+
+                  <% } %>
+
+
+                  <% if (item.physical_quantity && Number(item.physical_quantity) > 0) { %>
+
+                    <span class="cart-option">
+
+                      Physical Pattern × <%= item.physical_quantity %>
+
+                    </span>
+
+                  <% } %>
+
+
+                  <% if (item.trial_quantity && Number(item.trial_quantity) > 0) { %>
+
+                    <span class="cart-option">
+
+                      Trial Sample × <%= item.trial_quantity %>
+
+                    </span>
+
+                  <% } %>
+
+
+                </div>
+
+
+                <!-- Extra data -->
+
+                <div class="cart-extra-list">
+
+                  <% if (item.selected_files && item.selected_files.length) { %>
+
+                    <% item.selected_files.forEach(function(file) { %>
+
+                      <span>
+                        <%= file.file_name %>
+                      </span>
+
+                    <% }) %>
+
+                  <% } %>
+
+                </div>
+
+
+                <!-- Quantity -->
+
+                <div class="cart-controls">
+
+
+                  <span class="cart-control-label">
+                    Digital quantity - Sizes: <%= (item.selected_sizes || []).join(', ') || 'As ordered' %>
+                  </span>
+
+
+                  <div class="cart-quantity">
+
+                    <button
+                      type="button"
+                      class="quantity-minus"
+                      data-target="qty-<%= index %>"
+                    >
+                      −
+                    </button>
+
+
+                    <input
+                      type="number"
+                      id="qty-<%= index %>"
+                      data-item-id="<%= item.id %>"
+                      class="update-qty"
+                      value="<%= item.quantity ?? 1 %>"
+                      min="0"
+                    >
+
+
+                    <button
+                      type="button"
+                      class="quantity-plus"
+                      data-target="qty-<%= index %>"
+                    >
+                      +
+                    </button>
+
+                  </div>
+
+
+                </div>
+
+
+                <!-- Physical quantity -->
+
+                <% if (item.physical_quantity !== undefined) { %>
+
+                  <div class="cart-controls">
+
+                    <span class="cart-control-label">
+                      Physical
+                    </span>
+
+                    <div class="cart-quantity">
+
+                      <button
+                        type="button"
+                        class="quantity-minus"
+                        data-target="physical-<%= index %>"
+                      >
+                        −
+                      </button>
+
+                      <input
+                        type="number"
+                        id="physical-<%= index %>"
+                        data-item-id="<%= item.id %>"
+                        class="update-physical"
+                        value="<%= item.physical_quantity || 0 %>"
+                        min="0"
+                      >
+
+                      <button
+                        type="button"
+                        class="quantity-plus"
+                        data-target="physical-<%= index %>"
+                      >
+                        +
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                <% } %>
+
+
+                <!-- Trial quantity -->
+
+                <% if (item.trial_quantity !== undefined) { %>
+
+                  <div class="cart-controls">
+
+                    <span class="cart-control-label">
+                      Trial
+                    </span>
+
+                    <div class="cart-quantity">
+
+                      <button
+                        type="button"
+                        class="quantity-minus"
+                        data-target="trial-<%= index %>"
+                      >
+                        −
+                      </button>
+
+                      <input
+                        type="number"
+                        id="trial-<%= index %>"
+                        data-item-id="<%= item.id %>"
+                        class="update-trial"
+                        value="<%= item.trial_quantity || 0 %>"
+                        min="0"
+                      >
+
+                      <button
+                        type="button"
+                        class="quantity-plus"
+                        data-target="trial-<%= index %>"
+                      >
+                        +
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                <% } %>
+
+
+              </div>
+
+
+              <!-- PRICE -->
+
+              <div class="cart-item-side">
+
+
+                <div>
+
+                  <span class="cart-item-price-label">
+                    Item Total
+                  </span>
+
+                  <strong class="cart-item-price">
+
+                    ₹<%= Number(item.total || 0).toLocaleString('en-IN', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    }) %>
+
+                  </strong>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  class="cart-remove remove-item"
+                  data-item-id="<%= item.id %>"
+                >
+                  Remove
+                </button>
+
+
+              </div>
+
+
+            </article>
+
+
+          <% }) %>
+
+
+        </section>
+
+
+        <!-- =================================================
+             SUMMARY
+        ================================================= -->
+
+        <aside class="cart-summary">
+
+          <span class="summary-kicker">
+            ORDER SUMMARY
+          </span>
+
+          <h2 class="summary-title">
+            Your Order
+          </h2>
+
+
+          <div class="summary-row">
+
+            <span>
+              Items
+            </span>
+
+            <strong>
+              <%= cart.length %>
+            </strong>
+
+          </div>
+
+
+          <div class="summary-row">
+
+            <span>
+              Pattern & Services
+            </span>
+
+            <strong>
+
+              ₹<%= cart.reduce(function(sum, item) {
+                return sum + Number(item.total || 0);
+              }, 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }) %>
+
+            </strong>
+
+          </div>
+
+
+          <div class="summary-row">
+
+            <span>
+              Shipping
+            </span>
+
+            <strong>
+              Calculated at checkout
+            </strong>
+
+          </div>
+
+
+          <div class="summary-total">
+
+            <span>
+              Cart Total
+            </span>
+
+            <strong>
+
+              ₹<%= cart.reduce(function(sum, item) {
+                return sum + Number(item.total || 0);
+              }, 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }) %>
+
+            </strong>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="proceed-checkout"
+            class="checkout-button"
+          >
+            Proceed to Checkout →
+          </button>
+
+
+          <% if(canVisit('/products')){ %><a
+            href="/products"
+            class="continue-shopping"
+          >
+            ← Continue Shopping
+          </a><% } %>
+
+
+          <div class="secure-note">
+
+            Secure checkout · Professional garment patterns ·
+            Digital & physical options available
+
+          </div>
+
+        </aside>
+
+
+      </div>
+
+
+    <% } else { %>
+
+
+      <!-- =================================================
+           EMPTY CART
+      ================================================= -->
+
+      <section class="empty-cart">
+
+        <div class="empty-icon">
+          GP
+        </div>
+
+        <h2>
+          Your cart is empty
+        </h2>
+
+        <p>
+          Explore our professional garment patterns and
+          choose the patterns and services you need.
+        </p>
+
+        <% if(canVisit('/products')){ %><a
+          href="/products"
+          class="shop-button"
+        >
+          Explore Patterns →
+        </a><% } %>
+
+      </section>
+
+
+    <% } %>
+
+
+  </main>
+
+
+  <!-- =====================================================
+       FOOTER
+  ===================================================== -->
+
+  <%- include('partials/footer') %><script src="/js/main.js"></script>
+
+
+  <!-- =====================================================
+       CART SCRIPT
+  ===================================================== -->
+
+  <script>
+
+    async function postJson(url, body) {
+
+      const response = await fetch(url, {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(body)
+
+      });
+
+      return response.json();
+
+    }
+
+
+    /* =====================================================
+       SAVE CART UPDATE
+    ===================================================== */
+
+    async function updateCartItem(itemId) {
+
+      const qtyInput =
+        document.querySelector(
+          '.update-qty[data-item-id="' + itemId + '"]'
+        );
+
+      const physicalInput =
+        document.querySelector(
+          '.update-physical[data-item-id="' + itemId + '"]'
+        );
+
+      const trialInput =
+        document.querySelector(
+          '.update-trial[data-item-id="' + itemId + '"]'
+        );
+
+
+      const quantity =
+        Number(qtyInput?.value || 1);
+
+      const physical =
+        Number(physicalInput?.value || 0);
+
+      const trial =
+        Number(trialInput?.value || 0);
+
+
+      await postJson("/cart/update", {
+
+        itemId: itemId,
+
+        quantity: quantity,
+
+        physical_quantity: physical,
+
+        trial_quantity: trial
+
+      });
+
+
+      window.location.reload();
+
+    }
+
+
+    /* =====================================================
+       PLUS / MINUS BUTTONS
+    ===================================================== */
+
+    document.querySelectorAll(".quantity-minus").forEach(
+      function (button) {
+
+        button.addEventListener("click", function () {
+
+          const input =
+            document.getElementById(
+              button.dataset.target
+            );
+
+          if (!input) return;
+
+
+          let value =
+            Number(input.value || 0);
+
+
+          const min =
+            Number(input.min || 0);
+
+
+          value--;
+
+          if (value < min) {
+            value = min;
+          }
+
+
+          input.value = value;
+
+
+          updateCartItem(
+            input.dataset.itemId
+          );
+
+        });
+
+      }
+    );
+
+
+    document.querySelectorAll(".quantity-plus").forEach(
+      function (button) {
+
+        button.addEventListener("click", function () {
+
+          const input =
+            document.getElementById(
+              button.dataset.target
+            );
+
+          if (!input) return;
+
+
+          let value =
+            Number(input.value || 0);
+
+
+          value++;
+
+          input.value = value;
+
+
+          updateCartItem(
+            input.dataset.itemId
+          );
+
+        });
+
+      }
+    );
+
+
+    /* =====================================================
+       MANUAL QUANTITY CHANGE
+    ===================================================== */
+
+    document.querySelectorAll(
+      ".update-qty, .update-physical, .update-trial"
+    ).forEach(function (input) {
+
+      input.addEventListener(
+        "change",
+        function () {
+
+          updateCartItem(
+            input.dataset.itemId
+          );
+
+        }
+      );
+
+    });
+
+
+    /* =====================================================
+       REMOVE ITEM
+    ===================================================== */
+
+    document.querySelectorAll(".remove-item").forEach(
+      function (button) {
+
+        button.addEventListener("click", async function () {
+
+          const itemId =
+            button.dataset.itemId;
+
+
+          const confirmed =
+            window.confirm(
+              "Remove this pattern from your cart?"
+            );
+
+
+          if (!confirmed) {
+            return;
+          }
+
+
+          await postJson(
+            "/cart/remove",
+            {
+              itemId: itemId
+            }
+          );
+
+
+          window.location.reload();
+
+        });
+
+      }
+    );
+
+
+    /* =====================================================
+       CHECKOUT
+    ===================================================== */
+
+    const checkoutButton =
+      document.getElementById(
+        "proceed-checkout"
+      );
+
+
+    if (checkoutButton) {
+
+      checkoutButton.addEventListener(
+        "click",
+        function () {
+
+          window.location.href =
+            "/checkout";
+
+        }
+      );
+
+    }
+
+  </script>
+
+
+</body>
+</html>

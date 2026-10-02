@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title><%= title %></title>
+
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+
+<body class="admin-products-page">
+
+  <%- include('../partials/admin_header') %>
+
+  <main class="container">
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <section class="section admin-products-section">
+
+      <div class="admin-hero">
+
+        <div>
+          <p class="eyebrow">Admin Portal</p>
+
+          <h1>Products</h1>
+
+          <p class="muted">
+            Manage your garment pattern products, prices and services.
+          </p>
+        </div>
+
+        <div class="admin-quick-actions">
+
+          <a
+            href="/admin/products/new"
+            class="btn primary"
+          >
+            Add Product
+          </a>
+
+          <a
+            href="/admin"
+            class="btn ghost"
+          >
+            Dashboard
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           MESSAGE
+      ====================================================== -->
+
+      <% if (message) { %>
+
+        <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>">
+          <%= message %>
+        </div>
+
+      <% } %>
+
+
+      <!-- =====================================================
+           PRODUCT FORM
+      ====================================================== -->
+
+      <% if (productForm) { %>
+
+        <section
+          class="card"
+          style="margin-bottom: 1.5rem;"
+        >
+
+          <div class="card-body">
+
+            <h2>
+              <%= editingProduct ? 'Edit Product' : 'Add New Product' %>
+            </h2>
+
+
+<% if(editingProduct){ %><p><a class="btn" href="/admin/products/<%= editingProduct._id %>/digital-files">Manage Private Digital Files</a></p><% } %>
+            <form
+              method="POST"
+              action="<%= editingProduct
+                ? '/admin/products/' + editingProduct._id + '/edit'
+                : '/admin/products' %>"
+              class="auth-form"
+              style="margin-top: 1rem;"
+            >
+
+
+              <!-- PRODUCT NAME -->
+
+              <label>
+
+                <span>Product Name</span>
+
+                <input
+                  type="text"
+                  name="name"
+                  value="<%= productForm.name || '' %>"
+                  required
+                />
+
+              </label>
+
+
+              <!-- SLUG -->
+
+              <label>
+
+                <span>Slug</span>
+
+                <input
+                  type="text"
+                  name="slug"
+                  value="<%= productForm.slug || '' %>"
+                  placeholder="example-shirt"
+                />
+
+              </label>
+
+
+              <!-- DESCRIPTION -->
+
+              <label>
+
+                <span>Description</span>
+
+                <textarea
+                  name="description"
+                  rows="4"
+                  placeholder="Product description"
+                ><%= productForm.description || '' %></textarea>
+
+              </label>
+
+
+<fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Available sizes / size range'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
+
+              <label>
+
+                <span>Base Pattern Price</span>
+
+                <input
+                  type="number"
+                  name="base_price"
+                  step="0.01"
+                  min="0"
+                  value="<%= productForm.base_price || 0 %>"
+                  required
+                />
+
+              </label>
+
+
+              <!-- ADDITIONAL SIZE PRICE -->
+
+              <label>
+
+                <span>Additional Size Price</span>
+
+                <input
+                  type="number"
+                  name="additional_size_price"
+                  step="0.01"
+                  min="0"
+                  value="<%= productForm.additional_size_price || 0 %>"
+                />
+
+              </label>
+
+
+              <!-- PHYSICAL PRICE -->
+
+              <label>
+
+                <span>Physical Pattern Price</span>
+
+                <input
+                  type="number"
+                  name="physical_price"
+                  step="0.01"
+                  min="0"
+                  value="<%= productForm.physical_price || 0 %>"
+                />
+
+              </label>
+
+
+              <!-- TRIAL PRICE -->
+
+              <label>
+
+                <span>Trial Sample Price</span>
+
+                <input
+                  type="number"
+                  name="trial_price"
+                  step="0.01"
+                  min="0"
+                  value="<%= productForm.trial_price || 0 %>"
+                />
+
+              </label>
+
+
+              <!-- IMAGES -->
+
+              <label>
+
+                <span>Images</span>
+
+                <textarea
+                  name="images"
+                  rows="3"
+                  placeholder="Enter image URLs, one per line"
+                ><%= Array.isArray(productForm.images)
+                  ? productForm.images.join('\n')
+                  : '' %></textarea>
+
+              </label>
+
+
+              <!-- ACTIVE -->
+
+              <label>
+
+                <span>Product Status</span>
+
+                <div style="margin-top: 8px;">
+
+                  <label
+                    style="display:flex;align-items:center;gap:8px;"
+                  >
+
+                    <input
+                      type="checkbox"
+                      name="active"
+                      <%= productForm.active ? 'checked' : '' %>
+                    />
+
+                    <span>Active</span>
+
+                  </label>
+
+                </div>
+
+              </label>
+
+
+              <!-- BUTTONS -->
+
+              <div
+                class="admin-quick-actions"
+                style="margin-top: 1rem;"
+              >
+
+                <button
+                  class="btn primary"
+                  type="submit"
+                >
+                  <%= editingProduct
+                    ? 'Update Product'
+                    : 'Create Product' %>
+                </button>
+
+
+                <% if (editingProduct) { %>
+
+                  <a
+                    href="/admin/products"
+                    class="btn ghost"
+                  >
+                    Cancel
+                  </a>
+
+                <% } %>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </section>
+
+      <% } %>
+
+
+      <!-- =====================================================
+           EXISTING PRODUCTS
+      ====================================================== -->
+
+      <section class="card">
+
+        <div class="card-body">
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              margin-bottom:1rem;
+            "
+          >
+
+            <div>
+
+              <h2>
+                Existing Products
+              </h2>
+
+              <p class="muted">
+                Edit product prices and manage pattern services.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <% if (products && products.length) { %>
+
+
+            <div class="admin-table-wrap">
+
+              <table class="admin-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Product
+                    </th>
+
+                    <th>
+                      Base Price
+                    </th>
+
+                    <th>
+                      Physical
+                    </th>
+
+                    <th>
+                      Trial
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  <% products.forEach(function(product) { %>
+
+                    <tr>
+
+
+                      <!-- PRODUCT -->
+
+                      <td>
+
+                        <strong>
+                          <%= product.name %>
+                        </strong>
+
+                        <div class="muted">
+                          <%= product.slug || '' %>
+                        </div>
+
+                      </td>
+
+
+        <fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Available sizes / size range'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
+
+                      <td>
+
+                        <%= formatCurrency
+                          ? formatCurrency(product.base_price)
+                          : product.base_price %>
+
+                      </td>
+
+
+                      <!-- PHYSICAL -->
+
+                      <td>
+
+                        <%= formatCurrency
+                          ? formatCurrency(product.physical_price)
+                          : (product.physical_price || 0) %>
+
+                      </td>
+
+
+                      <!-- TRIAL -->
+
+                      <td>
+
+                        <%= formatCurrency
+                          ? formatCurrency(product.trial_price)
+                          : (product.trial_price || 0) %>
+
+                      </td>
+
+
+                      <!-- STATUS -->
+
+                      <td>
+
+                        <% if (product.active) { %>
+
+                          <span>
+                            Active
+                          </span>
+
+                        <% } else { %>
+
+                          <span>
+                            Inactive
+                          </span>
+
+                        <% } %>
+
+                      </td>
+
+
+                      <!-- ACTIONS -->
+
+                      <td>
+
+                        <div class="admin-inline-actions">
+
+
+                          <!-- EDIT -->
+
+                          <a
+                            href="/admin/products/<%= product._id %>/edit"
+                            class="btn small primary"
+                          >
+                            Edit
+                          </a>
+
+
+                          <!-- FILES -->
+
+                          <a
+                            href="/admin/products/<%= product._id %>/files"
+                            class="btn small ghost"
+                          >
+                            Manage Files
+                          </a>
+
+
+                          <!-- ADDONS -->
+
+                          <a
+                            href="/admin/products/<%= product._id %>/addons"
+                            class="btn small ghost"
+                          >
+                            Manage Add-ons
+                          </a>
+
+
+                          <!-- ACTIVATE / DEACTIVATE -->
+
+                          <form
+                            method="POST"
+                            action="/admin/products/<%= product._id %>/toggle"
+                            style="display:inline;"
+                          >
+
+                            <button
+                              class="btn small ghost"
+                              type="submit"
+                            >
+                              <%= product.active
+                                ? 'Deactivate'
+                                : 'Activate' %>
+                            </button>
+
+                          </form>
+
+                          <% if (!product.active) { %>
+                            <form method="POST" action="/admin/products/<%= product._id %>/delete" style="display:inline;" onsubmit="return confirm('Permanently delete this inactive product? This cannot be undone.');">
+                              <button class="btn small ghost" type="submit">Delete</button>
+                            </form>
+                          <% } %>
+
+
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  <% }) %>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+          <% } else { %>
+
+
+            <div
+              style="
+                padding:2rem;
+                text-align:center;
+              "
+            >
+
+              <h3>
+                No Products Found
+              </h3>
+
+              <p class="muted">
+                Create your first garment pattern product.
+              </p>
+
+              <a
+                href="/admin/products/new"
+                class="btn primary"
+              >
+                Add Product
+              </a>
+
+            </div>
+
+
+          <% } %>
+
+        </div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+
+  <%- include('../partials/footer') %>
+
+</body>
+
+</html>

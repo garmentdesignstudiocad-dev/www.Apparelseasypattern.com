@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-order-detail">
+    <%- include('../partials/admin_header') %>
+    <main class="container">
+      <section class="admin-hero">
+        <div>
+          <h1>Order Details</h1>
+          <p class="muted">Order <strong><%= order._id %></strong></p>
+        </div>
+        <div class="admin-quick-actions">
+          <a href="/admin/orders" class="btn ghost">Back to Orders</a>
+        </div>
+      </section>
+
+<% if(order.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %><section id="fulfilment" class="card"><div class="card-body"><h2>Manual Courier Fulfilment</h2><p>Contact/book the selected courier manually, then enter its tracking/AWB number below. This store does not automatically book pickups.</p><% if(order.delivery_flow_version===2){ %><p>Region: <%= order.destination_region %></p><p>Dispatch From: <%= order.dispatch_location %></p><% } %><p>Destination: <%= order.shipping_address || customer?.address || '' %>, <%= order.shipping_city || customer?.city || '' %>, <%= order.shipping_state || order.delivery_state || '' %> ? <%= order.delivery_pincode %></p><% if(order.delivery_flow_version!==2 && order.shipping_arranged_separately){ %><p>Courier Charge: <%= formatCurrency(order.delivery_charge || 0) %> ? Pay Separately / Pay on Delivery.</p><% } %><form method="post" action="/admin/orders/<%= order._id %>/fulfilment" class="admin-settings-grid"><input type="hidden" name="_csrf" value="<%= learningCsrf %>"><% if(order.customer_selected_courier){ %><p><strong>Customer Selected Delivery Partner:</strong> <%= order.courier_name %></p><input type="hidden" name="courier_id" value="<%= order.courier_id %>"><% }else{ %><label>Courier Selected<select name="courier_id"><option value="">Select courier</option><% couriers.forEach(courier=>{ %><option value="<%= courier._id %>" <%= order.courier_id===courier._id?'selected':'' %>><%= courier.name %><%= courier.active?'':' (inactive)' %></option><% }) %></select></label><% } %><label>Tracking/AWB Number<input name="tracking_number" maxlength="100" value="<%= order.tracking_number || '' %>"></label><label>Dispatch Date<input type="date" name="dispatch_date" value="<%= order.dispatch_date?new Date(order.dispatch_date).toISOString().slice(0,10):'' %>"></label><label>Tracking URL<input type="url" name="tracking_url" value="<%= order.tracking_url || '' %>" placeholder="Blank uses courier tracking URL"></label><label>Fulfilment Status<select name="shipping_status"><% ['Confirmed','Preparing','Ready to Dispatch','Shipped','Delivered','Cancelled','Pending','Packed','In Transit','Returned'].forEach(status=>{ %><option <%= (order.shipping_status || 'Pending')===status?'selected':'' %>><%= status %></option><% }) %></select></label><button>Save Fulfilment</button><p>Marking Shipped queues email and WhatsApp with courier and tracking details. Repeated saves of the same shipment do not resend.</p></form></div></section><% } %>
+      <section class="card">
+        <div class="card-body">
+          <h3>Order Information</h3>
+          <p><strong>Order ID:</strong> <%= order._id %></p>
+          <p><strong>Date:</strong> <%= new Date(order.createdAt).toLocaleString() %></p>
+          <p><strong>Order status:</strong> <%= order.order_status %></p>
+          <p><strong>Payment status:</strong> <%= order.payment_status %></p>
+
+          <h4>Customer</h4>
+          <% const contact = order.customer_snapshot?.email ? order.customer_snapshot : customer; %>
+          <% if(contact){ %>
+            <p><strong><%= contact.name %></strong></p>
+            <p><a href="mailto:<%= contact.email %>"><%= contact.email %></a></p>
+            <p><a href="tel:<%= (contact.phone || '').replace(/[^+0-9]/g,'') %>"><%= contact.phone || '' %></a></p>
+            <p><%= [order.shipping_address,order.shipping_city,order.shipping_state,order.delivery_pincode].filter(Boolean).join(', ') %></p>
+          <% }else{ %><p>Customer information not available.</p><% } %>
+
+          <h4>Items</h4>
+          <% if (order.items && order.items.length) { %>
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:0.5rem">Product</th>
+                  <th style="padding:0.5rem">Quantity</th><th style="padding:0.5rem">Qty (physical)</th>
+                  <th style="padding:0.5rem">Qty (trial)</th>
+                  <th style="padding:0.5rem">Unit Price</th>
+                  <th style="padding:0.5rem">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% order.items.forEach(function(it){ %>
+                  <tr style="border-top:1px solid rgba(0,0,0,0.06)">
+                    <td style="padding:0.5rem"><%= it.product_id && it.product_id.name ? it.product_id.name : (it.product_id || 'Product') %></td>
+                    <td style="padding:0.5rem;text-align:center"><%= it.quantity ?? 1 %><br>Sizes: <%= (it.selected_sizes || []).join(', ') || 'As ordered' %><br>Formats: <%= (it.selected_files || []).map(f=>f.file_type || f.file_name).join(', ') %><br>Add-ons: <%= (it.selected_addons || []).map(a=>a.name).join(', ') %></td><td style="padding:0.5rem;text-align:center"><%= it.physical_quantity || 0 %></td>
+                    <td style="padding:0.5rem;text-align:center"><%= it.trial_quantity || 0 %></td>
+                    <td style="padding:0.5rem;text-align:center"><%= formatCurrency ? formatCurrency(it.unit_price) : it.unit_price %></td>
+                    <td style="padding:0.5rem;text-align:center"><%= formatCurrency ? formatCurrency(it.total_price) : it.total_price %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %>
+            <p class="muted">No items found for this order.</p>
+          <% } %>
+
+          <h4>Totals</h4>
+          <p><strong>Subtotal:</strong> <%= formatCurrency(order.subtotal || 0) %></p>
+          <p><strong>Add-ons:</strong> <%= formatCurrency(order.addon_total || 0) %></p>
+          <p><strong>Physical Total:</strong> <%= formatCurrency(order.physical_total || 0) %></p>
+          <p><strong>Trial Total:</strong> <%= formatCurrency(order.trial_total || 0) %></p>
+          <% if(order.delivery_flow_version!==2){ %><p><strong>Historical Delivery Charge:</strong> <%= formatCurrency(order.delivery_charge || 0) %></p><% } %>
+          <p><strong><%= order.tax_rate ? 'GST (' + order.tax_rate + '%)' : 'GST' %>:</strong> <%= formatCurrency(order.tax_amount || 0) %></p>
+          <p><strong>Online Payment Total:</strong> <%= formatCurrency(order.grand_total || 0) %></p>
+
+          <h4>Payment</h4>
+          <% if (payment) { %>
+            <p><strong>Provider:</strong> <%= payment.payment_provider || '' %></p>
+            <p><strong>Payment ID:</strong> <%= payment.payment_id || payment.payment_reference || '' %></p>
+            <p><strong>Amount:</strong> <%= formatCurrency(payment.amount || 0) %></p>
+            <p><strong>Status:</strong> <%= payment.payment_status %></p>
+          <% } else { %>
+            <p class="muted">No payment record found.</p>
+          <% } %>
+
+          <h4>Update Order Status</h4>
+          <form method="POST" action="/admin/orders/<%= order._id %>/status">
+            <label>New status<select name="status"><% ['pending','confirmed','processing','completed','shipped','delivered','cancelled'].forEach(function(status){ %><option value="<%= status %>" <%= order.order_status === status ? 'selected' : '' %>><%= status.charAt(0).toUpperCase() + status.slice(1) %></option><% }) %></select></label>
+            <div style="margin-top:0.5rem"><button class="btn primary" type="submit">Update Status</button></div>
+          </form>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer') %>
+  </body>
+</html>

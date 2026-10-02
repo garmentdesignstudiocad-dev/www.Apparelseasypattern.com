@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title><%= title || 'Checkout | Garment Pattern Store' %></title>
+
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/customer-experience.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+
+    .checkout-page {
+      background: #f7f4f0;
+      min-height: 100vh;
+    }
+
+    .checkout-container {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 55px 0 80px;
+    }
+
+    .checkout-heading {
+      margin-bottom: 35px;
+    }
+
+    .checkout-kicker {
+      display: block;
+      margin-bottom: 10px;
+      color: #9a6338;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .checkout-heading h1 {
+      margin: 0;
+      font-family: "Playfair Display", serif;
+      font-size: 46px;
+      line-height: 1.05;
+      color: #171419;
+    }
+
+    .checkout-heading p {
+      margin-top: 12px;
+      color: #777;
+      font-size: 14px;
+    }
+
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .checkout-card {
+      background: #fff;
+      border: 1px solid #e5ddd5;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 12px 35px rgba(35, 25, 20, .05);
+    }
+
+    .checkout-card h2 {
+      margin: 0 0 22px;
+      font-family: "Playfair Display", serif;
+      font-size: 25px;
+      color: #171419;
+    }
+
+    .checkout-card h3 {
+      margin: 25px 0 15px;
+      color: #171419;
+      font-size: 15px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      margin-bottom: 7px;
+      color: #302b2f;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .required {
+      color: #b56a35;
+    }
+
+    .form-group input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px 14px;
+      border: 1px solid #ddd3cb;
+      border-radius: 10px;
+      background: #fff;
+      color: #171419;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: .2s;
+    }
+
+    .form-group input:focus {
+      border-color: #a56b40;
+      box-shadow: 0 0 0 3px rgba(165, 107, 64, .10);
+    }
+
+    .field-error {
+      min-height: 16px;
+      margin-top: 5px;
+      color: #c0392b;
+      font-size: 11px;
+    }
+
+    .delivery-box {
+      margin-top: 25px;
+      padding: 18px;
+      border: 1px solid #e5ddd5;
+      border-radius: 13px;
+      background: #faf7f3;
+    }
+
+    .delivery-box h3 {
+      margin: 0 0 7px;
+      font-family: "Playfair Display", serif;
+      font-size: 19px;
+    }
+
+    .delivery-box p {
+      margin: 0;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .delivery-status {
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .delivery-status.digital {
+      color: #27734d;
+    }
+
+    .delivery-status.physical {
+      color: #9a6338;
+    }
+
+    .payment-note {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f7f1eb;
+      color: #756c66;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .checkout-button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 16px 20px;
+      border: 0;
+      border-radius: 11px;
+      background: #171419;
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .checkout-button:hover {
+      background: #9a6338;
+    }
+
+    .checkout-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .order-item {
+      padding: 18px 0;
+      border-bottom: 1px solid #eee7e1;
+    }
+
+    .order-item:first-child {
+      padding-top: 0;
+    }
+
+    .order-item:last-child {
+      border-bottom: 0;
+    }
+
+    .order-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .order-product-name {
+      color: #171419;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .order-product-price {
+      color: #171419;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .order-meta {
+      margin-top: 7px;
+      color: #888;
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 12px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .summary-row strong {
+      color: #171419;
+    }
+
+    .summary-row.delivery {
+      color: #9a6338;
+    }
+
+    .summary-row.tax {
+      color: #555;
+    }
+
+    .summary-note {
+      margin-top: 12px;
+      color: #999;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd5cf;
+    }
+
+    .order-total span {
+      color: #777;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .order-total strong {
+      color: #171419;
+      font-family: "Playfair Display", serif;
+      font-size: 27px;
+    }
+
+    .empty-checkout {
+      padding: 30px;
+      text-align: center;
+      background: #fff;
+      border: 1px solid #e5ddd5;
+      border-radius: 18px;
+    }
+
+    .empty-checkout h2 {
+      margin-bottom: 10px;
+      font-family: "Playfair Display", serif;
+    }
+
+    .empty-checkout p {
+      color: #777;
+      font-size: 13px;
+    }
+
+    .back-products {
+      display: inline-block;
+      margin-top: 15px;
+      color: #9a6338;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 850px) {
+
+      .checkout-layout {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+    @media (max-width: 600px) {
+
+      .checkout-container {
+        width: calc(100% - 26px);
+        padding-top: 35px;
+      }
+
+      .checkout-heading h1 {
+        font-size: 38px;
+      }
+
+      .checkout-card {
+        padding: 22px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full {
+        grid-column: auto;
+      }
+
+    }
+
+  </style>
+
+<%- include('partials/theme') %></head>
+
+
+<body class="checkout-page">
+
+  <%- include('partials/header') %>
+
+
+  <main class="checkout-container">
+
+    <div class="checkout-heading">
+
+      <span class="checkout-kicker">
+        SECURE CHECKOUT
+      </span>
+
+      <h1><%= siteSettings.checkout_heading %></h1>
+
+      <p>
+        Enter your details and continue to secure payment.
+      </p>
+
+    </div>
+
+
+    <% if (cart && cart.length) { %>
+
+      <div class="checkout-layout">
+
+
+        <!-- CUSTOMER INFORMATION -->
+
+        <section class="checkout-card">
+
+          <h2>
+            Customer Information
+          </h2>
+
+
+          <form id="checkout-form">
+
+
+            <div class="form-grid">
+
+
+              <!-- NAME -->
+
+              <div class="form-group full">
+
+                <label for="fullName">
+                  Full Name <span class="required">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  id="fullName"
+                  name="name"
+                  value="<%= typeof accountCustomer!=='undefined' && accountCustomer ? accountCustomer.name:'' %>"
+                  autocomplete="name"
+                  required
+                  placeholder="Enter your full name"
+                >
+
+                <div
+                  class="field-error"
+                  id="err-name"
+                ></div>
+
+              </div>
+
+
+              <!-- EMAIL -->
+
+              <div class="form-group">
+
+                <label for="email">
+                  Email Address <span class="required">*</span>
+                </label>
+
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value="<%= typeof accountCustomer!=='undefined' && accountCustomer ? accountCustomer.email:'' %>"
+                  autocomplete="email"
+                  required
+                  placeholder="you@example.com"
+                >
+
+                <div
+                  class="field-error"
+                  id="err-email"
+                ></div>
+
+              </div>
+
+
+              <!-- PHONE -->
+
+              <div class="form-group">
+
+                <label for="phone">
+                  Phone Number <span class="required">*</span>
+                </label>
+
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value="<%= typeof accountCustomer!=='undefined' && accountCustomer ? accountCustomer.phone:'' %>"
+                  autocomplete="tel"
+                  required
+                  maxlength="10"
+                  placeholder="10 digit mobile number"
+                >
+
+                <div
+                  class="field-error"
+                  id="err-phone"
+                ></div>
+
+              </div>
+
+            </div>
+
+
+            <!-- DELIVERY INFORMATION -->
+
+            <div id="delivery-section">
+
+              <h3>
+                Delivery Information
+              </h3>
+
+
+              <div class="form-grid">
+
+
+                <div class="form-group full">
+
+                  <label for="address">
+                    Delivery Address
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    autocomplete="street-address"
+                    placeholder="House / Street / Area"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="city">
+                    City <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    autocomplete="address-level2"
+                    placeholder="City"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="state">
+                    State <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    autocomplete="address-level1"
+                    placeholder="State"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="pincode">
+                    Pincode <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    id="pincode"
+                    name="pincode"
+                    inputmode="numeric"
+                    maxlength="6"
+                    autocomplete="postal-code"
+                    placeholder="6 digit pincode"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div class="delivery-box">
+
+                <h3>
+                  Delivery
+                </h3>
+
+                <p>
+                  Enter your state to see delivery partners for your dispatch hub.
+                </p>
+
+                <div
+                  id="delivery-status"
+                  class="delivery-status physical"
+                >
+                  Enter your state to find your delivery zone and dispatch hub.
+                </div>
+
+                <label for="courier-select">Choose Delivery Partner</label>
+                <select id="courier-select" name="courier_id" disabled><option value="">Choose a delivery partner</option></select>
+                <p id="courier-help">Choose an available delivery partner for your dispatch hub.</p>
+
+              </div>
+
+            </div>
+
+
+            <!-- DIGITAL ONLY MESSAGE -->
+
+            <div
+              id="digital-message"
+              class="delivery-box hidden"
+            >
+
+              <h3>
+                Digital Delivery
+              </h3>
+
+              <p>
+                Your order contains only digital products.
+                No physical delivery is required and delivery charge is ₹0.
+              </p>
+
+              <div class="delivery-status digital">
+                ✓ Instant online access after successful payment
+              </div>
+
+            </div>
+
+
+            <div class="payment-note">
+
+              Your order amount will be calculated securely on the server
+              using the selected products and GST.
+
+              Live payments are securely processed through Razorpay after continuing.
+
+            </div>
+
+
+            <button
+              type="submit"
+              id="proceed"
+              class="checkout-button"
+            >
+              Pay Now
+            </button>
+
+
+          </form>
+
+        </section>
+
+
+        <!-- ORDER SUMMARY -->
+
+        <section class="checkout-card">
+
+          <h2>
+            Order Summary
+          </h2>
+
+
+          <div id="cart-items">
+
+            <% cart.forEach(function(item) { %>
+
+              <div class="order-item">
+
+                <div class="order-item-top">
+
+                  <span class="order-product-name">
+                    <%= item.name %>
+                  </span>
+
+                  <span class="order-product-price">
+
+                    ₹<%= Number(
+                      item.total || 0
+                    ).toLocaleString(
+                      'en-IN',
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }
+                    ) %>
+
+                  </span>
+
+                </div>
+
+
+                <div class="order-meta">
+
+                  Sizes: <%= (item.selected_sizes || []).join(', ') || 'As ordered' %> - Digital quantity:
+                  <%= item.quantity ?? 1 %>
+
+
+                  <% if (
+                    item.selected_files &&
+                    item.selected_files.length
+                  ) { %>
+
+                    <br>
+
+                    Digital / Files:
+
+                    <%= item.selected_files.map(
+                      function(f) {
+                        return f.file_name;
+                      }
+                    ).join(', ') %>
+
+                  <% } %>
+
+
+                  <% if (item.physical_quantity) { %>
+
+                    <br>
+
+                    Physical Pattern:
+                    <%= item.physical_quantity %>
+
+                  <% } %>
+
+
+                  <% if (item.trial_quantity) { %>
+
+                    <br>
+
+                    Trial Sample:
+                    <%= item.trial_quantity %>
+
+                  <% } %>
+
+
+                  <% if (
+                    item.selected_addons &&
+                    item.selected_addons.length
+                  ) { %>
+
+                    <br>
+
+                    Add-ons:
+
+                    <%= item.selected_addons.map(
+                      function(a) {
+                        return a.name;
+                      }
+                    ).join(', ') %>
+
+                  <% } %>
+
+                </div>
+
+              </div>
+
+            <% }) %>
+
+          </div>
+
+
+          <h3>Online Payment</h3>
+          <!-- PRODUCT TOTAL -->
+
+          <div class="summary-row">
+
+            <span>
+              Subtotal
+            </span>
+
+            <strong id="product-total">
+              ₹0.00
+            </strong>
+
+          </div>
+
+
+          <!-- GST -->
+
+          <div class="summary-row tax">
+
+            <span>
+              GST
+              (<%= typeof gstRate !== 'undefined'
+                ? gstRate
+                : 18
+              %>%)
+            </span>
+
+            <strong id="gst-total">
+              ₹0.00
+            </strong>
+
+          </div>
+
+
+          <div class="summary-note">
+            Final price is calculated securely by the server.
+          </div>
+
+          <div class="order-total">
+
+            <span>
+              Online Payment Total
+            </span>
+
+            <strong id="grand-total">
+              ₹0.00
+            </strong>
+
+          </div>
+
+          <section id="courier-summary" class="hidden" style="border-top:1px solid #ddd;margin-top:24px;padding-top:18px">
+            <h3>Delivery</h3><p>Selected Delivery Partner: <span id="selected-courier-summary">Choose a delivery partner</span></p>
+            <p>Destination: <span id="destination-summary"></span></p><p>Zone: <span id="region-summary"></span></p><p>Dispatch From: <span id="dispatch-summary"></span></p>
+
+
+
+            <p>Partners follow Admin-configured serviceability. Selection does not confirm an external booking.</p>
+          </section>
+        </section>
+
+      </div>
+
+
+    <% } else { %>
+
+
+      <div class="empty-checkout">
+
+        <h2>
+          Your cart is empty
+        </h2>
+
+        <p>
+          Add a garment pattern to your cart before continuing
+          to checkout.
+        </p>
+
+        <% if(canVisit('/products')){ %><a
+          href="/products"
+          class="back-products"
+        >
+          ← Browse Patterns
+        </a><% } %>
+
+      </div>
+
+
+    <% } %>
+
+  </main>
+
+
+  <script>
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+
+    const form =
+      document.getElementById(
+        "checkout-form"
+      );
+
+    if (!form) {
+      return;
+    }
+
+
+    /*
+    =====================================================
+    ELEMENTS
+    =====================================================
+    */
+
+    const proceedButton =
+      document.getElementById(
+        "proceed"
+      );
+
+    const deliverySection =
+      document.getElementById(
+        "delivery-section"
+      );
+
+    const digitalMessage =
+      document.getElementById(
+        "digital-message"
+      );
+
+    const deliveryStatus =
+      document.getElementById(
+        "delivery-status"
+      );
+
+    const pincodeInput =
+      document.getElementById(
+        "pincode"
+      );
+
+    let deliveryRequestId = 0;
+    const courierSelect = document.getElementById("courier-select");
+    const courierHelp = document.getElementById("courier-help");
+    const cityInput=document.getElementById('city'),stateInput=document.getElementById('state');
+    let courierRows=[], loadedCityKey='';
+    function showDestination(data={}){document.getElementById('destination-summary').textContent=[data.city,data.state].filter(Boolean).join(', ');document.getElementById('region-summary').textContent=data.region || '';document.getElementById('dispatch-summary').textContent=data.dispatch_location || '';}
+    function resetCouriers() {
+      courierRows=[];loadedCityKey='';showDestination();
+      const placeholder=new Option('Choose a delivery partner','');placeholder.disabled=true;placeholder.selected=true;
+      courierSelect.replaceChildren(placeholder);courierSelect.disabled=true;courierSelect.required=deliveryRequired;
+      courierHelp.textContent='Enter your state to see available delivery partners.';
+    }
+    function showCouriers(rows,selected='') {
+      const placeholder=new Option('Choose a delivery partner','');placeholder.disabled=true;
+      courierSelect.replaceChildren(placeholder);courierRows=rows;
+      rows.forEach(row=>courierSelect.add(new Option(row.name,row._id)));
+      courierSelect.disabled=!rows.length;courierSelect.required=deliveryRequired;
+      courierSelect.value=rows.some(row=>row._id===selected)?selected:'';
+      courierHelp.textContent=rows.length?'Choose one delivery partner for your dispatch hub.':'Delivery service is not currently configured for this state.';
+    }
+    function renderCourierSummary(){
+      const selected=courierRows.find(row=>row._id===courierSelect.value);
+      document.getElementById('selected-courier-summary').textContent=selected?.name || 'Choose a delivery partner';
+
+    }
+
+    const productTotalElement =
+      document.getElementById(
+        "product-total"
+      );
+
+    const gstTotalElement =
+      document.getElementById(
+        "gst-total"
+      );
+
+    const grandTotalElement =
+      document.getElementById(
+        "grand-total"
+      );
+
+
+    /*
+    =====================================================
+    CART
+    =====================================================
+    */
+
+    const cart =
+      <%- JSON.stringify(
+        typeof cart !== 'undefined'
+          ? cart
+          : []
+      ) %>;
+
+
+    /*
+    =====================================================
+    GST
+    =====================================================
+    */
+
+    const gstRate =
+      Number(
+        <%- JSON.stringify(
+          typeof gstRate !== 'undefined'
+            ? gstRate
+            : 0
+        ) %>
+      );
+
+
+    /*
+    =====================================================
+    DELIVERY REQUIRED
+    =====================================================
+    */
+
+    function isDeliveryRequired() {
+
+      return cart.some(
+        function (item) {
+
+          return (
+            Number(
+              item.physical_quantity || 0
+            ) > 0
+            ||
+            Number(
+              item.trial_quantity || 0
+            ) > 0
+          );
+
+        }
+      );
+
+    }
+
+
+    const deliveryRequired =
+      isDeliveryRequired();
+
+
+    /*
+    =====================================================
+    FORMAT CURRENCY
+    =====================================================
+    */
+
+    function formatCurrency(
+      amount
+    ) {
+
+      return "₹" +
+        Number(
+          amount || 0
+        ).toLocaleString(
+          "en-IN",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }
+        );
+
+    }
+
+
+    /*
+    =====================================================
+    PRODUCT TOTAL
+    =====================================================
+    */
+
+    function calculateProductTotal() {
+
+      return cart.reduce(
+        function (
+          total,
+          item
+        ) {
+
+          return (
+            total +
+            Number(
+              item.total || 0
+            )
+          );
+
+        },
+        0
+      );
+
+    }
+
+
+    const productTotal =
+      calculateProductTotal();
+
+
+    /*
+    =====================================================
+    GET DELIVERY CHARGE FROM SERVER
+    =====================================================
+    */
+
+    async function loadDeliveryRoute(){
+      const requestId=++deliveryRequestId;
+      if(!deliveryRequired)return 0;
+      const city=cityInput.value.trim(),state=stateInput.value.trim(),cityKey=state+'|'+city;
+      if(!state){resetCouriers();renderCourierSummary();deliveryStatus.textContent='Enter your state.';return null;}
+      const selected=loadedCityKey===cityKey?courierSelect.value:'';
+      deliveryStatus.textContent='Checking configured delivery partner services...';
+      try{
+        const response=await fetch('/checkout/delivery-info?state='+encodeURIComponent(state)+'&city='+encodeURIComponent(city));
+        const data=await response.json();
+        if(requestId!==deliveryRequestId || stateInput.value.trim()+'|'+cityInput.value.trim()!==cityKey)return {stale:true};
+        if(!response.ok || !data.ok)throw new Error(data.error || 'Unable to load couriers.');
+        showDestination(data);
+        showCouriers(Array.isArray(data.couriers)?data.couriers:[],selected);loadedCityKey=cityKey;
+        if(!courierRows.length && data.region_id)courierHelp.textContent='No delivery partners have been enabled for the '+data.dispatch_location+' dispatch hub.';
+        deliveryStatus.textContent=courierRows.length?'Available Delivery Partners':courierHelp.textContent;
+        renderCourierSummary();return data;
+      }catch(error){
+        if(requestId!==deliveryRequestId)return {stale:true};
+        resetCouriers();renderCourierSummary();deliveryStatus.textContent='Unable to load delivery partner services. Please try again.';return null;
+      }
+    }
+    async function updateSummary(){
+      productTotalElement.textContent=formatCurrency(productTotal);
+      const tax=Math.round(productTotal*100*gstRate/100)/100;
+      gstTotalElement.textContent=formatCurrency(tax);
+      grandTotalElement.textContent=formatCurrency(productTotal+tax);
+      if(deliveryRequired)await loadDeliveryRoute();
+    }
+
+    function updateDeliveryUI() {
+      document.getElementById("courier-summary").classList.toggle("hidden", !deliveryRequired);
+
+      if (
+        deliveryRequired
+      ) {
+
+        deliverySection.classList.remove(
+          "hidden"
+        );
+
+        digitalMessage.classList.add(
+          "hidden"
+        );
+
+      } else {
+
+        deliverySection.classList.add(
+          "hidden"
+        );
+
+        digitalMessage.classList.remove(
+          "hidden"
+        );
+
+
+      }
+
+      updateSummary();
+
+    }
+
+
+    /*
+    =====================================================
+    PINCODE INPUT
+    =====================================================
+    */
+
+    for(const input of [cityInput,stateInput])input.addEventListener('input',()=>{deliveryRequestId+=1;resetCouriers();renderCourierSummary();updateSummary();});
+    pincodeInput.addEventListener(
+      "input",
+      function () {
+
+        this.value =
+          this.value
+            .replace(
+              /\D/g,
+              ""
+            )
+            .slice(
+              0,
+              6
+            );
+
+
+
+      }
+    );
+
+
+    /*
+    =====================================================
+    INITIAL UI
+    =====================================================
+    */
+
+    courierSelect.addEventListener("change", renderCourierSummary);
+    updateDeliveryUI();
+
+
+    /*
+    =====================================================
+    FORM SUBMIT
+    =====================================================
+    */
+
+    form.addEventListener(
+      "submit",
+      async function (
+        event
+      ) {
+
+        event.preventDefault();
+
+
+        /*
+        -------------------------------------------------
+        EMPTY CART
+        -------------------------------------------------
+        */
+
+        if (
+          !cart ||
+          !cart.length
+        ) {
+
+          alert(
+            "Your cart is empty. Add items before checkout."
+          );
+
+          return;
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        CUSTOMER DETAILS
+        -------------------------------------------------
+        */
+
+        const name =
+          document
+            .getElementById(
+              "fullName"
+            )
+            .value
+            .trim();
+
+
+        const email =
+          document
+            .getElementById(
+              "email"
+            )
+            .value
+            .trim()
+            .toLowerCase();
+
+
+        const phone =
+          document
+            .getElementById(
+              "phone"
+            )
+            .value
+            .trim()
+            .replace(
+              /\s+/g,
+              ""
+            );
+
+
+        const address =
+          document
+            .getElementById(
+              "address"
+            )
+            .value
+            .trim();
+
+
+        const city =
+          document
+            .getElementById(
+              "city"
+            )
+            .value
+            .trim();
+
+
+        const state =
+          document
+            .getElementById(
+              "state"
+            )
+            .value
+            .trim();
+
+
+        const pincode =
+          document
+            .getElementById(
+              "pincode"
+            )
+            .value
+            .trim();
+
+
+        /*
+        -------------------------------------------------
+        VALIDATION
+        -------------------------------------------------
+        */
+
+        let valid = true;
+
+
+        const errName =
+          document.getElementById(
+            "err-name"
+          );
+
+        const errEmail =
+          document.getElementById(
+            "err-email"
+          );
+
+        const errPhone =
+          document.getElementById(
+            "err-phone"
+          );
+
+
+        errName.textContent =
+          "";
+
+        errEmail.textContent =
+          "";
+
+        errPhone.textContent =
+          "";
+
+
+        if (!name) {
+
+          errName.textContent =
+            "Full name is required";
+
+          valid = false;
+
+        }
+
+
+        if (
+          !email ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+            email
+          )
+        ) {
+
+          errEmail.textContent =
+            "Valid email is required";
+
+          valid = false;
+
+        }
+
+
+        if (
+          !phone ||
+          !/^[0-9]{10}$/.test(
+            phone
+          )
+        ) {
+
+          errPhone.textContent =
+            "Enter a valid 10 digit phone number";
+
+          valid = false;
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        PHYSICAL DELIVERY VALIDATION
+        -------------------------------------------------
+        */
+
+        if (
+          deliveryRequired
+        ) {
+
+          if (!address) {
+
+            alert(
+              "Delivery address is required."
+            );
+
+            return;
+
+          }
+
+
+          if (!city) {
+
+            alert(
+              "City is required."
+            );
+
+            return;
+
+          }
+
+
+          if (!state) {
+
+            alert(
+              "State is required."
+            );
+
+            return;
+
+          }
+
+
+          if (
+            !/^[0-9]{6}$/.test(
+              pincode
+            )
+          ) {
+
+            alert(
+              "Please enter a valid 6-digit pincode."
+            );
+
+            return;
+
+          }
+
+        }
+
+
+        if (!valid) {
+
+          return;
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        CHECK PINCODE BEFORE PAYMENT
+        -------------------------------------------------
+        */
+
+        if (
+          deliveryRequired
+        ) {
+
+          const deliveryInfo =
+            await loadDeliveryRoute();
+
+
+          if (
+            deliveryInfo === null || deliveryInfo.stale || !courierSelect.value || !courierRows.some(row=>row._id===courierSelect.value)
+          ) {
+
+            alert(
+              "Choose an available delivery partner for your dispatch hub before continuing."
+            );
+
+            return;
+
+          }
+
+        }
+
+
+        /*
+        =================================================
+        CART ITEMS
+        =================================================
+        */
+
+        const items =
+          cart.map(
+            function (
+              item
+            ) {
+
+              return {
+
+                product_id:
+                  item.product_id ||
+                  item.productId,
+
+                name:
+                  item.name,
+
+                unit_price:
+                  item.itemUnitTotal ||
+                  item.unit_price ||
+                  item.total ||
+                  0,
+
+                selected_sizes: item.selected_sizes || [],
+                quantity:
+                  item.quantity ??
+                  1,
+
+                selected_files:
+                  item.selected_files ||
+                  [],
+
+                selected_addons:
+                  item.selected_addons ||
+                  [],
+
+                physical_quantity:
+                  item.physical_quantity ||
+                  0,
+
+                trial_quantity:
+                  item.trial_quantity ||
+                  0
+
+              };
+
+            }
+          );
+
+
+        /*
+        =================================================
+        CUSTOMER
+        =================================================
+        */
+
+        const customer = {
+
+          name,
+
+          email,
+
+          phone,
+
+          address:
+            deliveryRequired
+              ? address
+              : "",
+
+          city:
+            deliveryRequired
+              ? city
+              : "",
+
+          state:
+            deliveryRequired
+              ? state
+              : "",
+
+          pincode:
+            deliveryRequired
+              ? pincode
+              : ""
+
+        };
+
+
+        /*
+        =================================================
+        SHIPPING
+        =================================================
+        */
+
+        const shipping =
+          deliveryRequired
+            ? {
+
+                address,
+
+                city,
+
+                state,
+
+                pincode,
+                courier_id: courierSelect.value
+
+              }
+            : {};
+
+
+        /*
+        =================================================
+        DISABLE BUTTON
+        =================================================
+        */
+
+        proceedButton.disabled =
+          true;
+
+
+        proceedButton.textContent =
+          "Preparing Payment...";
+
+
+        try {
+
+          /*
+          ===============================================
+          CREATE SERVER ORDER
+          ===============================================
+          */
+
+          const response =
+            await fetch(
+              "/checkout",
+              {
+
+                method:
+                  "POST",
+
+                headers: {
+
+                  "Content-Type":
+                    "application/json"
+
+                },
+
+                body:
+                  JSON.stringify({
+
+                    customer,
+
+                    items,
+
+                    shipping
+
+                  })
+
+              }
+            );
+
+
+          const json =
+            await response.json();
+
+
+          /*
+          ===============================================
+          SERVER ERROR
+          ===============================================
+          */
+
+          if (json.login_url) { window.location.href=json.login_url; return; }
+          if (
+            !response.ok
+          ) {
+
+            alert(
+              json.error ||
+              "Unable to start payment."
+            );
+
+            return;
+
+          }
+
+          if (json.payment_method_url) {
+            window.location.href = json.payment_method_url;
+            return;
+          }
+
+          /*
+          ===============================================
+          RAZORPAY ORDER CHECK
+          ===============================================
+          */
+
+          if (
+            !json.razorpay_order_id
+          ) {
+
+            alert(
+              json.message ||
+              json.error ||
+              "Payment gateway is not available."
+            );
+
+            return;
+
+          }
+
+
+          /*
+          ===============================================
+          RAZORPAY
+          ===============================================
+          */
+
+          const options = {
+
+            key:
+              json.key,
+
+            amount:
+              json.amount,
+
+            currency:
+              json.currency ||
+              "INR",
+
+            name:
+              "Garment Pattern Store",
+
+            description:
+              "Garment Pattern Order",
+
+            order_id:
+              json.razorpay_order_id,
+
+
+            prefill: {
+
+              name:
+                json.customer?.name ||
+                name,
+
+              email:
+                json.customer?.email ||
+                email,
+
+              contact:
+                phone
+                  ? "+91" + phone
+                  : ""
+
+            },
+
+
+            notes: {
+
+              order_id:
+                json.order_id,
+
+              tax_amount:
+                json.tax_amount,
+
+              grand_total:
+                json.grand_total
+
+            },
+
+
+            theme: {
+
+              color:
+                "#9a6338"
+
+            },
+
+
+            callback_url:
+              window.location.origin +
+              "/checkout/razorpay-callback"
+
+          };
+
+
+          /*
+          ===============================================
+          CREATE RAZORPAY INSTANCE
+          ===============================================
+          */
+
+          const razorpay =
+            new Razorpay(
+              options
+            );
+
+
+          /*
+          ===============================================
+          PAYMENT FAILED
+          ===============================================
+          */
+
+          razorpay.on(
+            "payment.failed",
+            function (
+              response
+            ) {
+
+
+              alert(
+                response.error?.description ||
+                "Payment failed. Please try again."
+              );
+
+
+              proceedButton.disabled =
+                false;
+
+
+              proceedButton.textContent =
+                "Continue to Payment →";
+
+            }
+          );
+
+
+          /*
+          ===============================================
+          OPEN RAZORPAY
+          ===============================================
+          */
+
+          razorpay.open();
+
+
+        } catch (
+          error
+        ) {
+
+
+          alert(
+            "Unable to start payment. Please try again."
+          );
+
+
+        } finally {
+
+          setTimeout(
+            function () {
+
+              proceedButton.disabled =
+                false;
+
+              proceedButton.textContent =
+                "Continue to Payment →";
+
+            },
+            2500
+          );
+
+        }
+
+      }
+    );
+
+  }
+);
+
+</script>
+
+  <%- include('partials/footer') %><script src="/js/main.js"></script>
+
+</body>
+
+</html>

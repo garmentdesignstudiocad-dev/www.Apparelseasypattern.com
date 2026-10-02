@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Website Appearance</title><link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap"><link rel="stylesheet" href="/css/admin-appearance.css"></head>
+<body><%- include('../partials/admin_header') %><main class="container section">
+<h1>Website Appearance</h1><p>Choose your store's look and wording. Preview changes below, then save to update the ordering website.</p>
+<% if(message){ %><p class="settings-note" role="status"><%= message %></p><% } %>
+<% if(errors.length){ %><div class="appearance-errors" role="alert"><strong>Please check these settings:</strong><ul><% errors.forEach(error => { %><li><%= error %></li><% }) %></ul></div><% } %>
+<form method="post" action="/admin/settings/appearance" id="appearance-form">
+<input type="hidden" name="_csrf" value="<%= csrf %>">
+<% const label = key => key.replaceAll('_',' ').replace(/\b\w/g, c => c.toUpperCase()).replace('Url','URL');
+const helpers = {
+ store_name:'Shown in the header and footer.',logo_url:'Full HTTP or HTTPS link to your logo. Leave blank to use the GP mark.',favicon_url:'Full HTTP or HTTPS link to a small browser tab icon. Optional.',
+ main_website_url:'Your main Wix marketing website. Customers can return here.',contact_email:'Public support email address.',contact_phone:'Public phone number, including country code if needed.',whatsapp_number:'Include country code, for example +919876543210.',address:'Your public business address.',
+ primary_color:'Main brand tone and hero backgrounds.',secondary_color:'Secondary brand tone and highlighted sections.',accent_color:'Small highlights and labels.',background_color:'Background behind the page content.',header_background_color:'Navigation background.',header_text_color:'Logo text and navigation links.',button_color:'Main action buttons.',button_text_color:'Text on main action buttons.',footer_background_color:'Bottom section background.',footer_text_color:'Bottom section text and links.',
+ main_font:'Used for regular text. Web fonts use a safe fallback if unavailable.',heading_font:'Used for page and section headings.',base_font_size:'Regular text size, from 14 to 20 pixels.',heading_style:'Normal or italic headings.',button_style:'Choose the shape of action buttons.',card_style:'Choose how product and order cards are outlined.',layout_density:'Choose spacing inside cards and between items.',
+ homepage_heading:'Main heading on the store home page.',homepage_subheading:'Short introduction below the home heading.',products_heading:'Heading above the product collection.',products_description:'Introduction to the product collection.',cart_heading:'Title of the shopping cart.',checkout_heading:'Title above checkout details.',footer_text:'Short business message at the bottom of the website.',back_website_label:'Label for links back to your main Wix website.',view_products_label:'Label for buttons opening the product collection.' };
+const sections = {
+ Branding:['store_name','logo_url','favicon_url','main_website_url','contact_email','contact_phone','whatsapp_number','support_cta','address'],
+ 'Page SEO':Object.keys(appearance.content).filter(key=>key.includes('_seo_')),
+ Colors:Object.keys(appearance.colors), Typography:['main_font','heading_font','base_font_size','heading_style'],
+ 'Buttons & Cards':['button_style','card_style','layout_density'],
+ 'Basic Text':['homepage_heading','homepage_subheading','products_heading','products_description','cart_heading','checkout_heading','footer_text','back_website_label','view_products_label']
+};
+for(const [section, fields] of Object.entries(sections)){ %>
+<fieldset class="appearance-section"><legend><%= section %></legend><div class="admin-settings-grid">
+<% for(const key of fields){ %><div class="appearance-field"><label for="<%= key %>"><%= label(key) %></label>
+<% if(key in appearance.colors){ %><div class="appearance-color"><input type="color" data-color-for="<%= key %>" aria-label="<%= label(key) %> picker" value="<%= appearance.valid(key,settings[key]) ? settings[key] : appearance.colors[key] %>"><input id="<%= key %>" name="<%= key %>" value="<%= settings[key] %>" pattern="#[0-9a-fA-F]{6}" maxlength="7" required spellcheck="false" aria-describedby="help-<%= key %>"></div>
+<% }else if(key in appearance.options){ %><select id="<%= key %>" name="<%= key %>" aria-describedby="help-<%= key %>"><% appearance.options[key].forEach(option=>{ %><option value="<%= option %>" <%= settings[key]===option?'selected':'' %>><%= option.replaceAll('-',' ').replace(/^./,c=>c.toUpperCase()) %></option><% }) %></select>
+<% }else{ %><input id="<%= key %>" name="<%= key %>" type="<%= key==='base_font_size'?'number':key.endsWith('_url')?'url':key==='contact_email'?'email':'text' %>" value="<%= settings[key] %>" <%= key==='base_font_size'?'min=14 max=20 step=1 required':'' %> <%= ['store_name','back_website_label','view_products_label'].includes(key)?'required':'' %> maxlength="<%= key.endsWith('_url')?2048:600 %>" aria-describedby="help-<%= key %>"><% } %>
+<small id="help-<%= key %>"><%= helpers[key] %></small></div><% } %>
+</div></fieldset><% } %>
+<section class="appearance-section"><h2>Preview</h2><p>This sample updates immediately. The live store changes only after you save.</p>
+<div id="theme-preview"><header class="preview-header"><strong data-preview="store_name"></strong><span>Patterns · Cart</span></header><div class="preview-main"><h2 data-preview="homepage_heading"></h2><p data-preview="homepage_subheading"></p><article class="preview-card"><div class="preview-image">Sample Pattern</div><h3>Classic garment pattern</h3><p>Digital files and physical pattern options.</p><strong class="preview-accent">₹500</strong><p><button type="button" class="preview-button" data-preview="view_products_label"></button></p></article></div><footer class="preview-footer" data-preview="footer_text"></footer></div>
+</section><div class="appearance-actions"><button class="btn primary" type="submit">Save Website Appearance</button><a href="/products" target="_blank" rel="noopener">Open Store ↗</a></div>
+</form>
+<form method="post" action="/admin/settings/appearance/reset" id="appearance-reset" class="appearance-section"><input type="hidden" name="_csrf" value="<%= csrf %>"><h2>Reset to Default Theme</h2><p>Restore the default colors, fonts, button styles and spacing. Your branding, text and business data will be kept.</p><label><input type="checkbox" name="confirm_reset" value="yes" required> I confirm that I want to reset the appearance.</label><p><button type="submit" class="btn">Reset to Default Theme</button></p></form>
+</main><script src="/js/admin-appearance.js"></script></body></html>

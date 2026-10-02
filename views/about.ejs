@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/customer-experience.css" />
+  <%- include('partials/theme') %></head>
+  <body>
+    <%- include('partials/header') %>
+    <main class="fashion-page">
+      <section class="story-hero"><div class="story-panel"><span class="eyebrow">Garment Pattern Store</span><h1 class="page-title">Patterns for the work behind every garment.</h1><p class="page-intro">Explore a flexible pattern store designed around digital files, physical patterns and trial samples—so you can choose the right format for your next garment project.</p><% if(canVisit('/products')){ %><a class="fashion-button" style="margin-top:24px" href="/products">Explore Patterns</a><% } %></div><div class="story-visual" role="img" aria-label="Abstract garment-pattern artwork"></div></section>
+      <section class="feature-columns"><article class="feature-tile"><b>01 / DIGITAL</b><h3>Digital patterns</h3><p>Select the file formats that fit your design and production workflow.</p></article><article class="feature-tile"><b>02 / PHYSICAL</b><h3>Physical patterns</h3><p>Choose printed patterns when physical development is the better fit.</p></article><article class="feature-tile"><b>03 / TRIAL</b><h3>Trial samples</h3><p>Keep your options flexible with trial sample quantities where available.</p></article></section>
+    </main>
+    <%- include('partials/footer') %><script src="/js/main.js"></script>
+  </body>
+</html>

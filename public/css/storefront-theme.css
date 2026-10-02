@@ -1,0 +1,45 @@
+/* Loaded last on customer pages only. Settings are validated before emitting variables. */
+:root {
+  --brand-primary:var(--primary-color); --brand-deep:var(--secondary-color); --brand-accent:var(--accent-color);
+  --canvas:var(--background-color); --paper:var(--background-color); --cream:var(--background-color);
+  --accent:var(--accent-color); --accent-dark:var(--primary-color); --brown:var(--primary-color); --brown-dark:var(--secondary-color); --gold:var(--accent-color);
+  --cart-bg:var(--background-color); --cart-brown:var(--primary-color); --cart-gold:var(--accent-color);
+  --header-bg:var(--header-background-color); --header-text:var(--header-text-color);
+  --button-bg:var(--button-color); --button-text:var(--button-text-color);
+  --footer-bg:var(--footer-background-color); --footer-text:var(--footer-text-color);
+}
+html { font-size:var(--base-font-size); }
+body,body.premium-store,body.payment-page { background:var(--background-color); font-family:var(--main-font); font-size:var(--base-font-size); }
+body h1,body h2,body h3,body h4,body h5,body .page-title,body .summary-title { font-family:var(--heading-font)!important; font-style:var(--heading-style)!important; overflow-wrap:anywhere; }
+main p,main .page-intro,main .pd-description,main .cart-item-description { font-size:1em; }
+button,input,select,textarea { font-family:inherit; }
+.site-header { background:var(--header-bg); color:var(--header-text); }
+.site-header .fashion-logo,.site-header .fashion-logo__copy small,.site-header .main-nav a,.site-header .nav-toggle { color:var(--header-text); }
+.site-header .nav-toggle span { background:var(--header-text); }
+.site-header .fashion-logo__copy strong { max-width:260px; overflow-wrap:anywhere; }
+.announcement-bar { background:var(--secondary-color); }
+.site-footer { background:var(--footer-bg); color:var(--footer-text); }
+.site-footer :is(a,p,h4,h5,strong,small,.footer-bottom) { color:var(--footer-text); }
+.site-footer .fashion-logo__mark { background:var(--footer-bg); color:var(--footer-text); border:1px solid currentColor; }
+.site-header .fashion-logo__mark { background:var(--primary-color); }
+.catalog-hero,.premium-store .lux-hero { background:linear-gradient(118deg,var(--secondary-color),var(--primary-color) 60%,var(--accent-color)); }
+.eyebrow,.pd-kicker,.cart-kicker,.summary-kicker,.fashion-product__kicker { color:var(--accent-color); }
+.lux-hero .eyebrow,.catalog-hero .eyebrow { color:var(--accent-color); }
+.pd-total { background:var(--secondary-color); }
+body :is(.fashion-button,.button,.btn.primary,.checkout-button,.pay-button,.shop-button,.pd-add,.cart-link,.primary-btn) {
+  background:var(--button-bg); color:var(--button-text)!important; border-radius:var(--button-radius); border-color:var(--button-bg);
+}
+body :is(.fashion-button,.button,.btn.primary,.checkout-button,.pay-button,.shop-button,.pd-add):hover { filter:brightness(.93); background:var(--button-bg); }
+body :is(.fashion-product,.class-card,.cart-item,.cart-summary,.checkout-card,.payment-card,.success-card,.cancel-card,.confirmation-card,.pd-price-card,.pd-feature,.form-surface,.empty-cart) {
+  border:var(--card-border); box-shadow:var(--card-shadow);
+}
+body :is(.fashion-product__body,.class-card__body,.cart-item,.cart-summary,.checkout-card,.payment-card,.success-card,.pd-price-card,.form-surface) { padding:var(--card-padding); }
+body :is(.product-catalog,.class-grid,.cart-items,.cart-layout,.checkout-layout,.payment-layout,.pd-product) { gap:var(--layout-gap); }
+.fashion-product:hover { box-shadow:var(--card-shadow); }
+.fashion-logo { min-width:0; }
+.fashion-logo__copy { overflow-wrap:anywhere; }
+@media(max-width:800px) {
+  .site-header .main-nav { background:var(--header-bg); }
+  .site-header .fashion-logo__copy strong { max-width:180px; }
+  .site-header .nav-container { gap:12px; }
+}

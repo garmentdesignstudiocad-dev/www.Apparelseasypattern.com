@@ -1,0 +1,17 @@
+<% if(featureEnabled('leads')){ %>
+<section class="studio-section" id="enquiry"><h2>Submit Your Requirement</h2><p>Tell us what you need. Our team will follow up using your contact details.</p>
+<% if(errors.length){ %><div class="studio-errors" role="alert"><% errors.forEach(error => { %><p><%= error %></p><% }) %></div><% } %>
+<form action="/enquiries" method="post" class="studio-form">
+<input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="source" value="<%= source %>">
+<% const fields = [['name',corporate?'Contact Person':'Name','text',true],['email','Email','email',true],['whatsapp','WhatsApp Number (with country code)','tel',true],['country','Country','text',false],['location','Location','text',corporate],['profession','Profession','text',false],['experience','Current Experience','text',false],['preferred_timing','Preferred Timing (include time zone)','text',false]]; fields.forEach(([key,label,type,required]) => { %>
+<label><%= label %><%= required?' *':'' %><input name="<%= key %>" type="<%= type %>" maxlength="300" value="<%= typeof values[key] === 'string' ? values[key] : '' %>" <%= required?'required':'' %>></label><% }) %>
+<label>Interest *<select name="interest" required><% business.interests.filter(visibleInterest).forEach(option => { %><option <%= (values.interest || interest) === option ? 'selected' : '' %>><%= option %></option><% }) %></select></label>
+<% if(featureEnabled('courses')){ %><fieldset class="studio-wide"><legend>Corporate training details (required for Corporate Training)</legend><div class="studio-form">
+<label>Company Name<input name="company_name" maxlength="300" value="<%= values.company_name || '' %>" <%= corporate?'required':'' %>></label>
+<label>Number of Employees<input type="number" min="1" max="1000000" step="1" name="employee_count" value="<%= values.employee_count || '' %>" <%= corporate?'required':'' %>></label>
+<label>Preferred Date<input type="date" name="preferred_date" value="<%= values.preferred_date || '' %>" <%= corporate?'required':'' %>></label></div></fieldset><% } %>
+<label class="studio-wide"><%= corporate?'Training Requirement':'Message / Requirement' %><textarea name="message" rows="5" maxlength="5000" <%= corporate?'required':'' %>><%= values.message || '' %></textarea></label>
+<div class="studio-wide"><p>Lead source: <%= source %></p><button type="submit" class="fashion-button">Send Enquiry</button></div>
+</form></section>
+
+<% } %>

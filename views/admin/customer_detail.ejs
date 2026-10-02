@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-customer-detail">
+    <%- include('../partials/admin_header') %>
+    <main class="container">
+      <section class="admin-hero">
+        <div>
+          <h1><%= customer.name %></h1>
+          <p class="muted"><%= customer.email %></p>
+        </div>
+        <div class="admin-quick-actions">
+          <a href="/admin/customers" class="btn ghost">Back to Customers</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h3>Customer Information</h3>
+          <p><strong>Email:</strong> <%= customer.email %></p>
+          <p><strong>Phone:</strong> <%= customer.phone || '—' %></p>
+          <p><strong>Registered:</strong> <%= new Date(customer.createdAt).toLocaleString() %></p>
+
+          <h4>Orders (<%= totalOrders %>) — Total Spent: <%= formatCurrency(totalPurchase || 0) %></h4>
+          <% if (orders && orders.length) { %>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Order Status</th>
+                  <th>Payment Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% orders.forEach(function(o) { %>
+                  <tr>
+                    <td>#<%= o.id %></td>
+                    <td><%= new Date(o.createdAt).toLocaleString() %></td>
+                    <td><%= formatCurrency(o.grand_total || 0) %></td>
+                    <td><%= o.order_status %></td>
+                    <td><%= o.payment_status %></td>
+                    <td><a class="btn small" href="/admin/orders/<%= o.id %>">View</a></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %>
+            <p class="muted">No orders for this customer.</p>
+          <% } %>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer') %>
+  </body>
+</html>

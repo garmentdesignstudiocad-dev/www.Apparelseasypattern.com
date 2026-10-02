@@ -1,0 +1,9 @@
+<% const pageTitle = typeof seoTitle !== 'undefined' ? seoTitle : (typeof title !== 'undefined' ? title : siteSettings.store_name); const pageDescription = typeof description !== 'undefined' ? description : 'Explore digital garment patterns, pattern making courses, garment technology training and apparel technical consulting.'; %>
+<meta property="og:title" content="<%= pageTitle %>">
+<meta property="og:description" content="<%= pageDescription %>">
+<meta property="og:type" content="website">
+<% if(typeof canonicalUrl !== 'undefined' && canonicalUrl){ %><link rel="canonical" href="<%= canonicalUrl %>"><meta property="og:url" content="<%= canonicalUrl %>"><% } %>
+
+<meta name="description" content="<%= pageDescription %>">
+<% if(typeof productStructuredData!=='undefined' && productStructuredData){ %><script type="application/ld+json"><%- jsonLd(productStructuredData) %></script><% } %>
+<% if(typeof organizationData!=='undefined' && organizationData){ %><script type="application/ld+json"><%- jsonLd(organizationData) %></script><% } %>

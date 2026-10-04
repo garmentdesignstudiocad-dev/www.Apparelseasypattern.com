@@ -1,168 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %> - <%= product.name %></title>
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body class="admin-product-addons-page">
-    <%- include('../partials/admin_header') %>
-    <main class="container">
-      <section class="section">
-        <div class="admin-hero">
-          <div>
-            <h1>Add-ons for: <%= product.name %></h1>
-            <p class="muted">Manage add-ons for this product.</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= title %> - <%= product.name %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin-products.css">
+</head>
+<body class="admin-product-editor">
+  <%- include('../partials/admin_header') %>
+  <main class="admin-product-editor-main">
+    <header class="admin-product-editor-heading">
+      <div>
+        <a class="admin-product-back" href="/admin/products/<%= product._id %>/edit">&larr; Back to product setup</a>
+        <p class="eyebrow">Admin Portal</p>
+        <h1>Optional Add-ons</h1>
+        <p>Optional extras customers can add to <strong><%= product.name %></strong>.</p>
+      </div>
+      <a href="/admin/products/<%= product._id %>/addons#add-form" class="btn primary">+ Add Add-on</a>
+    </header>
+
+    <% if (message) { %><div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>" role="status"><%= message %></div><% } %>
+
+    <% if (addonForm) { %>
+      <section id="add-form" class="admin-product-section">
+        <header><span>1</span><div><h2><%= editingAddon ? 'Edit Add-on' : 'Add an Optional Extra' %></h2><p>Describe the extra item or service customers can choose with this pattern.</p></div></header>
+        <form class="admin-product-form" method="POST" action="<%= editingAddon ? '/admin/products/' + product._id + '/addons/' + editingAddon._id + '/edit' : '/admin/products/' + product._id + '/addons' %>">
+          <div class="admin-product-fields">
+            <label><span>Add-on Name</span><small>The short name customers see when choosing this extra. Example: “Printed pattern set”.</small><input name="name" required maxlength="160" value="<%= addonForm.name || '' %>"></label>
+            <label><span>Add-on Description</span><small>Explain what the customer receives and how this extra differs from the main pattern.</small><textarea name="description" rows="3" maxlength="2000"><%= addonForm.description || '' %></textarea></label>
+            <label><span>Add-on Price</span><small>Enter the amount the customer must pay for this extra. Leave unset until confirmed. Do not use ₹0 as a temporary price.</small><input name="price" type="number" min="0" step="0.01" value="<%= addonForm.price ?? '' %>" placeholder="Final price" required></label>
+            <label class="admin-option-row"><input type="checkbox" name="active" <%= addonForm.active === false ? '' : 'checked' %>><span><strong>Offer This Add-on</strong><small>When active, customers can select this extra on the product page. Keep it off until its details and price are confirmed.</small></span></label>
           </div>
-          <div class="admin-quick-actions">
-            <a href="/admin/products/<%= product._id %>/addons#add-form" class="btn primary">Add Add-on</a>
-            <a href="/admin/products" class="btn ghost">Back to Products</a>
+          <div class="admin-product-form-actions">
+            <button class="btn primary" type="submit"><%= editingAddon ? 'Save Add-on Changes' : 'Save Add-on' %></button>
+            <% if (editingAddon) { %><a href="/admin/products/<%= product._id %>/addons" class="btn ghost">Cancel</a><% } %>
+            <a href="/admin/products/<%= product._id %>/edit" class="btn ghost">Back to Product</a>
           </div>
-        </div>
-
-        <% if (message) { %>
-          <div class="alert"><%= message %></div>
-        <% } %>
-
-        <% if (addonForm) { %>
-          <section id="add-form" class="card" style="margin-bottom:1rem;padding:1rem">
-            <h3><%= editingAddon ? 'Edit Add-on' : 'Add Add-on' %></h3>
-            <form method="POST" action="<%= editingAddon ? ('/admin/products/' + product._id + '/addons/' + editingAddon._id + '/edit') : ('/admin/products/' + product._id + '/addons') %>">
-              <label>Name<input name="name" required value="<%= addonForm.name || '' %>"></label>
-              <label>Description<textarea name="description"><%= addonForm.description || '' %></textarea></label>
-              <label>Price<input name="price" type="number" step="0.01" value="<%= addonForm.price || 0 %>"></label>
-              <label><input type="checkbox" name="active" <%= addonForm.active ? 'checked' : '' %>> Active</label>
-              <div style="margin-top:0.5rem"><button class="btn primary" type="submit">Save Add-on</button></div>
-            </form>
-          </section>
-        <% } %>
-
-        <table style="width:100%;border-collapse:collapse">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:0.75rem">Name</th>
-              <th style="padding:0.75rem">Price</th>
-              <th style="padding:0.75rem">Status</th>
-              <th style="padding:0.75rem">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% addons.forEach(function(a){ %>
-              <tr style="border-top:1px solid rgba(0,0,0,0.06)">
-                <td style="padding:0.75rem"><strong><%= a.name %></strong><div class="muted"><%= a.description %></div></td>
-                <td style="padding:0.75rem;text-align:center"><%= formatCurrency ? formatCurrency(a.price) : a.price %></td>
-                <td style="padding:0.75rem;text-align:center"><%= a.active ? 'Active' : 'Inactive' %></td>
-                <td style="padding:0.75rem;text-align:center">
-                  <a class="btn small" href="/admin/products/<%= product._id %>/addons/<%= a._id %>/edit">Edit</a>
-                  <form method="POST" action="/admin/products/<%= product._id %>/addons/<%= a._id %>/toggle" style="display:inline">
-                    <button class="btn small" type="submit"><%= a.active ? 'Deactivate' : 'Activate' %></button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+        </form>
       </section>
-    </main>
-    <%- include('../partials/footer') %>
-  </body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body class="admin-dashboard-page">
-    <%- include('../partials/admin_header') %>
-    <main class="container admin-dashboard-main">
-      <section class="admin-hero">
-        <div>
-          <p class="eyebrow">Admin Portal</p>
-          <h1>Manage Add-ons for <%= product.name %></h1>
-          <p class="muted">Add and manage optional add-ons for this product.</p>
-        </div>
-        <div class="admin-quick-actions">
-          <a href="/admin/products" class="btn ghost">Back to Products</a>
-        </div>
-      </section>
+    <% } %>
 
-      <% if (message) { %>
-        <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>"><%= message %></div>
-      <% } %>
-
-      <section class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-body">
-          <h3><%= editingAddon ? 'Edit Add-on' : 'Add Add-on' %></h3>
-          <form method="POST" action="<%= editingAddon ? '/admin/products/' + product._id + '/addons/' + editingAddon._id + '/edit' : '/admin/products/' + product._id + '/addons' %>" class="auth-form" style="margin-top:1rem;">
-            <label>
-              <span>Name</span>
-              <input type="text" name="name" value="<%= addonForm.name || '' %>" required />
-            </label>
-            <label>
-              <span>Description</span>
-              <textarea name="description" rows="4"><%= addonForm.description || '' %></textarea>
-            </label>
-            <label>
-              <span>Price</span>
-              <input type="number" step="0.01" min="0" name="price" value="<%= addonForm.price || 0 %>" required />
-            </label>
-            <label>
-              <span>Active</span>
-              <input type="checkbox" name="active" <%= addonForm.active === false ? '' : 'checked' %> />
-            </label>
-            <div class="admin-quick-actions">
-              <button class="btn primary" type="submit"><%= editingAddon ? 'Update Add-on' : 'Add Add-on' %></button>
-              <% if (editingAddon) { %>
-                <a href="/admin/products/<%= product._id %>/addons" class="btn ghost">Cancel</a>
-              <% } %>
-            </div>
-          </form>
+    <section class="admin-product-section">
+      <header><span>2</span><div><h2>Current Add-ons</h2><p>Active extras can appear alongside this product for customers to choose.</p></div></header>
+      <% if (addons.length) { %>
+        <div class="admin-product-table-wrap">
+          <table class="admin-product-table">
+            <thead><tr><th>Add-on</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <% addons.forEach(item => { %>
+                <tr>
+                  <td data-label="Add-on"><strong><%= item.name %></strong><small class="admin-product-slug"><%= item.description || 'No customer description added.' %></small></td>
+                  <td data-label="Price"><%= formatCurrency(item.price) %></td>
+                  <td data-label="Status"><span class="admin-badge <%= item.active ? 'admin-badge--active' : 'admin-badge--draft' %>"><%= item.active ? 'Active' : 'Inactive' %></span></td>
+                  <td data-label="Actions"><div class="admin-product-actions">
+                    <a href="/admin/products/<%= product._id %>/addons/<%= item._id %>/edit" class="btn small primary">Edit</a>
+                    <form method="POST" action="/admin/products/<%= product._id %>/addons/<%= item._id %>/toggle"><button class="btn small ghost" type="submit"><%= item.active ? 'Deactivate' : 'Activate' %></button></form>
+                  </div></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
         </div>
-      </section>
-
-      <section class="card">
-        <div class="card-body">
-          <h3>Current Add-ons</h3>
-          <% if (addons.length) { %>
-            <div class="admin-table-wrap">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% addons.forEach(function(item) { %>
-                    <tr>
-                      <td><%= item.name %><br /><span class="muted"><%= item.description %></span></td>
-                      <td><%= formatCurrency(item.price) %></td>
-                      <td><%= item.active ? 'Active' : 'Inactive' %></td>
-                      <td>
-                        <div class="admin-inline-actions">
-                          <a href="/admin/products/<%= product._id %>/addons/<%= item._id %>/edit" class="btn small primary">Edit</a>
-                          <form method="POST" action="/admin/products/<%= product._id %>/addons/<%= item._id %>/toggle" style="display:inline;">
-                            <button class="btn small ghost" type="submit"><%= item.active ? 'Deactivate' : 'Activate' %></button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } else { %>
-            <p class="muted">No add-ons added for this product yet.</p>
-          <% } %>
-        </div>
-      </section>
-    </main>
-    <%- include('../partials/footer') %>
-  </body>
+      <% } else { %><p class="admin-product-empty">No add-ons have been added to this product.</p><% } %>
+    </section>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
 </html>

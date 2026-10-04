@@ -65,7 +65,8 @@ router.get('/products/:id/digital-files',async(req,res)=>{
 router.post('/products/:id/digital-files/:fileId?',async(req,res)=>{
   if(!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send('Upload a file.');
   const ext=path.extname(decodeURIComponent(req.get('x-file-name')||'')).toLowerCase();
-  if(!['.aama','.astm','.pdf','.zip','.dxf','.dwg','.ai','.eps','.plt'].includes(ext))return res.status(400).send('Use DXF, AAMA, ASTM, PDF, ZIP, DWG, AI, EPS or PLT.');
+  if(!['.svg','.aama','.astm','.pdf','.zip','.dxf','.dwg','.ai','.eps','.plt'].includes(ext))return res.status(400).send('Use SVG, DXF, AAMA, ASTM, PDF, ZIP, DWG, AI, EPS or PLT.');
+  if(!req.params.fileId && !['.pdf','.svg'].includes(ext))return res.status(400).send('Printable soft copy must be PDF or SVG. Add editable DXF and other files as separate paid Product Files.');
   if(req.params.fileId && !/^[a-f0-9]{24}$/i.test(req.params.fileId))return res.sendStatus(404);
   const Model=req.params.fileId?require('../models/mongo/ProductFile'):Product,filter=req.params.fileId?{_id:req.params.fileId,product_id:req.params.id}:{_id:req.params.id};
   if(!await Model.exists(filter))return res.sendStatus(404);

@@ -30,15 +30,22 @@ function mobileMenu(html) {
   return links;
 }
 (async()=>{
-  for(const [key,url] of Object.entries({patterns:'/products',online_classes:'/classes',courses:'/courses',webinars:'/webinars',books:'/books',consulting:'/consulting',updates:'/updates'})) {
+  const expectedLinks=settings=>({
+    '/products':settings.patterns_enabled,
+    '/books':settings.books_enabled,
+    '/classes/enquiry':settings.online_classes_enabled!==false && settings.leads_enabled!==false,
+  });
+  for(const key of Object.keys(defaults)) {
     for(const enabled of [false,true]) {
       const settings={...defaults,[key+'_enabled']:enabled}, policy=helpers(settings);
       const home=await render('home',settings);
       const links=mobileMenu(home);
-      assert.equal(links.some(link=>link.href===url),enabled,key+' desktop/mobile');
+      for(const [url,expected] of Object.entries(expectedLinks(settings)))assert.equal(links.some(link=>link.href===url),expected,key+' '+url+' desktop/mobile');
+      for(const hidden of ['/consulting','/courses','/webinars','/updates','/garment-technology'])assert.equal(links.some(link=>link.href===hidden),false,key+' exposed retired link '+hidden);
       for(const file of ['home','partials/footer','partials/business-cta','partials/lead-form']) {
         const html=await render(file,settings);
         for(const match of html.matchAll(/href="([^"]+)"/g)) assert.ok(policy.canVisit(match[1]),key+' '+file+' leaked '+match[1]);
+        if(['home','partials/footer','partials/business-cta'].includes(file))for(const hidden of ['/consulting','/courses','/webinars','/updates','/garment-technology'])assert.equal(html.includes(`href="${hidden}"`),false,key+' '+file+' exposed retired link '+hidden);
         if(file==='partials/lead-form') for(const match of html.matchAll(/<option[^>]*>([^<]+)<\/option>/g)) assert.ok(policy.visibleInterest(match[1]));
       }
     }

@@ -1,8 +1,9 @@
-<% const pageTitle = typeof seoTitle !== 'undefined' ? seoTitle : (typeof title !== 'undefined' ? title : siteSettings.store_name); const pageDescription = typeof description !== 'undefined' ? description : 'Explore digital garment patterns, pattern making courses, garment technology training and apparel technical consulting.'; %>
+<% const pageTitle = typeof seoTitle !== 'undefined' ? seoTitle : (typeof title !== 'undefined' ? title : siteSettings.store_name); const pageDescription = typeof description !== 'undefined' ? description : 'Explore ready-to-use apparel patterns, printable garment pattern blocks, and optional pattern-making resources.'; %>
 <meta property="og:title" content="<%= pageTitle %>">
 <meta property="og:description" content="<%= pageDescription %>">
 <meta property="og:type" content="website">
 <% if(typeof canonicalUrl !== 'undefined' && canonicalUrl){ %><link rel="canonical" href="<%= canonicalUrl %>"><meta property="og:url" content="<%= canonicalUrl %>"><% } %>
+<% const socialImage=typeof ogImage!=='undefined'?ogImage:siteSettings.logo_url; if(socialImage){ %><meta property="og:image" content="<%= socialImage %>"><meta name="twitter:card" content="summary_large_image"><% } %>
 
 <meta name="description" content="<%= pageDescription %>">
 <% if(typeof productStructuredData!=='undefined' && productStructuredData){ %><script type="application/ld+json"><%- jsonLd(productStructuredData) %></script><% } %>

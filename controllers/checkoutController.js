@@ -782,6 +782,8 @@ async function postCheckout(
         addonsTotal;
 
 
+      const optionError=require('../services/patternOptions').validate(product,selectedFiles,item);
+      if(optionError)return res.status(400).json({error:optionError});
       const priced = pricing.itemPrice(product, selectedFiles, selectedAddons, item);
       const itemSubtotal = priced.digital;
 
@@ -845,6 +847,7 @@ async function postCheckout(
 
       orderItems.push({
         product_name: product.name,
+        printable_selected: item.printable_selected !== false,
         selected_sizes: item.selected_sizes || [],
         additional_size_price: Number(product.additional_size_price || 0),
 

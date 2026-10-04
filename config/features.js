@@ -42,9 +42,10 @@ function helpers(settings = defaults, origin = '') {
       classes:'online_classes', 'my-courses':'online_classes', courses:'courses',
       'garment-technology':'courses', 'corporate-training':'courses', 'course-bookings':'courses',
       webinars:'webinars', 'webinar-registrations':'webinars', books:'books', 'book-purchases':'books',
-      consulting:'consulting', 'consultation-bookings':'consulting', updates:'updates', enquiries:'leads',
+      consulting:'consulting', 'consultation-bookings':'consulting', updates:'updates', enquiries:'leads', 'pattern-updates':'leads',
     };
     if (groups[first] && !enabled(groups[first])) return false;
+    if(path==='/books/notify')return enabled('books') && enabled('leads');
     if (/^\/classes\/enquiry(?:\/|$)/.test(path)) return enabled('leads');
     if (/^\/(books|consulting)\/[^/]+\/access\/?$/.test(path) || /^\/(courses|webinars)\/[^/]+\/(book|register)\/?$/.test(path) || /^\/consulting\/[^/]+\/?$/.test(path)) return enabled('paid_access');
     if (/^\/(course-bookings|webinar-registrations|book-purchases|consultation-bookings)\/[^/]+\/order\/?$/.test(path)) return enabled('paid_access');

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %> - <%= product.name %></title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/admin-products.css" />
   </head>
   <body class="admin-product-files-page">
     <%- include('../partials/admin_header') %>
@@ -13,10 +14,10 @@
         <div class="admin-hero">
           <div>
             <h1>Files for: <%= product.name %></h1>
-            <p class="muted">Manage pattern files for this product.</p>
+            <p class="muted">Product files are the actual files customers receive or purchase as a separate option. Upload the private download from “Upload / Manage Private Files” on the product edit page.</p>
           </div>
           <div class="admin-quick-actions">
-            <a href="/admin/products/<%= product._id %>/files#add-form" class="btn primary">Add File</a>
+            <a href="/admin/products/<%= product._id %>/files#add-form" class="btn primary">+ Add Product File</a>
             <a href="/admin/products" class="btn ghost">Back to Products</a>
           </div>
         </div>
@@ -26,23 +27,28 @@
         <% } %>
 
         <% if (fileForm) { %>
+          <% const filePurposeOptions = [['other', fileForm.purpose === 'other' && (product.import_source_key || fileForm.import_source_key) ? 'Needs Review — not confirmed' : 'Other file'], ['dxf', 'Editable DXF Pattern'], ['tech_pack', 'Basic Tech Pack'], ['specs', 'Measurement / Specifications']]; %>
           <section id="add-form" class="card" style="margin-bottom:1rem;padding:1rem">
-            <h3><%= editingFile ? 'Edit File' : 'Add File' %></h3>
+            <h3><%= editingFile ? 'Edit Product File' : 'Add Product File' %></h3>
             <form method="POST" action="<%= editingFile ? ('/admin/products/' + product._id + '/files/' + editingFile._id + '/edit') : ('/admin/products/' + product._id + '/files') %>">
-              <label>File Name<input name="file_name" required value="<%= fileForm.file_name || '' %>"></label>
-              <label>File Type<input name="file_type" required value="<%= fileForm.file_type || '' %>"></label>
-              <label>File Price<input name="file_price" type="number" step="0.01" value="<%= fileForm.file_price || 0 %>"></label>
-              <label><input type="checkbox" name="active" <%= fileForm.active ? 'checked' : '' %>> Active</label>
-              <div style="margin-top:0.5rem"><button class="btn primary" type="submit">Save File</button></div>
+              <label><strong>File Name</strong><small>The name Admin and customers use to identify this file. Example: “Slim Fit Shirt A4 PDF”.</small><input name="file_name" required value="<%= fileForm.file_name || '' %>"></label>
+              <label><strong>File Purpose</strong><small>Choose the confirmed product option this file belongs to. This determines how the option is described to customers. If unsure, leave it as “Needs Review” and keep it inactive.</small><select name="purpose"><% filePurposeOptions.forEach(([key,label]) => { %><option value="<%= key %>" <%= (fileForm.purpose||'other')===key?'selected':'' %>><%= label %></option><% }) %></select></label>
+              <% if(fileForm.purpose==='other'&&(product.import_source_key||fileForm.import_source_key)){ %><p class="admin-product-guidance">This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</p><% } %>
+              <p class="admin-product-help">Each product file is a separate paid option; it is not automatically included with the printable pattern. Upload its actual file privately from the product’s “Upload / Manage Private Files” screen.</p>
+              <label><strong>Watermark Supporting PDF</strong><small>Optional for confirmed measurement/specification or tech-pack PDFs. Do not enable for technical pattern layouts or signed files.</small><input name="watermark_pdf" type="checkbox" <%= fileForm.watermark_pdf?'checked':'' %>> Add the brand and order reference to a purchased PDF</label>
+              <label><strong>Confirmed File Format</strong><small>The actual file format, such as PDF, DXF or ZIP. Do not guess from the filename.</small><input name="file_type" required value="<%= fileForm.file_type || '' %>"></label>
+              <label><strong>Customer Price</strong><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input name="file_price" type="number" min="0" step="0.01" value="<%= fileForm.file_price ?? '' %>" placeholder="Final price"></label>
+              <label><strong>Offer This File</strong><small>Only active, correctly identified files can be offered as a paid option. The product also needs a confirmed positive customer price.</small><input type="checkbox" name="active" <%= fileForm.active ? 'checked' : '' %>> Active</label>
+              <div style="margin-top:0.5rem"><button class="btn primary" type="submit"><%= editingFile ? 'Save File Changes' : 'Save Product File' %></button></div>
             </form>
           </section>
         <% } %>
 
-        <table style="width:100%;border-collapse:collapse">
+        <div class="admin-product-table-wrap"><table style="width:100%;border-collapse:collapse">
           <thead>
             <tr>
-              <th style="text-align:left;padding:0.75rem">File Name</th>
-              <th style="padding:0.75rem">Type</th>
+              <th style="text-align:left;padding:0.75rem">Product File</th>
+              <th style="padding:0.75rem">Purpose</th>
               <th style="padding:0.75rem">Price</th>
               <th style="padding:0.75rem">Status</th>
               <th style="padding:0.75rem">Actions</th>
@@ -51,12 +57,12 @@
           <tbody>
             <% files.forEach(function(f){ %>
               <tr style="border-top:1px solid rgba(0,0,0,0.06)">
-                <td style="padding:0.75rem"><%= f.file_name %></td>
-                <td style="padding:0.75rem;text-align:center"><%= f.file_type %></td>
+                <td style="padding:0.75rem"><strong><%= f.file_name %></strong><% if(f.purpose==='other'&&(product.import_source_key||f.import_source_key)){ %><p class="admin-product-guidance">This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</p><% } %></td>
+                <td style="padding:0.75rem;text-align:center"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Needs Review':({dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[f.purpose]||'Other file') %><br><small><%= f.file_type %></small></td>
                 <td style="padding:0.75rem;text-align:center"><%= formatCurrency ? formatCurrency(f.file_price) : f.file_price %></td>
                 <td style="padding:0.75rem;text-align:center"><%= f.active ? 'Active' : 'Inactive' %></td>
                 <td style="padding:0.75rem;text-align:center">
-                  <a class="btn small" href="/admin/products/<%= product._id %>/files/<%= f._id %>/edit">Edit</a>
+                  <a class="btn small" href="/admin/products/<%= product._id %>/files/<%= f._id %>/edit"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Review Purpose':'Edit File' %></a>
                   <form method="POST" action="/admin/products/<%= product._id %>/files/<%= f._id %>/toggle" style="display:inline">
                     <button class="btn small" type="submit"><%= f.active ? 'Deactivate' : 'Activate' %></button>
                   </form>
@@ -64,109 +70,9 @@
               </tr>
             <% }) %>
           </tbody>
-        </table>
+        </table></div>
       </section>
     </main>
     <%- include('../partials/footer') %>
   </body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body class="admin-dashboard-page">
-    <%- include('../partials/admin_header') %>
-    <main class="container admin-dashboard-main">
-      <section class="admin-hero">
-        <div>
-          <p class="eyebrow">Admin Portal</p>
-          <h1>Manage Files for <%= product.name %></h1>
-          <p class="muted">Add and edit pattern files for this product.</p>
-        </div>
-        <div class="admin-quick-actions">
-          <a href="/admin/products" class="btn ghost">Back to Products</a>
-        </div>
-      </section>
-
-      <% if (message) { %>
-        <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>"><%= message %></div>
-      <% } %>
-
-      <section class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-body">
-          <h3><%= editingFile ? 'Edit Pattern File' : 'Add Pattern File' %></h3>
-          <form method="POST" action="<%= editingFile ? '/admin/products/' + product._id + '/files/' + editingFile._id + '/edit' : '/admin/products/' + product._id + '/files' %>" class="auth-form" style="margin-top:1rem;">
-            <label>
-              <span>File Name</span>
-              <input type="text" name="file_name" value="<%= fileForm.file_name || '' %>" required />
-            </label>
-            <label>
-              <span>File Type</span>
-              <input type="text" name="file_type" value="<%= fileForm.file_type || '' %>" required />
-            </label>
-            <label>
-              <span>File Price</span>
-              <input type="number" step="0.01" min="0" name="file_price" value="<%= fileForm.file_price || 0 %>" required />
-            </label>
-            <label>
-              <span>Active</span>
-              <input type="checkbox" name="active" <%= fileForm.active === false ? '' : 'checked' %> />
-            </label>
-            <div class="admin-quick-actions">
-              <button class="btn primary" type="submit"><%= editingFile ? 'Update File' : 'Add File' %></button>
-              <% if (editingFile) { %>
-                <a href="/admin/products/<%= product._id %>/files" class="btn ghost">Cancel</a>
-              <% } %>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-body">
-          <h3>Current Files</h3>
-          <% if (files.length) { %>
-            <div class="admin-table-wrap">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>File Name</th>
-                    <th>Type</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% files.forEach(function(item) { %>
-                    <tr>
-                      <td><%= item.file_name %></td>
-                      <td><%= item.file_type %></td>
-                      <td><%= formatCurrency(item.file_price) %></td>
-                      <td><%= item.active ? 'Active' : 'Inactive' %></td>
-                      <td>
-                        <div class="admin-inline-actions">
-                          <a href="/admin/products/<%= product._id %>/files/<%= item._id %>/edit" class="btn small primary">Edit</a>
-                          <form method="POST" action="/admin/products/<%= product._id %>/files/<%= item._id %>/toggle" style="display:inline;">
-                            <button class="btn small ghost" type="submit"><%= item.active ? 'Deactivate' : 'Activate' %></button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } else { %>
-            <p class="muted">No files added for this product yet.</p>
-          <% } %>
-        </div>
-      </section>
-    </main>
-    <%- include('../partials/footer') %>
-  </body>
-</html>
+  </html>

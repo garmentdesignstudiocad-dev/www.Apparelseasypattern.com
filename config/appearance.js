@@ -19,11 +19,11 @@ const defaults = { ...colors, main_font: 'DM Sans', heading_font: 'Playfair Disp
   heading_style: 'normal', button_style: 'slightly-rounded', card_style: 'border', layout_density: 'comfortable' };
 const content = {
   ...require('../services/seoService').settingsDefaults,
-  store_name: 'Garment Pattern Store', logo_url: '', favicon_url: '', main_website_url: '',
+  store_name: 'Apparel Easy Patterns', logo_url: '', favicon_url: '', main_website_url: '',
   ...require('./launch'), address: '',
-  homepage_heading: 'Professional Garment Technology, Pattern Making & Apparel Development',
-  homepage_subheading: 'Learn ? Develop ? Buy ? Consult',
-  products_heading: 'Ready-to-Use Professional Garment Patterns',
+  homepage_heading: 'Ready-to-Use Apparel Patterns',
+  homepage_subheading: 'Ready-to-use garment pattern blocks for faster sampling, stitching and product development.',
+  products_heading: 'READY-TO-USE AVAILABLE PATTERN TEMPLATES',
   products_description: 'Choose professional garment patterns with flexible digital files, physical pattern and trial-sample options.',
   cart_heading: 'Shopping Cart', checkout_heading: 'Complete your order.',
   footer_text: 'Professional garment pattern ordering with secure online checkout.',
@@ -46,6 +46,9 @@ function valid(key, value) {
 function normalize(stored = {}) {
   // Upgrade only the former stock copy; preserve owner-written homepage text.
   stored = { ...stored };
+  if(['Garment Pattern Store','Apparels Easy Pattern','Apparels Easy Patterns'].includes(stored.store_name))stored.store_name=content.store_name;
+  if(stored.homepage_heading==='Professional Garment Technology, Pattern Making & Apparel Development')stored.homepage_heading=content.homepage_heading;
+  if(stored.homepage_subheading==='Learn ? Develop ? Buy ? Consult')stored.homepage_subheading=content.homepage_subheading;
   if(stored.products_heading === 'Made to move from idea to production.') stored.products_heading = content.products_heading;
   if (stored.homepage_heading === 'Precision behind every silhouette.') stored.homepage_heading = content.homepage_heading;
   if (stored.homepage_subheading === 'Explore garment patterns built for practical design, sampling and production workflows. Choose the digital files, physical patterns and trial samples your project requires.') stored.homepage_subheading = content.homepage_subheading;

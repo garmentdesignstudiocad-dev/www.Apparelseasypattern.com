@@ -7,9 +7,10 @@ const paise = value => {
 function itemPrice(product, files, addons, item) {
   const quantity = Number(item.quantity ?? 1);
   const extraSizes = Math.max(0, (item.selected_sizes || []).length - 1);
-  const digital = paise(product.base_price) + extraSizes * paise(product.additional_size_price) + files.reduce((n,f)=>n+paise(f.file_price),0);
+  const digital = (item.printable_selected===false ? 0 : paise(product.base_price) + extraSizes * paise(product.additional_size_price)) + files.reduce((n,f)=>n+paise(f.file_price),0);
   const addon = addons.reduce((n,a)=>n+paise(a.price),0);
-  const physical = Number(item.physical_quantity || 0) * paise(product.physical_price);
+  const chosen=item.selected_sizes || [];
+  const physical = chosen.length && product.size_prices?.length ? Math.round(chosen.reduce((sum,size)=>sum+paise(product.size_prices.find(row=>row.size===size)?.price ?? product.physical_price),0)*Number(item.physical_quantity||0)/chosen.length) : Number(item.physical_quantity || 0)*paise(product.physical_price);
   const trial = Number(item.trial_quantity || 0) * paise(product.trial_price);
   return {digital:(digital*quantity + addon*Math.max(1,quantity))/100, addons:addon*Math.max(1,quantity)/100, physical:physical/100, trial:trial/100,
     unit:(digital+addon)/100, total:(digital*quantity+addon*Math.max(1,quantity)+physical+trial)/100};

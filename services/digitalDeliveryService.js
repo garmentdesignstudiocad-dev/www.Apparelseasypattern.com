@@ -22,11 +22,11 @@ async function ensure(id){
     if(Number(item.quantity ?? 1)===0)continue;
     const product=await require('../models/mongo/Product').findById(item.product_id).select('+digital_file').lean();
     const files=[];
-    if(product?.digital_file)files.push({name:product.name,file:product.digital_file});
+    if(item.printable_selected!==false && product?.digital_file)files.push({name:product.name,file:product.digital_file});
     for(const selected of item.selected_files || []){
       const asset=await require('../models/mongo/ProductFile').findOne({_id:selected.id,product_id:item.product_id}).select('+digital_file').lean();
       if(!asset?.digital_file)return null;
-      files.push({name:asset.file_name,file:asset.digital_file});
+      files.push({name:asset.file_name,file:asset.digital_file,watermark_pdf:asset.watermark_pdf===true && ['specs','tech_pack'].includes(asset.purpose) && path.extname(asset.digital_file).toLowerCase()==='.pdf'});
     }
     if(!files.length)return null;
     for(const asset of files){if(!await filePath(asset.file))return null;if(!assets.some(existing=>existing.file===asset.file))assets.push(asset);}

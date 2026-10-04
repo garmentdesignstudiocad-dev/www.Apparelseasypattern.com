@@ -1,5 +1,5 @@
 const { Schema, model } = require('mongoose');
-const schema = new Schema({ key:{type:String,default:'default',unique:true}, store_name:{type:String,default:'Garment Pattern Store'}, logo_url:String, main_website_url:String, contact_email:String,contact_phone:String,whatsapp_number:String,address:String,footer_text:String,homepage_heading:String,homepage_subheading:String },{timestamps:true});
+const schema = new Schema({ key:{type:String,default:'default',unique:true}, store_name:{type:String,default:'Apparel Easy Patterns'}, logo_url:String, main_website_url:String, contact_email:String,contact_phone:String,whatsapp_number:String,address:String,footer_text:String,homepage_heading:String,homepage_subheading:String },{timestamps:true});
 const { defaults, content, valid } = require('../../config/appearance');
 schema.add({launch_contacts_version:{type:Number,default:0}});
 for (const [key, value] of Object.entries({ ...defaults, ...content })) {

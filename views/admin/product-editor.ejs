@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin-products.css">
+</head>
+<body class="admin-product-editor">
+  <%- include('../partials/admin_header') %>
+  <main class="admin-product-editor-main">
+    <header class="admin-product-editor-heading">
+      <div>
+        <a class="admin-product-back" href="/admin/products">&larr; Products / Patterns</a>
+        <p class="eyebrow">Admin Portal</p>
+        <h1><%= editingProduct ? 'Edit Product' : 'Add Product' %></h1>
+        <p><%= editingProduct ? productForm.name : 'Add a product now; complete details and pricing before making it available.' %></p>
+      </div>
+    </header>
+
+    <% if (message) { %><div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>" role="status"><%= message %></div><% } %>
+
+    <% if (editingProduct) { %>
+      <section class="admin-setup-panel" aria-labelledby="product-setup-heading">
+        <div class="admin-setup-heading">
+          <div><h2 id="product-setup-heading">Product Setup</h2><p>Complete the required sections below before activating this product.</p></div>
+          <span class="admin-badge <%= productSetup.missing.length ? 'admin-badge--setup' : 'admin-badge--active' %>"><%= productSetup.missing.length ? 'Setup Required' : 'Ready for Review' %></span>
+        </div>
+        <ol class="admin-setup-steps">
+          <% productSetup.steps.forEach(step => { %><li class="<%= step.complete ? 'is-complete' : '' %>"><span aria-hidden="true"><%= step.complete ? '✓' : '○' %></span><%= step.label %></li><% }) %>
+        </ol>
+        <% if (productSetup.missing.length) { %>
+          <div class="admin-setup-missing"><strong>Setup Required</strong><ul><% productSetup.missing.forEach(item => { %><li><%= item %></li><% }) %></ul></div>
+        <% } %>
+      </section>
+    <% } %>
+
+    <form class="admin-product-form" method="POST" action="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/edit' : '/admin/products' %>">
+      <input type="hidden" name="pattern_configuration" value="1">
+      <% if (editingProduct) { %>
+        <input type="hidden" name="status" value="<%= productForm.status || 'draft' %>">
+        <input type="hidden" name="active" value="<%= productForm.active ? '1' : '0' %>">
+      <% } else { %>
+        <input type="hidden" name="status" value="draft">
+      <% } %>
+
+      <section class="admin-product-section">
+        <header><span>1</span><div><h2>Product Basics</h2><p>Tell customers what this pattern is.</p></div></header>
+        <div class="admin-product-fields">
+          <label><span>Product Name</span><small>The name shown on product listings and product details. Example: Slim Fit Shirt.</small><input name="name" required maxlength="160" value="<%= productForm.name || '' %>"></label>
+          <label><span>URL Name</span><small>Used in the product web address. Leave blank to create it from the product name.</small><input name="slug" value="<%= productForm.slug || '' %>" placeholder="slim-fit-shirt"></label>
+          <label><span>Category</span><small>Groups similar products so customers can browse them. Example: shirts, pants or shorts.</small><input name="category" maxlength="80" list="product-categories" value="<%= productForm.category || '' %>" placeholder="shirts"><datalist id="product-categories"><option value="shirts"><option value="pants"><option value="shorts"></datalist></label>
+          <label class="admin-product-field--wide"><span>Product Description</span><small>A customer-friendly explanation of what the pattern is and what the customer receives. Use only confirmed product details.</small><textarea name="description" rows="4" maxlength="3000"><%= productForm.description || '' %></textarea></label>
+          <label><span>Measurement Chart / Basic Specifications</span><small>Confirmed measurements or specifications shown on the product page. Do not add unverified details.</small><textarea name="size_information" rows="3"><%= productForm.size_information || '' %></textarea></label>
+          <label><span>File Formats</span><small>List only the actual formats customers receive. Example: PDF. Check the associated files first.</small><textarea name="file_formats" rows="3"><%= productForm.file_formats || '' %></textarea></label>
+          <label><span>Delivery / Fulfilment Information</span><small>Explain confirmed digital or physical fulfilment details customers will see before ordering.</small><textarea name="delivery_information" rows="3"><%= productForm.delivery_information || '' %></textarea></label>
+          <label><span>Download Information</span><small>Optional instructions shown to customers about accessing their purchased files.</small><textarea name="download_information" rows="3"><%= productForm.download_information || '' %></textarea></label>
+        </div>
+      </section>
+
+      <section class="admin-product-section">
+        <header><span>2</span><div><h2>Images &amp; Preview</h2><p>Show customers what the pattern or finished product represents.</p></div></header>
+        <div class="admin-product-fields">
+          <label class="admin-product-field--wide"><span>Main Product Image</span><small>Paste the owner-approved image URL customers will see first in the product listing and details page. This field links to an image; it does not upload a file.</small><input type="url" name="main_image_url" value="<%= (productForm.images || [])[0] || '' %>" placeholder="https://example.com/slim-fit-shirt.jpg"><% if (!(productForm.images || []).length) { %><small class="admin-no-images">No main image added.</small><% } %></label>
+          <label class="admin-product-field--wide"><span>Gallery Images</span><small>Optional additional owner-approved product or sample image URLs, one per line. Customers can browse these after the main image.</small><textarea name="gallery_image_urls" rows="3" placeholder="https://example.com/slim-fit-shirt-detail.jpg"><%= (productForm.images || []).slice(1).join('\n') %></textarea></label>
+          <label><span>Finished Sample Image</span><small>Optional separate image of a finished sample, shown with product details. Add only an approved image URL.</small><input type="url" name="sample_image_url" value="<%= productForm.sample_image_url || '' %>" placeholder="https://example.com/sample.jpg"></label>
+          <label><span>Optional Product Video</span><small>Optional direct video link shown on the product page. Use an approved product video URL.</small><input type="url" name="video_url" value="<%= productForm.video_url || '' %>" placeholder="https://example.com/product-video.mp4"></label>
+        </div>
+      </section>
+
+      <section class="admin-product-section" id="files-section">
+        <header><span>3</span><div><h2>Pattern Files</h2><p>Choose which files customers receive, either with the pattern or as a separate paid option.</p></div></header>
+        <% if (editingProduct) { %>
+          <p class="admin-product-guidance">Unconfirmed files stay inactive and are not sold until reviewed. Choose only a purpose you can verify from the supplied file.</p>
+          <% if (productFiles.length) { %>
+            <ul class="admin-product-file-list">
+              <% productFiles.forEach(file => { %>
+                <% const reviewRequired=file.purpose==='other'&&(editingProduct.import_source_key||file.import_source_key); %>
+                <li><div><strong><%= file.file_name %></strong><small>Purpose: <%= reviewRequired ? 'Needs Review' : ({other:'Other file',dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[file.purpose] || 'Other file') %><% if (!file.active) { %> · Inactive<% } %></small><% if (reviewRequired) { %><small>This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</small><% } %></div><a class="btn small ghost" href="/admin/products/<%= editingProduct._id %>/files/<%= file._id %>/edit"><%= reviewRequired ? 'Set Purpose' : 'Edit File' %></a></li>
+              <% }) %>
+            </ul>
+          <% } else { %><p class="admin-product-empty">No product files have been added yet.</p><% } %>
+          <div class="admin-product-actions admin-editor-file-actions">
+            <a class="btn ghost" href="/admin/products/<%= editingProduct._id %>/files">Manage Product Files</a>
+            <a class="btn ghost" href="/admin/products/<%= editingProduct._id %>/digital-files">Upload / Manage Private Files</a>
+          </div>
+          <p class="admin-product-help">Product Files describe an option and its price. Private Digital Files stores the actual customer download securely outside the public website.</p>
+        <% } else { %>
+          <p class="admin-product-guidance">Save the product first, then add file options and upload the private files from its product management page.</p>
+        <% } %>
+      </section>
+
+      <section class="admin-product-section">
+        <header><span>4</span><div><h2>Sizes</h2><p>Choose the sizes available for purchase.</p></div></header>
+        <label class="admin-product-field"><span>Available Sizes</span><small>Select the pattern sizes customers can choose. Enter sizes separated by commas. Example: XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL.</small><input name="available_sizes" maxlength="500" value="<%= (productForm.available_sizes || []).join(', ') %>" placeholder="XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL"></label>
+      </section>
+
+      <section class="admin-product-section">
+        <header><span>5</span><div><h2>Pricing &amp; Paid Options</h2><p>Set what customers pay for each available option.</p></div></header>
+        <div class="admin-option-list">
+          <label class="admin-option-row"><input type="checkbox" name="printable_enabled" <%= productForm.pattern_options?.printable !== false ? 'checked' : '' %>><span><strong>Printable Soft Copy</strong><small>The ready-to-print pattern file for customers who want to print and use it. Requires its private file and confirmed price.</small></span></label>
+          <label class="admin-product-field"><span>Printable Soft Copy Price</span><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="base_price" min="0" step="0.01" value="<%= productForm.base_price ?? '' %>" placeholder="Final price"></label>
+          <label class="admin-product-field"><span>Additional Size Price</span><small>Extra amount charged for each additional selected size, if applicable. Leave blank until confirmed.</small><input type="number" name="additional_size_price" min="0" step="0.01" value="<%= productForm.additional_size_price ?? '' %>" placeholder="Optional"></label>
+          <div class="admin-option-row admin-option-row--info"><span><strong>Editable DXF</strong><small>An editable professional pattern file. It is a separate paid option, not the normal printable pattern. Confirm its file purpose and price under Pattern Files.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
+          <div class="admin-option-row admin-option-row--info"><span><strong>Basic Tech Pack</strong><small>Additional garment construction or specification information sold as a separate paid option.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
+          <div class="admin-option-row admin-option-row--info"><span><strong>Measurement Chart / Basic Specs</strong><small>Confirmed measurement or specification file. Set it up as a separate paid file only if that is what customers will receive.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
+        </div>
+      </section>
+
+      <section class="admin-product-section">
+        <header><span>6</span><div><h2>Physical Delivery</h2><p>Configure pattern options that require manual courier fulfilment.</p></div></header>
+        <div class="admin-product-fields">
+          <label class="admin-option-row"><input type="checkbox" name="physical_enabled" <%= productForm.pattern_options?.physical !== false ? 'checked' : '' %>><span><strong>Physical Pattern</strong><small>Select this only when customers can receive a physical printed or cut pattern.</small></span></label>
+          <label><span>Physical Pattern Price</span><small>Enter the amount the customer must pay for this option, before any applicable shipping. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="physical_price" min="0" step="0.01" value="<%= productForm.physical_price ?? '' %>" placeholder="Final price"></label>
+          <label><span>Physical Price by Size</span><small>Optional confirmed amount per selected size, one per line. Example: M=500. Leave blank if one physical price applies to all sizes. Do not use ₹0 as a temporary price.</small><textarea name="size_prices" rows="3"><%= (productForm.size_prices || []).map(row => row.size + '=' + row.price).join('\n') %></textarea></label>
+          <label class="admin-option-row"><input type="checkbox" name="trial_enabled" <%= productForm.pattern_options?.trial !== false ? 'checked' : '' %>><span><strong>Trial Sample</strong><small>Select this only when you can make an optional paid sample for customers to inspect.</small></span></label>
+          <label><span>Trial Sample Price</span><small>Enter the amount the customer must pay for this sample. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="trial_price" min="0" step="0.01" value="<%= productForm.trial_price ?? '' %>" placeholder="Final price"></label>
+          <label><span>Printable Dimensions / Format Notes</span><small>Optional confirmed print dimensions or format notes shown to customers.</small><input name="printable_dimensions" maxlength="500" value="<%= productForm.printable_dimensions || '' %>"></label>
+        </div>
+      </section>
+
+      <section class="admin-product-section">
+        <header><span>7</span><div><h2>Product Status</h2><p>Review the product before making it available to customers.</p></div></header>
+        <% if (editingProduct) { %>
+          <% const isLive = productForm.active && productForm.status === 'active'; %>
+          <p>Current status: <span class="admin-badge <%= isLive ? 'admin-badge--active' : 'admin-badge--draft' %>"><%= isLive ? 'Active' : productForm.status === 'coming_soon' ? 'Coming Soon' : 'Draft' %></span></p>
+          <ul class="admin-status-guide">
+            <li><strong>Draft:</strong> saved in Admin; customers cannot purchase it.</li>
+            <li><strong>Active:</strong> available to customers after you select Activate Product.</li>
+            <li><strong>Setup Required:</strong> a reminder listing the information that still needs review.</li>
+          </ul>
+        <% } else { %>
+          <p>Current status: <span class="admin-badge admin-badge--draft">Draft</span></p>
+          <ul class="admin-status-guide">
+            <li><strong>Draft:</strong> saved in Admin; customers cannot purchase it.</li>
+            <li><strong>Active:</strong> available to customers after you review setup and select Activate Product.</li>
+            <li><strong>Setup Required:</strong> a reminder listing the information that still needs review.</li>
+          </ul>
+        <% } %>
+      </section>
+
+      <details class="admin-product-section admin-product-seo">
+        <summary>8. SEO &amp; External Listing</summary>
+        <p>Optional settings for search engines and external marketplaces.</p>
+        <div class="admin-product-fields">
+          <label><span>SEO Title</span><small>Optional search result title. Leave blank to use the product name.</small><input name="seo_title" maxlength="200" value="<%= productForm.seo_title || '' %>"></label>
+          <label><span>SEO Description</span><small>Optional short summary that may appear in search results. Describe only confirmed product details.</small><textarea name="seo_description" maxlength="320" rows="3"><%= productForm.seo_description || '' %></textarea></label>
+          <label class="admin-product-field--wide"><span>Amazon Listing URL</span><small>Optional HTTPS link to this product’s own Amazon listing. Leave blank if it has no listing.</small><input type="url" name="amazon_listing_url" value="<%= productForm.amazon_listing_url || '' %>" placeholder="https://www.amazon.in/..."></label>
+        </div>
+      </details>
+
+      <footer class="admin-product-form-actions">
+        <% if (editingProduct) { %>
+          <button class="btn primary" type="submit" name="admin_action" value="save">Save Changes</button>
+          <% if (productForm.active && productForm.status === 'active') { %>
+            <button class="btn ghost" type="submit" name="admin_action" value="deactivate">Deactivate Product</button>
+          <% } else { %>
+            <button class="btn primary" type="submit" name="admin_action" value="activate" data-activate-product data-setup-missing="<%= encodeURIComponent(JSON.stringify(productSetup.missing)) %>">Activate Product</button>
+          <% } %>
+        <% } else { %>
+          <button class="btn primary" type="submit">Save Product</button>
+        <% } %>
+        <a class="btn ghost" href="/admin/products">Cancel</a>
+      </footer>
+    </form>
+  </main>
+  <%- include('../partials/footer') %>
+  <script>
+    document.querySelector('[data-activate-product]')?.addEventListener('click', event => {
+      const missing = JSON.parse(decodeURIComponent(event.currentTarget.dataset.setupMissing || '%5B%5D'));
+      if (missing.length && !window.confirm(`This product still needs setup:\n\n• ${missing.join('\n• ')}\n\nContinue to activation?`)) {
+        event.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

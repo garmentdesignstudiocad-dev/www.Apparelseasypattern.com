@@ -11,16 +11,20 @@ PRODUCT LIST
 
 async function listProducts(req, res, next) {
   try {
-    const products = await Product.find({
-      active: true,
-    })
+    const seoTitle='Ready-to-Use Available Pattern Templates | Apparel Easy Patterns';
+    const category=typeof req.query.category==='string'?req.query.category.trim().toLowerCase():'';
+    if(category && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category))return res.status(400).send('Choose a valid category.');
+    const categories=[...new Set(['shirts','pants','shorts',...await Product.distinct('category',require('../services/patternOptions').publicFilter)])].filter(Boolean);
+    const filter={...require('../services/patternOptions').publicFilter,...(category?{category}:{})};
+    const products = await Product.find(filter)
       .sort({ createdAt: -1 })
       .lean();
 
     res.render('products', {
-      title: res.locals.siteSettings.products_seo_title,
-      description:res.locals.siteSettings.products_seo_description,
-      products,
+      title:seoTitle,
+      seoTitle,
+      description:'Browse ready-to-use apparel pattern templates. Choose printable files, optional DXF, tech packs, physical patterns and trial samples where available.',
+      products, category, categories,
     });
   } catch (err) {
     logError('Product list error:', err);
@@ -49,7 +53,7 @@ async function productDetails(req, res, next) {
 
     const product = await Product.findOne({
       slug,
-      active: true,
+      ...require('../services/patternOptions').publicFilter,
     }).lean();
 
     if (!product) {
@@ -73,15 +77,18 @@ async function productDetails(req, res, next) {
       .sort({ createdAt: -1 })
       .lean();
 
+  const {seoTitle,description,ogImage,productStructuredData}=require('../services/seoService').productMetadata(product);
   res.render('product', {
-  title: product.seo_title || product.name+' | Professional Garment Pattern',
-  seoTitle:product.seo_title || product.name+' | Professional Garment Pattern',
-  description:product.seo_description || product.description?.slice(0,200) || 'View garment pattern sizes, formats and ordering options.',
-  productStructuredData:require('../services/seoService').productData(product),
-  product,
-  files,
-  addons,
-});
+    title:seoTitle,
+    seoTitle,
+    description,
+    ogImage,
+    productStructuredData,
+    product,
+    files,
+    addons,
+    optionAvailability:require('../services/patternOptions').availability(product),
+  });
   } catch (err) {
     logError('Product details error:', err);
 

@@ -19,17 +19,9 @@ router.use((req, res, next) => {
 });
 function page(res, title, extra = {}) { return res.render('business/page', { title, description: title, mode: 'landing', items: [], ...extra }); }
 router.get('/', asyncRoute(async (req, res) => {
-  const results = await Promise.allSettled([
-    Product.find({ active: true }).sort({ createdAt: -1 }).limit(4).lean(),
-    Course.find({ active: true }).sort({ createdAt: -1 }).limit(4).lean(),
-    Article.find(published()).sort({ published_at: -1 }).limit(3).lean(),
-    Book.find({ active: true }).sort({ createdAt: -1 }).limit(4).lean(),
-    Webinar.find({ active: true, starts_at: { $gt: new Date() } }).sort({ starts_at: 1 }).limit(4).lean(),
-  ]);
-  const settings=await access.getSettings();
-  res.locals.accessQuote=(kind,item)=>access.quote(kind,item,settings);
-  const [products, courses, articles, books, webinars] = results.map(result => result.status === 'fulfilled' ? result.value : []);
-  res.render('home', { title: 'Garment Technology, Pattern Making & Apparel Development', products, courses:settings.courses.active?courses:[], articles, books:settings.books.active?books:[], webinars:settings.webinars.active?webinars:[], catalogUnavailable: results.some(result => result.status === 'rejected') });
+  const seo=require('../services/seoService');
+  const products=await Product.find(require('../services/patternOptions').publicFilter).sort({featured:-1,createdAt:-1}).limit(4).lean();
+  res.render('home',{title:seo.homeTitle,seoTitle:seo.homeTitle,description:seo.homeDescription,products,catalogUnavailable:false});
 }));
 router.get('/courses/pattern-making', (req, res) => page(res, 'Become a Professional Pattern Maker', { mode: 'pattern', interest: 'Pattern Making Course', description: 'Pattern making course online: learn basic blocks, womenswear, menswear, fit correction, grading and CAD garment patterns.' }));
 router.get('/garment-technology', (req, res) => page(res, 'Become a Garment Technology Professional', { mode: 'technology', interest: 'Garment Technology Training', description: 'Garment technology course and training in construction, fit engineering, tech packs, sampling and production quality.' }));
@@ -40,7 +32,7 @@ router.get('/consulting', asyncRoute(async(req,res)=>{
 }));
 router.get('/corporate-training', (req, res) => page(res, 'Corporate Garment Technology Training', { mode: 'corporate', interest: 'Corporate Training', corporate: true }));
 router.get('/contact', (req, res) => page(res, 'Contact the Studio', { mode: 'contact', description: res.locals.siteSettings.contact_seo_description }));
-router.get('/books', asyncRoute(async (req, res) => {const settings=await access.getSettings();if(!settings.books.active)return res.sendStatus(404);res.locals.accessQuote=(kind,item)=>access.quote(kind,item,settings);return page(res, 'Books & E-books', { mode: 'books', items: await Book.find({ active: true }).sort({ createdAt: -1 }).lean() });}));
+router.get('/books',(req,res)=>res.render('books-coming-soon',{title:'Books - Coming Soon | Apparel Easy Patterns',description:'Practical apparel-industry learning materials. Get notified when books become available.'}));
 router.get('/updates', asyncRoute(async (req, res) => page(res, 'Global Fashion & Garment Technology Updates', { mode: 'updates', items: await Article.find(published()).sort({ published_at: -1 }).lean(), description: 'Explore fashion industry updates, market trends and practical garment technology insights.' })));
 for (const [route, Model, filter, mode] of [['books', Book, () => ({ active: true }), 'book'], ['updates', Article, published, 'article']]) {
   router.get(`/${route}/:slug`, asyncRoute(async (req, res) => {
@@ -53,7 +45,7 @@ for (const [route, Model, filter, mode] of [['books', Book, () => ({ active: tru
 router.post('/enquiries', asyncRoute(async (req, res, next) => {
   if (req.body._csrf !== req.session.leadToken) return res.status(403).send('Form expired. Reload the page and try again.');
   let data;
-  try { data = validation.lead(req.body); if(!res.locals.visibleInterest(data.interest)) throw new Error('This service is currently unavailable. Please choose another interest.'); }
+  try { data = validation.lead(req.body); if(!['Digital Patterns','Online Classes','Books','Other'].includes(data.interest) || !res.locals.visibleInterest(data.interest)) throw new Error('This service is currently unavailable. Please choose another interest.'); }
   catch (error) { return res.status(400).render('business/page', { title: 'Review Your Enquiry', description: 'Submit your requirement', mode: 'contact', items: [], values: req.body, errors: [error.message], corporate: req.body.interest === 'Corporate Training', interest: req.body.interest, source: typeof req.body.source === 'string' ? req.body.source : '' }); }
   if (req.session.lastLeadAt && Date.now() - req.session.lastLeadAt < 30000) return res.status(429).send('Please wait 30 seconds before sending another enquiry.');
   try { const courseEnquiry=['Online Classes','Pattern Making Course','Garment Technology Training','Corporate Training'].includes(data.interest);const lead=await Lead.create({...data,...(courseEnquiry?{notification_jobs:[{key:'created',event:'created',status:'Enquiry received'}]}:{})});if(courseEnquiry)await require('../services/notificationService').safeFlush('course_enquiry',lead._id); } catch (error) { return next(error); }

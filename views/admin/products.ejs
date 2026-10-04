@@ -129,6 +129,7 @@
               </label>
 
 
+<%- include('pattern-configuration',{productForm}) %>
               <!-- DESCRIPTION -->
 
               <label>
@@ -144,11 +145,11 @@
               </label>
 
 
-<fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Available sizes / size range'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
+<fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Measurement Chart / Basic Specifications (owner-provided public summary)'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
 
               <label>
 
-                <span>Base Pattern Price</span>
+                <span>Printable Soft Copy Price</span>
 
                 <input
                   type="number"
@@ -390,7 +391,7 @@
                       </td>
 
 
-        <fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Available sizes / size range'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
+        <fieldset><legend>Pattern details &amp; search visibility</legend><% [['size_information','Measurement Chart / Basic Specifications (owner-provided public summary)'],['file_formats','File formats'],['delivery_information','Delivery information'],['download_information','Download / fulfilment information'],['seo_title','SEO title'],['seo_description','SEO description'],['amazon_listing_url','Amazon Listing URL (physical listing only)']].forEach(([key,label])=>{ %><label><span><%= label %></span><textarea name="<%= key %>" rows="2"><%= productForm[key] || '' %></textarea></label><% }) %><p>Keep prices and file options below accurate. Amazon is a separate external sale. Do not publish until sizes, formats and fulfilment are confirmed.</p></fieldset>              <!-- BASE PRICE -->
 
                       <td>
 

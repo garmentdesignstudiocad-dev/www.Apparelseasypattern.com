@@ -1,0 +1,15 @@
+<fieldset><legend>Pattern library configuration</legend>
+<input type="hidden" name="pattern_configuration" value="1">
+<label>Category<input name="category" maxlength="80" list="pattern-categories" value="<%= productForm.category || '' %>" placeholder="shirts"><datalist id="pattern-categories"><option value="shirts"><option value="pants"><option value="shorts"></datalist></label>
+<p>Use any category slug, such as jackets, jeans, womens-dresses or kids. Only assign real products.</p>
+<label>Status<select name="status"><% [['active','Available'],['draft','Draft / Test — hidden'],['coming_soon','Coming Soon — no purchases']].forEach(([value,label])=>{ %><option value="<%= value %>" <%= (productForm.status||'active')===value?'selected':'' %>><%= label %></option><% }) %></select></label>
+<label><input name="featured" type="checkbox" <%= productForm.featured?'checked':'' %>> Featured pattern</label>
+<% [['printable','Printable Soft Copy'],['physical','Physical Pattern'],['trial','Trial Sample']].forEach(([key,label])=>{ %><label><input type="checkbox" name="<%= key %>_enabled" <%= productForm.pattern_options?.[key]!==false?'checked':'' %>> Offer <%= label %></label><% }) %>
+<p>DXF, Tech Pack and paid measurement/spec files use existing Product Files: set their purpose, price and Active status, then upload the private file. These options are never bundled automatically with printable soft copy.</p>
+<label>Available sizes (comma separated)<input name="available_sizes" maxlength="500" value="<%= (productForm.available_sizes||[]).join(', ') %>" placeholder="XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL"></label>
+<label>Physical price per size (optional, one size=price per line)<textarea name="size_prices" rows="3"><%= (productForm.size_prices||[]).map(row=>row.size+'='+row.price).join('\n') %></textarea></label>
+<label>Printable dimensions / format notes (owner-provided)<input name="printable_dimensions" maxlength="500" value="<%= productForm.printable_dimensions||'' %>"></label>
+<label>Finished sample image URL<input type="url" name="sample_image_url" value="<%= productForm.sample_image_url||'' %>"></label>
+<label>Product video URL (direct video file)<input type="url" name="video_url" value="<%= productForm.video_url||'' %>"></label>
+<p>The existing Images field supports the main image and additional gallery images. Use owner-provided assets. ₹1/₹2 test prices may be entered on Draft / Test products; existing prices are never reset.</p>
+</fieldset>

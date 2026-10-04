@@ -8,6 +8,9 @@
     "test:launch": "node scripts/testLaunch.js",
     "prepare:launch": "node scripts/prepareLaunch.js",
     "test:public-visibility": "node scripts/testPublicVisibility.js",
+    "test:seo": "node scripts/testSeo.js",
+    "test:owner-update": "node scripts/testOwnerUpdate.js",
+    "test:pattern-browser": "node scripts/testPatternBrowser.js",
     "test:features": "node scripts/testFeatures.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
@@ -44,11 +47,13 @@
     "mongoose": "^7.5.0",
     "mysql2": "^3.23.2",
     "nodemailer": "^10.0.13",
+    "pdf-lib": "^1.17.1",
     "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "mongodb-memory-server": "^11.3.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "yauzl": "^3.4.0"
   },
   "knex": {
     "version": "2.x"

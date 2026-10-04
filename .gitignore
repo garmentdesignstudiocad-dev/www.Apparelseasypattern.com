@@ -12,3 +12,6 @@ yarn-error.log*
 !.env.example
 !.env.*.example
 *.log
+
+# Private owner-supplied product feed; source code importer remains tracked.
+/apparel-easy-patterns-product-data-feed.zip

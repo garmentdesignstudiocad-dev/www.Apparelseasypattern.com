@@ -50,10 +50,13 @@ app.use(async (req, res, next) => {
   catch(error){next(error);}
 });
 
+const noindexPath=/^\/(?:admin(?:\/|$)|login(?:\/|$)|account(?:\/|$)|cart(?:\/|$)|checkout(?:\/|$)|payment(?:\/|$)|receipts(?:\/|$)|downloads(?:\/|$)|my-courses(?:\/|$)|course-bookings(?:\/|$)|webinar-registrations(?:\/|$)|book-purchases(?:\/|$)|consultation-bookings(?:\/|$)|books\/[^/]+\/access(?:\/|$)|consulting\/[^/]+\/access(?:\/|$)|classes\/registration(?:\/|$)|enquiries\/thank-you(?:\/|$)|classes\/enquiry\/thank-you(?:\/|$))/;
 // Phase 1 business pages reuse the existing store and enrollment flows.
 app.use((req, res, next) => {
   const seo=require('./services/seoService'), origin=seo.siteOrigin();
-  res.locals.canonicalUrl = origin ? origin + (req.path==='/patterns'?'/products':req.path) : '';
+  const noindex=noindexPath.test(req.path);
+  if(noindex)res.set('X-Robots-Tag','noindex, nofollow');
+  res.locals.canonicalUrl = origin&&!noindex ? origin + (req.path==='/patterns'?'/products':req.path) : '';
   res.locals.organizationData=seo.organization(res.locals.siteSettings);
   const section=req.path.slice(1);
   if(seo.pageDefaults[section]){res.locals.seoTitle=res.locals.siteSettings[section+'_seo_title'];res.locals.description=res.locals.siteSettings[section+'_seo_description'];}
@@ -64,6 +67,8 @@ app.use('/', require('./routes/customerAccount'));
 app.use('/',require('./routes/seo'));
 app.use('/', require('./routes/receipts'));
 app.use('/', require('./routes/downloads'));
+app.use(require('./middleware/patternStorefront'));
+app.use('/',require('./routes/patternUpdates'));
 app.use('/', require('./routes/classEnquiries'));
 app.use('/', require('./routes/paidAccess'));
 app.use('/', require('./routes/learning'));
@@ -99,7 +104,10 @@ app.use('/', productsRouter);
 app.use('/', classesRouter);
 
 // Keep simple pages
-app.get('/about', (req, res) => res.render('about', { title: 'About' }));
+app.get('/about', (req, res) => res.render('about', {
+  title:'About Apparels Easy Pattern | Garment Pattern Store',
+  description:'Learn about Apparels Easy Pattern and its garment pattern formats, including digital files, physical patterns and trial samples.',
+}));
 
 
 // Mount cart router to handle cart display and actions

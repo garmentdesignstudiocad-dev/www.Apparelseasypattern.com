@@ -1,6 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 const OrderItemSchema = new Schema({
+  printable_selected: {type:Boolean,default:true},
   product_name: String,
   selected_sizes: {type:[String],default:[]},
   additional_size_price:Number,

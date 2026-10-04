@@ -1,10 +1,12 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><%= typeof seoTitle !== 'undefined' ? seoTitle : title %> | <%= siteSettings.store_name %></title>
-<meta name="description" content="<%= typeof description !== 'undefined' ? description : 'Professional garment technology, pattern making, digital patterns and apparel development.' %>">
-<meta property="og:title" content="<%= typeof seoTitle !== 'undefined' ? seoTitle : title %>">
-<meta property="og:description" content="<%= typeof description !== 'undefined' ? description : 'Learn, develop, buy and consult with the Garment Design Studio.' %>">
+<% const pageTitle=typeof seoTitle!=='undefined'?seoTitle:`${title} | Apparels Easy Pattern`; const pageDescription=typeof description!=='undefined'?description:'Professional garment technology, pattern making, digital patterns and apparel development.'; %>
+<title><%= pageTitle %></title>
+<meta name="description" content="<%= pageDescription %>">
+<meta property="og:title" content="<%= pageTitle %>">
+<meta property="og:description" content="<%= pageDescription %>">
 <meta property="og:type" content="<%= typeof mode !== 'undefined' && mode === 'article' ? 'article' : 'website' %>">
 <% if(typeof canonicalUrl !== 'undefined' && canonicalUrl){ %><link rel="canonical" href="<%= canonicalUrl %>"><meta property="og:url" content="<%= canonicalUrl %>"><% } %>
+<% const socialImage=typeof ogImage!=='undefined'?ogImage:siteSettings.logo_url; if(socialImage){ %><meta property="og:image" content="<%= socialImage %>"><meta name="twitter:card" content="summary_large_image"><% } %>
 <link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/customer-experience.css"><link rel="stylesheet" href="/css/business.css"><%- include('theme', {skipSharedSeo:true}) %>
 
 <% if(typeof organizationData!=='undefined' && organizationData){ %><script type="application/ld+json"><%- jsonLd(organizationData) %></script><% } %>

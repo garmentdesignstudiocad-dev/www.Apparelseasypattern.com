@@ -2,7 +2,7 @@ const { safeUrl } = require('../config/appearance');
 module.exports=(req,res,next)=>{
   if(req.method!=='POST')return next();
   const body=req.body || {};
-  try { require('../services/productMetadata').parse(body); } catch(error){return res.status(400).send(error.message);}
+  try { require('../services/productMetadata').parse(body); require('../services/patternOptions').parse(body); } catch(error){return res.status(400).send(error.message);}
   const numeric=/^(?:price|.*_price|percentage|default_charge|delivery_charge|free_delivery_threshold|discount_value|minimum_order_value|max_seats)$/;
   for(const [key,value] of Object.entries(body)) {
     if(numeric.test(key) && value!=='' && (typeof value!=='string' || !/^\d+(?:\.\d{1,2})?$/.test(value) || !Number.isFinite(Number(value)) || Number(value)>1000000)) return res.status(400).send('Enter valid non-negative prices and numeric values.');

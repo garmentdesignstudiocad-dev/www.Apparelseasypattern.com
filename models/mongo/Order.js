@@ -18,7 +18,7 @@ const OrderSchema = new Schema(
     shipping_version:{type:Number,default:0},shipping_notification_keys:{type:[String],default:[]},
     shipping_arranged_separately:{type:Boolean,default:false},
     download_token:{type:String,select:false},download_expires_at:Date,
-    download_assets:{type:[new Schema({name:String,file:String},{_id:false})],select:false,default:undefined},
+    download_assets:{type:[new Schema({name:String,file:String,watermark_pdf:Boolean},{_id:false})],select:false,default:undefined},
     customer_id: {
       type: Schema.Types.ObjectId,
       ref: 'Customer',

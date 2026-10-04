@@ -88,6 +88,8 @@ router.post('/cart/add', async (req, res) => {
 
 
     if(selectedFiles.length!==files.length || selectedAddons.length!==addons.length) return res.status(400).json({error:'One or more selected options are unavailable for this product.'});
+    const optionError=require('../services/patternOptions').validate(product,selectedFiles,req.body);
+    if(optionError)return res.status(400).json({error:optionError});
     const unitPrice =
       Number(product.base_price || 0);
 
@@ -163,6 +165,7 @@ router.post('/cart/add', async (req, res) => {
       name:
         product.name,
       selected_sizes: req.body.selected_sizes || [],
+      printable_selected: req.body.printable_selected !== false,
       additional_size_price: Number(product.additional_size_price || 0),
 
       slug:
@@ -367,6 +370,8 @@ router.post('/cart/update', async (req, res) => {
     const currentFiles = await ProductFile.find({_id:{$in:item.selected_files.map(f=>f.id)},product_id:item.product_id,active:true}).lean();
     const currentAddons = await Addon.find({_id:{$in:item.selected_addons.map(a=>a.id)},product_id:item.product_id,active:true}).lean();
     if(currentFiles.length!==item.selected_files.length || currentAddons.length!==item.selected_addons.length) return res.status(400).json({error:'An option is unavailable. Remove and re-add this product.'});
+    const optionError=require('../services/patternOptions').validate(currentProduct,currentFiles,item);
+    if(optionError)return res.status(400).json({error:optionError});
     item.total = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).total;
 
     req.session.cart =

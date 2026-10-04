@@ -11,7 +11,6 @@ const Addon = require('../models/mongo/Addon');
 const Order = require('../models/mongo/Order');
 const Customer = require('../models/mongo/Customer');
 const Payment = require('../models/mongo/Payment');
-const PricingSettings = require('../models/mongo/PricingSettings');
 
 
 const adminUsername = process.env.ADMIN_USERNAME?.trim();
@@ -48,19 +47,23 @@ function parseProductPayload(body) {
   return {
     name,
     ...require('../services/productMetadata').parse(body),
+    ...require('../services/patternOptions').parse(body),
     slug: String(body?.slug || '').trim() || buildSlug(name),
     description: String(body?.description || '').trim(),
     base_price: Number(body?.base_price || 0),
     additional_size_price: Number(body?.additional_size_price || 0),
     physical_price: Number(body?.physical_price || 0),
     trial_price: Number(body?.trial_price || 0),
-    images: parseStringArray(body?.images),
+    images: body?.main_image_url !== undefined || body?.gallery_image_urls !== undefined
+      ? [...(String(body?.main_image_url || '').trim() ? [String(body.main_image_url).trim()] : []), ...parseStringArray(body?.gallery_image_urls)]
+      : parseStringArray(body?.images),
     active: body?.active === 'on' || body?.active === true || body?.active === '1',
   };
 }
 
 function parseFilePayload(body) {
   return {
+    ...(body.purpose!==undefined?{purpose:body.purpose,watermark_pdf:body.watermark_pdf==='on' && ['specs','tech_pack'].includes(body.purpose)}:{}),
     file_name: String(body?.file_name || '').trim(),
     file_type: String(body?.file_type || '').trim(),
     file_price: Number(body?.file_price || 0),
@@ -74,6 +77,70 @@ function parseAddonPayload(body) {
     description: String(body?.description || '').trim(),
     price: Number(body?.price || 0),
     active: body?.active === 'on' || body?.active === true || body?.active === '1',
+  };
+}
+
+async function hasConfiguredPaidOption(product) {
+  const options = product.pattern_options || {};
+  if (options.printable !== false && Number(product.base_price) > 0) return true;
+  if (options.physical !== false && Number(product.physical_price) > 0) return true;
+  if (options.physical !== false && product.size_prices?.some(row => Number(row.price) > 0)) return true;
+  if (options.trial !== false && Number(product.trial_price) > 0) return true;
+  return Boolean(await ProductFile.exists({
+    product_id: product._id,
+    active: true,
+    file_price: { $gt: 0 },
+  }));
+}
+
+function productSetup(product, files = []) {
+  const missing = [];
+  const basicComplete = Boolean(
+    product.name?.trim()
+    && product.category?.trim()
+    && product.description?.trim()
+    && !product.description.includes('Admin review required.')
+  );
+  const imageComplete = Array.isArray(product.images) && product.images.length > 0;
+  const filesNeedingReview = files.filter(file =>
+    file.purpose === 'other' && (product.import_source_key || file.import_source_key));
+  const filesWithoutUpload = files.filter(file => file.purpose !== 'other' && !file.hasPrivateFile);
+  const filesComplete = (product.hasPrivateBaseFile || files.length > 0)
+    && filesNeedingReview.length === 0
+    && filesWithoutUpload.length === 0;
+  const sizesComplete = Array.isArray(product.available_sizes) && product.available_sizes.length > 0;
+  const options = product.pattern_options || {};
+  const pricingComplete = Boolean(
+    (options.printable !== false && Number(product.base_price) > 0)
+    || (options.physical !== false && Number(product.physical_price) > 0)
+    || (options.physical !== false && product.size_prices?.some(row => Number(row.price) > 0))
+    || (options.trial !== false && Number(product.trial_price) > 0)
+    || files.some(file => file.active && file.purpose !== 'other' && Number(file.file_price) > 0)
+  );
+
+  if (!basicComplete) missing.push('Product name, category, or customer description needs review.');
+  if (!imageComplete) missing.push('Main product image not added.');
+  for (const file of filesNeedingReview) {
+    missing.push(`"${file.file_name}" purpose not confirmed.`);
+  }
+  for (const file of filesWithoutUpload) {
+    missing.push(`Private download missing for "${file.file_name}".`);
+  }
+  if (!filesComplete) missing.push('Product files have not been added or reviewed.');
+  if (!pricingComplete) missing.push('Customer price not set for an available option.');
+  if (!sizesComplete) missing.push('Available sizes not set.');
+
+  const ready = missing.length === 0;
+  return {
+    missing,
+    steps: [
+      { label: 'Basic Information', complete: basicComplete },
+      { label: 'Images', complete: imageComplete },
+      { label: 'Files', complete: filesComplete },
+      { label: 'Pricing', complete: pricingComplete },
+      { label: 'Sizes', complete: sizesComplete },
+      { label: 'Final Review', complete: ready },
+    ],
   };
 }
 
@@ -254,11 +321,54 @@ router.get(['/', '/dashboard'], adminAuth, async (req, res) => {
 router.get('/products', adminAuth, async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 }).lean();
-    res.render('admin/products', {
-      title: 'Manage Products',
-      products,
-      editingProduct: null,
-      productForm: {},
+    const [productFiles, productsWithBaseFiles] = products.length
+      ? await Promise.all([
+        ProductFile.find({ product_id: { $in: products.map(product => product._id) } }).lean(),
+        Product.find({ _id: { $in: products.map(product => product._id) }, digital_file: { $exists: true, $ne: null } }).select('_id').lean(),
+      ])
+      : [[], []];
+    const productsWithPrivateBase = new Set(productsWithBaseFiles.map(product => String(product._id)));
+    const filesWithPrivateUploads = productFiles.length
+      ? await ProductFile.find({
+        _id: { $in: productFiles.map(file => file._id) },
+        digital_file: { $exists: true, $ne: null },
+      }).select('_id').lean()
+      : [];
+    const filesWithPrivateUploadsSet = new Set(filesWithPrivateUploads.map(file => String(file._id)));
+    for (const product of products) {
+      product.hasPrivateBaseFile = productsWithPrivateBase.has(String(product._id));
+    }
+    for (const file of productFiles) {
+      file.hasPrivateFile = filesWithPrivateUploadsSet.has(String(file._id));
+    }
+    const filesByProduct = new Map();
+    for (const file of productFiles) {
+      const key = String(file.product_id);
+      filesByProduct.set(key, [...(filesByProduct.get(key) || []), file]);
+    }
+    const setupByProduct = new Map(products.map(product => [
+      String(product._id),
+      productSetup(product, filesByProduct.get(String(product._id)) || []),
+    ]));
+    const reviewCount = productFiles.filter(file =>
+      file.purpose === 'other' && (file.import_source_key
+        || products.find(product => String(product._id) === String(file.product_id))?.import_source_key)).length;
+    const filteredProducts = req.query.review === '1'
+      ? products.filter(product => (filesByProduct.get(String(product._id)) || []).some(file =>
+        file.purpose === 'other' && (product.import_source_key || file.import_source_key)))
+      : products;
+
+    res.render('admin/product-list', {
+      title: 'Products / Patterns',
+      products: filteredProducts,
+      totalProducts: products.length,
+      activeProducts: products.filter(product => product.active && product.status === 'active').length,
+      draftProducts: products.filter(product => !product.active || product.status === 'draft').length,
+      setupRequired: [...setupByProduct.values()].filter(setup => !setup.steps.at(-1).complete).length,
+      reviewCount,
+      reviewFilter: req.query.review === '1',
+      filesByProduct,
+      setupByProduct,
       message: req.query.message || null,
       messageType: req.query.messageType || 'success',
       formatCurrency,
@@ -274,20 +384,18 @@ router.get('/products', adminAuth, async (req, res) => {
 
 router.get('/products/new', adminAuth, async (req, res) => {
   try {
-    const [products, defaults] = await Promise.all([
-      Product.find().sort({ createdAt: -1 }).lean(),
-      PricingSettings.findOne({ key: 'default' }).lean().catch(() => null),
-    ]);
-    res.render('admin/products', {
+    res.render('admin/product-editor', {
       title: 'Add Product',
-      products,
       editingProduct: null,
+      productFiles: [],
+      productSetup: productSetup({ name: '', category: '', description: '', images: [], available_sizes: [], pattern_options: {} }),
       productForm: {
-        active: true,
-        base_price: defaults?.soft_copy_price || 0,
-        additional_size_price: defaults?.additional_size_price || 0,
-        physical_price: defaults?.physical_pattern_price || 0,
-        trial_price: defaults?.trial_sample_price || 0,
+        status: 'draft',
+        active: false,
+        base_price: '',
+        additional_size_price: '',
+        physical_price: '',
+        trial_price: '',
       },
       message: req.query.message || null,
       messageType: req.query.messageType || 'success',
@@ -310,11 +418,11 @@ router.post('/products', adminAuth, async (req, res) => {
     res.redirect(buildRedirectUrl('/admin/products', 'Product created successfully.'));
   } catch (err) {
     logError('Admin product create error:', err);
-    const products = await Product.find().sort({ createdAt: -1 }).lean();
-    res.status(400).render('admin/products', {
+    res.status(400).render('admin/product-editor', {
       title: 'Add Product',
-      products,
       editingProduct: null,
+      productFiles: [],
+      productSetup: productSetup({ ...productForm, pattern_options: productForm.pattern_options || {} }),
       productForm,
       message: 'Could not create product. Please verify the slug and required fields.',
       messageType: 'error',
@@ -325,18 +433,23 @@ router.post('/products', adminAuth, async (req, res) => {
 
 router.get('/products/:id/edit', adminAuth, async (req, res) => {
   try {
-    const [product, products] = await Promise.all([
-      Product.findById(req.params.id).lean(),
-      Product.find().sort({ createdAt: -1 }).lean(),
-    ]);
+    const product = await Product.findById(req.params.id).select('+digital_file').lean();
 
     if (!product) {
       return res.redirect('/admin/products');
     }
+    const productFiles = await ProductFile.find({ product_id: product._id }).sort({ createdAt: -1 }).select('+digital_file').lean();
+    product.hasPrivateBaseFile = Boolean(product.digital_file);
+    delete product.digital_file;
+    for (const file of productFiles) {
+      file.hasPrivateFile = Boolean(file.digital_file);
+      delete file.digital_file;
+    }
 
-    res.render('admin/products', {
+    res.render('admin/product-editor', {
       title: 'Edit Product',
-      products,
+      productFiles,
+      productSetup: productSetup(product, productFiles),
       editingProduct: product,
       productForm: product,
       message: req.query.message || null,
@@ -356,22 +469,70 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
   const productForm = parseProductPayload(req.body);
 
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).select('+digital_file');
     if (!product) {
       return res.redirect('/admin/products');
     }
 
+    const adminAction = String(req.body.admin_action || '');
+    if (adminAction === 'save') {
+      productForm.active = product.active;
+      productForm.status = product.status;
+    } else if (adminAction === 'activate') {
+      productForm.active = true;
+      productForm.status = 'active';
+    } else if (adminAction === 'deactivate') {
+      productForm.active = false;
+      productForm.status = product.status;
+    }
+
+    if (product.import_source_key && productForm.active && productForm.status === 'active') {
+      const candidate = { ...product.toObject(), ...productForm };
+      if (!await hasConfiguredPaidOption(candidate)) {
+        const productFiles = await ProductFile.find({ product_id: product._id }).select('+digital_file').lean();
+        for (const file of productFiles) {
+          file.hasPrivateFile = Boolean(file.digital_file);
+          delete file.digital_file;
+        }
+        const missing = productSetup({ ...candidate, hasPrivateBaseFile: Boolean(candidate.digital_file) }, productFiles).missing;
+        missing.push('A positive price is required for at least one enabled product option.');
+        return res.redirect(buildRedirectUrl(
+          `/admin/products/${product._id}/edit`,
+          `Activation blocked. Complete: ${[...new Set(missing)].join(' ')}`,
+          'error'
+        ));
+      }
+    }
+
     Object.assign(product, productForm);
     await product.save();
-    res.redirect(buildRedirectUrl('/admin/products', 'Product updated successfully.'));
+    res.redirect(buildRedirectUrl(
+      `/admin/products/${product._id}/edit`,
+      adminAction === 'save' ? 'Changes saved. Product publication status was unchanged.'
+        : adminAction === 'activate' ? 'Product activated successfully.'
+          : adminAction === 'deactivate' ? 'Product saved as inactive.'
+            : 'Product updated successfully.'
+    ));
   } catch (err) {
     logError('Admin product update error:', err);
-    const products = await Product.find().sort({ createdAt: -1 }).lean();
-    res.status(400).render('admin/products', {
+    const [product, productFiles] = await Promise.all([
+      Product.findById(req.params.id).select('+digital_file').lean(),
+      ProductFile.find({ product_id: req.params.id }).sort({ createdAt: -1 }).select('+digital_file').lean(),
+    ]);
+    if (product) {
+      product.hasPrivateBaseFile = Boolean(product.digital_file);
+      delete product.digital_file;
+    }
+    for (const file of productFiles) {
+      file.hasPrivateFile = Boolean(file.digital_file);
+      delete file.digital_file;
+    }
+    res.status(400).render('admin/product-editor', {
       title: 'Edit Product',
-      products,
-      editingProduct: null,
-      productForm,
+      editingProduct: product,
+      productFiles,
+      productSetup: productSetup(product || productForm, productFiles),
+      productForm: { ...product, ...productForm },
       message: 'Could not update product.',
       messageType: 'error',
       formatCurrency,
@@ -381,9 +542,30 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
 
 router.post('/products/:id/toggle', adminAuth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).select('+digital_file');
     if (!product) {
       return res.redirect('/admin/products');
+    }
+
+    if (!product.active && product.import_source_key
+      && (product.status !== 'active' || !await hasConfiguredPaidOption(product))) {
+      const files = await ProductFile.find({ product_id: product._id }).select('+digital_file').lean();
+      for (const file of files) {
+        file.hasPrivateFile = Boolean(file.digital_file);
+        delete file.digital_file;
+      }
+      const productData = product.toObject();
+      productData.hasPrivateBaseFile = Boolean(productData.digital_file);
+      delete productData.digital_file;
+      const missing = productSetup(productData, files).missing;
+      if (product.status !== 'active' || !await hasConfiguredPaidOption(product)) {
+        missing.push('A positive price is required for at least one enabled product option.');
+      }
+      return res.redirect(buildRedirectUrl(
+        `/admin/products/${product._id}/edit`,
+        `Activation blocked. Complete: ${[...new Set(missing)].join(' ')}`,
+        'error'
+      ));
     }
 
     product.active = !product.active;
@@ -409,7 +591,7 @@ router.get('/products/:productId/files', adminAuth, async (req, res) => {
       product,
       files,
       editingFile: null,
-      fileForm: { active: true },
+      fileForm: { active: !product.import_source_key },
       message: req.query.message || null,
       messageType: req.query.messageType || 'success',
       formatCurrency,
@@ -431,6 +613,10 @@ router.post('/products/:productId/files', adminAuth, async (req, res) => {
     }
 
     const fileForm = parseFilePayload(req.body);
+    if (product.import_source_key && fileForm.active && !(fileForm.file_price > 0)) {
+      return res.redirect(buildRedirectUrl(`/admin/products/${product._id}/files`, 'Set a positive file price before activating this imported file.', 'error'));
+    }
+
     await ProductFile.create({
       product_id: product._id,
       ...fileForm,
@@ -481,7 +667,13 @@ router.post('/products/:productId/files/:fileId/edit', adminAuth, async (req, re
       return res.redirect(`/admin/products/${req.params.productId}/files`);
     }
 
-    Object.assign(file, parseFilePayload(req.body));
+    const fileForm = parseFilePayload(req.body);
+    const product = await Product.findById(req.params.productId);
+    if (product?.import_source_key && fileForm.active && !(fileForm.file_price > 0)) {
+      return res.redirect(buildRedirectUrl(`/admin/products/${product._id}/files`, 'Set a positive file price before activating this imported file.', 'error'));
+    }
+
+    Object.assign(file, fileForm);
     await file.save();
     res.redirect(buildRedirectUrl(`/admin/products/${req.params.productId}/files`, 'Pattern file updated successfully.'));
   } catch (err) {
@@ -495,6 +687,11 @@ router.post('/products/:productId/files/:fileId/toggle', adminAuth, async (req, 
     const file = await ProductFile.findById(req.params.fileId);
     if (!file) {
       return res.redirect(`/admin/products/${req.params.productId}/files`);
+    }
+
+    const product = await Product.findById(req.params.productId);
+    if (product?.import_source_key && !file.active && !(file.file_price > 0)) {
+      return res.redirect(buildRedirectUrl(`/admin/products/${product._id}/files`, 'Set a positive file price before activating this imported file.', 'error'));
     }
 
     file.active = !file.active;

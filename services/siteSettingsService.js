@@ -11,7 +11,7 @@ function safePublicUrl(value) {
 }
 
 const fallback = () => normalize({
-  store_name: 'Garment Pattern Store',
+  store_name: 'Apparel Easy Patterns',
   logo_url: '',
   main_website_url: safePublicUrl(process.env.MAIN_WEBSITE_URL),
   ...require('../config/launch'), address: '', footer_text: '',

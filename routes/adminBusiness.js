@@ -36,7 +36,7 @@ router.get('/leads', wrap(async (req, res) => {
   res.render('admin/business-leads', { title: 'Leads / Enquiries', items, total, page, query: req.query, item: null });
 }));
 router.get('/leads/export.csv', wrap(async (req, res) => {
-  const fields = ['name', 'email', 'whatsapp', 'country', 'location', 'profession', 'interest', 'interested_course', 'experience', 'preferred_timing', 'message', 'source', 'status', 'company_name', 'employee_count', 'preferred_date', 'createdAt'];
+  const fields = ['name', 'email', 'whatsapp', 'country', 'location', 'profession', 'interest', 'interested_course', 'experience', 'preferred_timing', 'studying', 'current_role', 'consent_at', 'consent_text', 'message', 'source', 'status', 'company_name', 'employee_count', 'preferred_date', 'createdAt'];
   res.type('text/csv').attachment('leads.csv');
   res.write('\uFEFF' + fields.map(validation.csvCell).join(',') + '\r\n');
   for await (const item of Lead.find(leadFilter(req.query)).sort({ createdAt: -1 }).lean().cursor()) {

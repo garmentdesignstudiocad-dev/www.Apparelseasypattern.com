@@ -15,3 +15,6 @@ yarn-error.log*
 
 # Private owner-supplied product feed; source code importer remains tracked.
 /apparel-easy-patterns-product-data-feed.zip
+
+# Local shipment/customer dataset; never publish.
+/data/pincodes.csv

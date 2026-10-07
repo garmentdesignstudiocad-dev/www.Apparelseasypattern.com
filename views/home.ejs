@@ -1,6 +1,302 @@
-<!doctype html><html lang="en"><head><%- include('partials/business-head') %></head><body class="premium-store"><%- include('partials/header') %><main class="studio-page">
-<section class="studio-section pattern-intro"><span class="eyebrow">Apparel Easy Patterns</span><h1>Ready-to-Use Apparel Patterns</h1><p>Ready-to-use garment pattern blocks for faster sampling, stitching and product development.</p><p>Browse practical pattern templates with selected printable files, measurement information, tech-pack options and physical pattern services.</p><div class="studio-actions"><% if(canVisit('/products')){ %><a class="fashion-button" href="/products">Explore Available Patterns</a><% } %><% if(canVisit('/pattern-updates')){ %><a href="/pattern-updates">Get Pattern Updates</a><% } %></div></section>
-<% if(canVisit('/products')){ %><section class="studio-section"><span class="eyebrow">Ready-to-use pattern block library</span><h2>A practical starting point for your next garment.</h2><p>Explore practical pattern blocks for current and essential apparel silhouettes across Men's, Women's and Kids' categories. The library will continue to grow with new ready-to-use styles, helping you begin sampling without starting every pattern from scratch.</p><nav class="pattern-categories" aria-label="Pattern categories"><% ['shirts','pants','shorts'].forEach(category=>{ %><a href="/products?category=<%= category %>"><%= category.toUpperCase() %></a><% }) %></nav>
-<% if(featureEnabled('homepage_catalogs')){ %><%- include('partials/business-cards',{kind:'products',items:products}) %><% } %><div class="studio-actions"><a href="/products">Explore Patterns</a></div></section><% } %>
-<section class="pattern-teasers"><% if(canVisit('/books')){ %><article><span class="eyebrow">Books - Coming Soon</span><h2>Want to become a garment technologist?</h2><p>Learn from materials prepared with practical apparel-industry knowledge and experience.</p><a href="/books">Explore Books</a></article><% } %><% if(canVisit('/classes/enquiry')){ %><article><span class="eyebrow">Online classes - Coming Soon</span><h2>Become a professional pattern maker</h2><p>Build your skills through focused online learning and practical pattern development.</p><a href="/classes/enquiry">Request Class Information</a></article><% } %></section>
-</main><%- include('partials/footer') %><script src="/js/main.js"></script></body></html>
+﻿<!doctype html>
+<html lang="en">
+
+<head>
+  <%- include('partials/business-head') %>
+  <link rel="stylesheet" href="/css/home.css">
+</head>
+
+<body class="premium-store">
+
+  <%- include('partials/header') %>
+
+  <main class="studio-page pattern-home">
+
+    <!-- HERO SECTION -->
+    <section class="home-hero" aria-labelledby="home-title">
+
+      <div class="home-hero-copy">
+
+        <span class="eyebrow">Fashion Pattern Studio</span>
+
+        <h1 id="home-title">
+          Ready-to-Use Apparel Blocks for Better Fit & Faster Development
+        </h1>
+
+        <p>
+          Built for the professional fashion industry, combining apparel
+          technology, pattern development and practical garment knowledge
+          with the experience of fashion industry experts.
+        </p>
+
+        <% if(canVisit('/products')){ %>
+
+          <div class="studio-actions">
+
+            <a class="fashion-button primary" href="/products">
+              Explore Available Patterns
+            </a>
+
+            <% if(canVisit('/classes/enquiry')){ %>
+
+              <a class="fashion-button secondary" href="/classes/enquiry">
+                Speak with the Studio
+              </a>
+
+            <% } %>
+
+          </div>
+
+        <% } %>
+
+        <ul class="home-trust-list" aria-label="Apparel studio capabilities">
+          <li>Fit Blocks</li>
+          <li>Fit Trials</li>
+          <li>Industry Technical Expertise</li>
+        </ul>
+
+      </div>
+
+
+      <div class="home-visual" aria-label="Apparel pattern development">
+
+        <div class="visual-panel">
+
+          <img
+            class="home-pattern-visual"
+            src="/images/basic-shirt-pattern.svg"
+            alt="Technical illustration of a shirt and garment pattern pieces"
+            width="1000"
+            height="800"
+            fetchpriority="high"
+          >
+
+        </div>
+
+        <div class="home-floating-card">
+
+          <span>Professional Fit Development</span>
+
+          <strong>
+            Fit Blocks • Fit Trials • Pattern Development
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- AVAILABLE PATTERNS -->
+    <% if(canVisit('/products')){ %>
+
+      <section class="home-available" aria-labelledby="available-title">
+
+        <div class="section-copy">
+
+          <span class="eyebrow">
+            Ready-to-Sew Available Patterns
+          </span>
+
+          <h2 id="available-title">
+            Ready-to-use patterns for practical apparel development.
+          </h2>
+
+          <p>
+            Explore ready-to-use pattern files designed to support sampling,
+            garment creation and professional apparel development without
+            starting every pattern from scratch.
+          </p>
+
+        </div>
+
+        <div class="studio-actions">
+
+          <a class="fashion-button" href="/products">
+            Explore Patterns
+          </a>
+
+        </div>
+
+      </section>
+
+    <% } %>
+
+
+    <!-- START WITH THE RIGHT BLOCK -->
+    <section class="home-focus" aria-labelledby="focus-title">
+
+      <div class="focus-header">
+
+        <span class="eyebrow">
+          Start with the Right Block
+        </span>
+
+        <h2 id="focus-title">
+          A Strong Technical Foundation for Better Garment Development
+        </h2>
+
+        <p>
+          Different garments require the right starting block for their
+          intended fit, silhouette and construction. Our apparel blocks
+          support practical development across men's, women's, kids',
+          formal, casual and denim garment categories.
+        </p>
+
+        <p>
+          Our fit blocks and fit trials are reviewed and validated with
+          the practical expertise of fashion industry technical experts.
+        </p>
+
+      </div>
+
+
+      <div class="focus-grid">
+
+        <article>
+
+          <span class="focus-index">01</span>
+
+          <h3>Fit Blocks</h3>
+
+          <p>
+            Practical pattern foundations developed to support fit,
+            proportion and efficient garment development.
+          </p>
+
+        </article>
+
+
+        <article>
+
+          <span class="focus-index">02</span>
+
+          <h3>Fit Trial</h3>
+
+          <p>
+            Fit trials support the technical review of garment balance,
+            proportion and practical fit before further development.
+          </p>
+
+        </article>
+
+
+        <article>
+
+          <span class="focus-index">03</span>
+
+          <h3>Technical Validation</h3>
+
+          <p>
+            Pattern and fit development is reviewed with practical
+            fashion industry technical expertise.
+          </p>
+
+        </article>
+
+
+        <article>
+
+          <span class="focus-index">04</span>
+
+          <h3>Garment Development</h3>
+
+          <p>
+            From the starting block through pattern development,
+            supporting a more structured professional apparel workflow.
+          </p>
+
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <!-- INDUSTRY EXPERTISE / VALIDATION -->
+    <section class="home-available" aria-labelledby="validation-title">
+
+      <div class="section-copy">
+
+        <span class="eyebrow">
+          Fashion Industry Technical Expertise
+        </span>
+
+        <h2 id="validation-title">
+          Verified and Validated with Fashion Industry Technical Expertise
+        </h2>
+
+        <p>
+          Our approach combines practical apparel industry knowledge,
+          fit evaluation and technical experience to support professional
+          pattern and garment development.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- BOOKS AND ONLINE CLASSES -->
+    <section class="home-coming-soon" aria-label="Coming soon">
+
+
+      <% if(canVisit('/books')){ %>
+
+        <article aria-labelledby="books-title">
+
+          <span class="home-status">
+            Coming Soon
+          </span>
+
+          <h2 id="books-title">
+            Build Your Garment Technology Knowledge
+          </h2>
+
+          <p>
+            Learn from materials prepared with practical apparel industry
+            knowledge and experience by fashion industry experts.
+          </p>
+
+        </article>
+
+      <% } %>
+
+
+      <% if(canVisit('/classes/enquiry')){ %>
+
+        <article aria-labelledby="classes-title">
+
+          <span class="home-status">
+            Coming Soon
+          </span>
+
+          <h2 id="classes-title">
+            Learn Professional Pattern Making
+          </h2>
+
+          <p>
+            Develop practical apparel pattern-making knowledge through
+            learning materials and guidance shaped by fashion industry
+            knowledge and professional experience.
+          </p>
+
+        </article>
+
+      <% } %>
+
+
+    </section>
+
+  </main>
+
+
+  <%- include('partials/footer') %>
+
+
+  <script src="/js/main.js"></script>
+
+</body>
+
+</html>

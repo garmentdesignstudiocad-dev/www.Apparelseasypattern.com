@@ -25,8 +25,9 @@
 
     <section class="admin-product-stats" aria-label="Product overview">
       <article class="admin-product-stat"><span>Total Products</span><strong><%= totalProducts %></strong></article>
-      <article class="admin-product-stat"><span>Active Products</span><strong><%= activeProducts %></strong></article>
+      <article class="admin-product-stat"><span>Active / Published Products</span><strong><%= activeProducts %></strong></article>
       <article class="admin-product-stat"><span>Draft Products</span><strong><%= draftProducts %></strong></article>
+      <article class="admin-product-stat"><span>Inactive Products</span><strong><%= inactiveProducts %></strong></article>
       <article class="admin-product-stat"><span>Products Requiring Setup</span><strong><%= setupRequired %></strong></article>
     </section>
 
@@ -39,7 +40,7 @@
       <div class="admin-product-list__heading">
         <div>
           <h2><%= reviewFilter ? 'Products with files to review' : 'Existing Products' %></h2>
-          <p><%= reviewFilter ? 'Open Files on a product to confirm each imported file purpose.' : 'Choose a product to edit its details or manage its files.' %></p>
+          <p>Showing <%= products.length %> of <%= totalProducts %> products. <%= reviewFilter ? 'File-review filter applied. Show all products to include records without files to review.' : 'All statuses included: draft, inactive and active / published. Choose Edit to review a product.' %></p>
         </div>
         <% if (reviewFilter) { %><a class="btn ghost" href="/admin/products#product-list">Show all products</a><% } %>
       </div>
@@ -52,7 +53,9 @@
               <% products.forEach(product => {
                 const setup = setupByProduct.get(String(product._id));
                 const files = filesByProduct.get(String(product._id)) || [];
-                const live = product.active && product.status === 'active';
+                const live = product.active === true && (!product.status || product.status === 'active');
+                const draft = product.status === 'draft';
+                const inactive = !live && product.active !== true && !draft;
                 const priceSet = product.base_price !== null && product.base_price !== undefined && product.base_price !== '';
               %>
                 <tr>
@@ -67,7 +70,17 @@
                   <td data-label="Category"><%= product.category ? product.category.replaceAll('-', ' ') : 'Not set' %></td>
                   <td data-label="Base Price"><%= priceSet && formatCurrency ? formatCurrency(product.base_price) : 'Price not set' %></td>
                   <td data-label="Files"><%= files.length %> <%= files.length === 1 ? 'file' : 'files' %><% const reviewFiles=files.filter(file=>file.purpose==='other'&&(product.import_source_key||file.import_source_key)); if(reviewFiles.length){ %><small class="admin-product-slug"><%= reviewFiles.length %> need review</small><% } %></td>
-                  <td data-label="Status"><span class="admin-badge <%= live ? 'admin-badge--active' : 'admin-badge--draft' %>"><%= product.status === 'coming_soon' ? 'Coming Soon' : live ? 'Active' : 'Draft' %></span></td>
+                  <td data-label="Status">
+                    <% if (draft) { %>
+                      <span class="admin-badge admin-badge--draft">DRAFT</span>
+                    <% } else if (product.status === 'coming_soon') { %>
+                      <span class="admin-badge admin-badge--draft">COMING SOON</span>
+                    <% } else if (inactive) { %>
+                      <span class="admin-badge admin-badge--draft">INACTIVE</span>
+                    <% } else if (live) { %>
+                      <span class="admin-badge admin-badge--active">ACTIVE / PUBLISHED</span>
+                    <% } %>
+                  </td>
                   <td data-label="Actions">
                     <div class="admin-product-actions">
                       <a class="btn small primary" href="/admin/products/<%= product._id %>/edit" aria-label="Edit <%= product.name %>">Edit</a>

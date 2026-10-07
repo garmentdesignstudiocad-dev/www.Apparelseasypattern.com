@@ -320,7 +320,8 @@ router.get(['/', '/dashboard'], adminAuth, async (req, res) => {
 
 router.get('/products', adminAuth, async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 }).lean();
+    // Admin must include drafts and inactive records; publicFilter is storefront-only.
+    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
     const [productFiles, productsWithBaseFiles] = products.length
       ? await Promise.all([
         ProductFile.find({ product_id: { $in: products.map(product => product._id) } }).lean(),
@@ -362,8 +363,10 @@ router.get('/products', adminAuth, async (req, res) => {
       title: 'Products / Patterns',
       products: filteredProducts,
       totalProducts: products.length,
-      activeProducts: products.filter(product => product.active && product.status === 'active').length,
-      draftProducts: products.filter(product => !product.active || product.status === 'draft').length,
+      activeProducts: products.filter(product => product.active === true
+        && (!product.status || product.status === 'active')).length,
+      draftProducts: products.filter(product => product.status === 'draft').length,
+      inactiveProducts: products.filter(product => product.active !== true && product.status !== 'draft').length,
       setupRequired: [...setupByProduct.values()].filter(setup => !setup.steps.at(-1).complete).length,
       reviewCount,
       reviewFilter: req.query.review === '1',

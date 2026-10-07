@@ -62,11 +62,12 @@ function parseProductPayload(body) {
 }
 
 function parseFilePayload(body) {
+  const price = body?.file_price;
   return {
     ...(body.purpose!==undefined?{purpose:body.purpose,watermark_pdf:body.watermark_pdf==='on' && ['specs','tech_pack'].includes(body.purpose)}:{}),
     file_name: String(body?.file_name || '').trim(),
     file_type: String(body?.file_type || '').trim(),
-    file_price: Number(body?.file_price || 0),
+    ...(price !== undefined && String(price).trim() !== '' ? { file_price: Number(price) } : {}),
     active: body?.active === 'on' || body?.active === true || body?.active === '1',
   };
 }
@@ -665,19 +666,23 @@ router.get('/products/:productId/files/:fileId/edit', adminAuth, async (req, res
 
 router.post('/products/:productId/files/:fileId/edit', adminAuth, async (req, res) => {
   try {
-    const file = await ProductFile.findById(req.params.fileId);
+    const file = await ProductFile.findOne({ _id: req.params.fileId, product_id: req.params.productId });
     if (!file) {
       return res.redirect(`/admin/products/${req.params.productId}/files`);
     }
 
     const fileForm = parseFilePayload(req.body);
     const product = await Product.findById(req.params.productId);
-    if (product?.import_source_key && fileForm.active && !(fileForm.file_price > 0)) {
+    const effectivePrice = Object.hasOwn(fileForm, 'file_price') ? fileForm.file_price : file.file_price;
+    if (product?.import_source_key && fileForm.active && !(effectivePrice > 0)) {
       return res.redirect(buildRedirectUrl(`/admin/products/${product._id}/files`, 'Set a positive file price before activating this imported file.', 'error'));
     }
 
-    Object.assign(file, fileForm);
-    await file.save();
+    await ProductFile.updateOne(
+      { _id: file._id, product_id: req.params.productId },
+      { $set: fileForm },
+      { runValidators: true }
+    );
     res.redirect(buildRedirectUrl(`/admin/products/${req.params.productId}/files`, 'Pattern file updated successfully.'));
   } catch (err) {
     logError('Admin product file update error:', err);

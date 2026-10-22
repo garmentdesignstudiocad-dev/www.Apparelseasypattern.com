@@ -59,7 +59,7 @@
               <tr style="border-top:1px solid rgba(0,0,0,0.06)">
                 <td style="padding:0.75rem"><strong><%= f.file_name %></strong><% if(f.purpose==='other'&&(product.import_source_key||f.import_source_key)){ %><p class="admin-product-guidance">This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</p><% } %></td>
                 <td style="padding:0.75rem;text-align:center"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Needs Review':({dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[f.purpose]||'Other file') %><br><small><%= f.file_type %></small></td>
-                <td style="padding:0.75rem;text-align:center"><%= formatCurrency ? formatCurrency(f.file_price) : f.file_price %></td>
+                <td style="padding:0.75rem;text-align:center"><%= f.file_price == null ? 'Not set' : (formatCurrency ? formatCurrency(f.file_price) : f.file_price) %></td>
                 <td style="padding:0.75rem;text-align:center"><%= f.active ? 'Active' : 'Inactive' %></td>
                 <td style="padding:0.75rem;text-align:center">
                   <a class="btn small" href="/admin/products/<%= product._id %>/files/<%= f._id %>/edit"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Review Purpose':'Edit File' %></a>
@@ -74,5 +74,81 @@
       </section>
     </main>
     <%- include('../partials/footer') %>
-  </body>
+
+<style>
+.aep-owner-guide {
+  margin: 16px 0 24px;
+  padding: 18px;
+  border: 1px solid #dadde4;
+  border-radius: 12px;
+  background: #fafaf8;
+  color: #222;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.aep-owner-guide h3 { margin: 0 0 8px; }
+.aep-owner-guide p { margin: 6px 0; }
+.aep-owner-guide summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.aep-owner-guide details { margin-top: 10px; }
+</style>
+<script>
+// AEP_OWNER_FILE_GUIDE_V1
+document.addEventListener("DOMContentLoaded", () => {
+  const heading = [...document.querySelectorAll("h1,h2,h3")]
+    .find(el => ["Edit Product File", "Add Product File"].includes(el.textContent.trim()));
+
+  if (!heading) return;
+
+  const guide = document.createElement("aside");
+  guide.className = "aep-owner-guide";
+  guide.setAttribute("aria-label", "Pattern file management guide");
+
+  const title = document.createElement("h3");
+  title.textContent = "What should I do on this page?";
+  guide.appendChild(title);
+
+  const description = document.createElement("p");
+  description.textContent =
+    "This page describes one private product file. Review its contents before choosing the correct purpose, format, price and availability.";
+  guide.appendChild(description);
+
+  const details = document.createElement("details");
+  details.open = true;
+  const summary = document.createElement("summary");
+  summary.textContent = "Simple explanation of each field";
+  details.appendChild(summary);
+
+  const meanings = [
+    ["File Name", "Name used to identify this file."],
+    ["File Purpose", "What the customer receives: printable pattern, editable CAD file, tech pack or another verified category."],
+    ["Needs Review", "The file content or purpose has not been confirmed yet."],
+    ["Confirmed File Format", "The verified delivered format, such as PDF or RAR. An archive may contain different files inside."],
+    ["Customer Price", "Use the owner-approved price only. Existing values are not automatically approved."],
+    ["Offer This File / Active", "Makes this file option available for sale. Leave off until approved."],
+    ["Watermark Supporting PDF", "Optional protection for applicable supporting PDF documents."]
+  ];
+
+  for (const [label, explanation] of meanings) {
+    const p = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = label + ": ";
+    p.append(strong, document.createTextNode(explanation));
+    details.appendChild(p);
+  }
+
+  guide.appendChild(details);
+
+  const warning = document.createElement("p");
+  warning.textContent =
+    "Important: Reviewing a file does not mean approving its price or activating it. Verify the actual private file before offering it to customers.";
+  guide.appendChild(warning);
+
+  heading.insertAdjacentElement("afterend", guide);
+});
+</script>
+
+</body>
   </html>

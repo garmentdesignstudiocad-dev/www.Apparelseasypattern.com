@@ -39,6 +39,7 @@ for (const Model of [require('../models/mongo/Courier'),Lead, Book, Article, Pro
   Model.findOne = filter => query(rows.filter(row => matches(row, filter || {})), true);
   Model.findById = id => query(rows.filter(row => String(row._id) === String(id)), true);
   Model.countDocuments = async filter => rows.filter(row => matches(row, filter)).length;
+  Model.distinct = async (field, filter = {}) => [...new Set(rows.filter(row => matches(row, filter)).map(row => row[field]).filter(Boolean))];
   Model.prototype.save = async function() {
     await this.validate();
     if (this.slug && rows.some(row => row.slug === this.slug && String(row._id) !== String(this._id))) throw Object.assign(new Error('duplicate'), { code: 11000 });

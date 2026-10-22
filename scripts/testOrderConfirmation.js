@@ -20,9 +20,15 @@ async function run(){
   const sent=[];
   const email=require('../services/emailService').createEmailService({env:{EMAIL_HOST:'smtp.example.test',EMAIL_PORT:'587',EMAIL_SECURE:'false',EMAIL_USER:'test',EMAIL_PASSWORD:'test',EMAIL_FROM:'store@example.test'},createTransport:()=>({sendMail:async mail=>{sent.push(mail);return {accepted:[mail.to],messageId:mail.messageId};}})});
   const dispatch=notifications.createDispatcher({email,whatsapp:async()=>{throw new Error('Unexpected WhatsApp');}});
-  for(const physical of [true,false]){
+  const testAccount = await Customer.create({
+      name:'Order Customer',
+      email:'customer@example.test',
+      phone:'9876543210'
+    });
+    // AEP_TEST_AUTH_FIX
+    for(const physical of [true,false]){
    const shipping=physical?{address:'12 Test Street',city:'Tiruppur',state:'Tamil Nadu',pincode:'638751',courier_id:'fixture'}:{};
-   const result=await call(controller.postCheckout,{createRazorpayOrder:true,session:{},body:{customer:{name:'Order Customer',email:'customer@example.test',phone:'9876543210'},shipping,items:[{product_id:String(product._id),quantity:1,physical_quantity:physical?1:0}]}});
+   const result=await call(controller.postCheckout,{createRazorpayOrder:true,session:{customerId:String(testAccount._id)},body:{customer:{name:'Order Customer',email:'customer@example.test',phone:'9876543210'},shipping,items:[{product_id:String(product._id),quantity:1,physical_quantity:physical?1:0}]}});
    assert.equal(result.code,200);const id=result.body.order_id;
    let order=await Order.findById(id).lean();assert.equal(order.payment_status,'unpaid');assert.equal(await Log.countDocuments({reference_id:id}),0);
    const paymentId='pay_test'+(gateway.length-1),orderId=result.body.razorpay_order_id;

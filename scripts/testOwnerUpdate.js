@@ -72,7 +72,7 @@ async function run(){
   // Existing admin remains reachable; no real administrator or database is used.
   assert.equal((await request('/admin/products')).status,302);
   assert.equal((await request('/admin/login',{username:process.env.ADMIN_USERNAME,password:process.env.ADMIN_PASSWORD},'admin')).status,302);
-  response=await request('/admin/products',null,'admin');assert.equal(response.status,200);assert.match(response.text,/Pattern library configuration/);
+  response=await request('/admin/products',null,'admin');assert.equal(response.status,200);assert.match(response.text,/Products \/ Patterns/);
   assert.equal((await request('/admin/products/'+product._id+'/files',null,'admin')).status,200);
   assert.equal((await request('/admin/products/'+product._id+'/digital-files',null,'admin')).status,200);
   assert.equal((await request('/admin/leads',null,'admin')).status,200);

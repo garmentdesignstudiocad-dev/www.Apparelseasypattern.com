@@ -1,3 +1,4 @@
+const { collectMediaUpdate } = require('../services/productMediaIntegration');
 const { logError } = require('../services/safeLog');
 const express = require('express');
 const router = express.Router();
@@ -16,7 +17,67 @@ const Payment = require('../models/mongo/Payment');
 const adminUsername = process.env.ADMIN_USERNAME?.trim();
 const adminPassword = process.env.ADMIN_PASSWORD?.trim();
 
-router.use((req,res,next)=>req.method==='POST' && req.path!=='/login'?adminAuth(req,res,()=>require('../middleware/adminInputValidation')(req,res,next)):next());
+
+// AEP_MULTIPART_FINAL
+const {
+  uploadProductMedia,
+  validateProductMedia,
+  deleteUploadedFiles,
+  publishProductMedia
+} = require('../middleware/productMediaUpload');
+
+router.use((req, res, next) => {
+  if (req.method === 'GET' && /^\/products\/[a-f\d]{24}\/edit$/i.test(req.path) && req.session?.isAdmin) {
+    req.session.productMediaCsrf ||= require('node:crypto').randomBytes(32).toString('hex');
+  }
+  res.locals.productMediaCsrf = req.session?.productMediaCsrf || '';
+  next();
+});
+
+router.use((req, res, next) => {
+  if (req.method !== 'POST' || req.path === '/login') {
+    return next();
+  }
+
+  adminAuth(req, res, () => {
+    const productEdit =
+      /^\/products\/[a-f\d]{24}\/edit$/i.test(req.path);
+
+    if (productEdit && !req.is('multipart/form-data') &&
+        (!req.session.productMediaCsrf || req.body?._csrf !== req.session.productMediaCsrf)) {
+      return res.status(403).send('Reload the product editor and try again.');
+    }
+
+    if (!productEdit || !req.is('multipart/form-data')) {
+      return require('../middleware/adminInputValidation')(
+        req, res, next
+      );
+    }
+
+    res.once('finish', () => {
+      if (!req.aepMediaCommitted) {
+        deleteUploadedFiles(req).catch(() => {});
+      }
+    });
+
+    uploadProductMedia(req, res, error => {
+      if (error) return next(error);
+
+      if (!req.session.productMediaCsrf || typeof req.body._csrf !== 'string' ||
+          req.body._csrf !== req.session.productMediaCsrf) {
+        return deleteUploadedFiles(req).then(() => res.status(403).send('Reload the product editor and try again.'), next);
+      }
+
+      validateProductMedia(req, res, error => {
+        if (error) return next(error);
+
+        require('../middleware/adminInputValidation')(
+          req, res, next
+        );
+      });
+    });
+  });
+});
 
 
 function buildSlug(value) {
@@ -478,6 +539,20 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
       return res.redirect('/admin/products');
     }
 
+    // AEP_PRESERVE_EMPTY_PRICES
+    // Blank Admin prices must not convert existing null values to zero.
+    for (const field of [
+      'base_price',
+      'additional_size_price',
+      'physical_price',
+      'trial_price'
+    ]) {
+      if (req.body[field] === undefined ||
+          String(req.body[field]).trim() === '') {
+        productForm[field] = product[field];
+      }
+    }
+
     const adminAction = String(req.body.admin_action || '');
     if (adminAction === 'save') {
       productForm.active = product.active;
@@ -507,9 +582,10 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
         ));
       }
     }
-
-    Object.assign(product, productForm);
+Object.assign(product, productForm, collectMediaUpdate(product, req.body, req.files));
+    await publishProductMedia(req);
     await product.save();
+    req.aepMediaCommitted = true;
     res.redirect(buildRedirectUrl(
       `/admin/products/${product._id}/edit`,
       adminAction === 'save' ? 'Changes saved. Product publication status was unchanged.'

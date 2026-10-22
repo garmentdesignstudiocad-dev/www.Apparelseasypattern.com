@@ -45,6 +45,7 @@
     "knex": "^3.3.0",
     "mongodb": "^7.5.0",
     "mongoose": "^7.5.0",
+    "multer": "^2.4.0",
     "mysql2": "^3.23.2",
     "nodemailer": "^10.0.13",
     "pdf-lib": "^1.17.1",

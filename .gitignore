@@ -18,3 +18,25 @@ yarn-error.log*
 
 # Local shipment/customer dataset; never publish.
 /data/pincodes.csv
+
+/private/backups/
+
+/public/uploads/products/
+# AEP local backups and temporary test artifacts
+*.bak
+*.bak-*
+*.backup-*
+*.disabled-*
+*.cjs.disabled
+private/
+scripts/aepFileUiDemoPatch.cjs
+scripts/aepLocalTshirtCheck.cjs
+scripts/aepTshirtDemoBaseline.cjs
+scripts/testProductMediaPersistence.cjs
+scripts/backupLocalProducts.cjs
+scripts/importProductArchivesLocal.js
+public/uploads/
+*.pem
+*.key
+*.p12
+*.pfx

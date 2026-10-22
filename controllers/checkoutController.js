@@ -1358,10 +1358,7 @@ RAZORPAY CALLBACK
 */
 
 async function completeVerifiedPayment(order, savedOrderId, paymentId) {
-    // Invalid callbacks never change payment state. Retries cannot reset delivery status.
-    await Order.updateOne({_id:order._id,payment_verified_at:{$exists:false}},{$set:{payment_status:'paid',shipping_status:order.order_status==='cancelled'?'Cancelled':'Confirmed',order_status:order.order_status==='cancelled'?'cancelled':'confirmed',payment_reference:paymentId,razorpay_order_id:savedOrderId,payment_verified_at:order.payment_verified_at || new Date()},$addToSet:{notification_jobs:{key:'paid',event:'payment_success',status:'Paid'}}});
-    await Payment.findOneAndUpdate({order_id:order._id},{$set:{payment_purpose:'product_order',local_reference_id:String(order._id),razorpay_order_id:savedOrderId,razorpay_payment_id:paymentId,payment_provider:'razorpay',payment_id:paymentId,payment_status:'paid',amount:order.grand_total,currency:'INR'}},{upsert:true,runValidators:true});
-    await require('../services/notificationService').safeFlush('product_order',order._id);
+    return require('../services/productPaymentConfirmation')(order, savedOrderId, paymentId);
 }
 
 async function postRazorpayWebhook(req, res) {
@@ -1383,7 +1380,7 @@ async function postRazorpayWebhook(req, res) {
     if(verified.order_id!==order.razorpay_order_id || verified.amount!==Math.round(order.grand_total*100) || verified.currency!=='INR' || verified.status!=='captured' || verified.captured!==true || Number(verified.amount_refunded || 0)>0)return res.sendStatus(409);
     await completeVerifiedPayment(order,order.razorpay_order_id,payment.id);
     return res.sendStatus(200);
-  } catch(error) { logError('Payment webhook deferred:',error);return res.sendStatus(500); }
+  } catch(error) { logError('Payment webhook deferred:',error);return res.sendStatus(error.status === 409 ? 409 : 500); }
 }
 
 async function postRazorpayCallback(req, res) {
@@ -1409,7 +1406,7 @@ async function postRazorpayCallback(req, res) {
       await new Promise((resolve,reject)=>req.session.save(error=>error?reject(error):resolve()));
     }
     return res.redirect('/checkout/success?orderId='+order._id);
-  } catch(error) { logError('Razorpay callback error:',error);return res.status(500).send('Payment verification could not be completed. Please try again.'); }
+  } catch(error) { logError('Razorpay callback error:',error);return res.status(error.status === 409 ? 409 : 500).send(error.status === 409 ? 'A different payment is already recorded for this order. Contact the studio.' : 'Payment verification could not be completed. Please try again.'); }
 }
 
 /*

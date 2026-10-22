@@ -26,23 +26,69 @@ app.use((req,res,next)=>{
 });
 
 // Static assets
+if (process.env.AEP_ISOLATED_MEDIA_TEST === '1') {
+  const mediaId = process.env.AEP_MEDIA_TEST_ID || '';
+
+  if (!/^[a-z0-9_-]{8,50}$/.test(mediaId)) {
+    throw new Error('Invalid isolated media ID');
+  }
+
+  const isolatedMediaDir = path.join(
+    __dirname,
+    'private',
+    'verification',
+    'isolated-media',
+    mediaId,
+    'published'
+  );
+
+  app.use(
+    '/uploads/products',
+    express.static(isolatedMediaDir, {
+      fallthrough: false,
+      index: false,
+      dotfiles: 'deny'
+    })
+  );
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Verify the exact signed bytes before JSON parsing or session middleware.
 app.post('/checkout/razorpay-webhook', express.raw({type:'application/json',limit:'256kb'}), require('./controllers/checkoutController').postRazorpayWebhook);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(session({
+// AEP_MONGO7_SESSION
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && !process.env.MONGODB_URI) {
+  throw new Error('MONGODB_URI is required for production sessions');
+}
+
+if (isProduction && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET is required in production');
+}
+
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'admin-session-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60,
+    maxAge: 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
-  },
-}));
+    secure: isProduction ? 'auto' : false
+  }
+};
+
+if (isProduction) {
+  const Store = require('./services/mongoSessionStore');
+  sessionConfig.store = new Store({
+    uri: process.env.MONGODB_URI
+  });
+}
+
+app.use(session(sessionConfig));
 
 const { getSiteSettings } = require('./services/siteSettingsService');
 app.use(async (req, res, next) => {

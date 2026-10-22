@@ -80,8 +80,9 @@ async function run() {
     } finally {global.Date=RealDate;}
     console.log('PASS: Both-hub enabled partner selectable at 1 AM and noon India time.');
     const product = await Product.create({ name: 'Test pattern', slug: 'test-pattern', base_price: 100, physical_price: 50, trial_price: 50 });
+    const testCustomer = await require('../models/mongo/Customer').create({name:'Delivery Test Customer',email:'delivery-test@example.test',phone:'9876543210'});
     const checkout = (state, courier_id, quantities = { physical_quantity: 1 }, extra = {}) => invoke(controller.postCheckout, {
-      createRazorpayOrder: true, session: {}, body: {
+      createRazorpayOrder: true, session: {customerId:testCustomer._id}, body: {
         customer: { name: 'Test customer', email: 'delivery@example.test', phone: '9876543210' },
         items: [{ product_id: String(product._id), quantity: 1, ...quantities }],
         shipping: { address: 'Test address', city: 'Unmapped city', state, pincode: '638751', courier_id, ...extra }

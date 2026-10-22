@@ -13,7 +13,7 @@ router.get('/account/register',(req,res)=>page(req,res,'register'));
 router.post('/account/register',form,limit,async(req,res,next)=>{try{
  const name=typeof req.body.name==='string'?req.body.name.trim():'',mail=email(req.body.email),phone=typeof req.body.phone==='string'?req.body.phone.trim():'';
  const password=req.body.password;
- if(!name || name.length>200 || !validEmail(mail) || !/^\d{10}$/.test(phone) || typeof password!=='string' || password.length<12 || password.length>128 || password!==req.body.confirm_password)return page(req,res,'register','Enter valid details and matching passwords of 12–128 characters.',400);
+ if(!name || name.length>200 || !validEmail(mail) || !/^\d{10}$/.test(phone) || typeof password!=='string' || password.length<8 || password.length>128 || password!==req.body.confirm_password)return page(req,res,'register','Enter valid details and matching passwords of 8–128 characters.',400);
  const password_hash=await passwords.hash(password);
  // A guest contact can gain credentials, but historical orders are NEVER claimed by email.
  let customer=await Customer.findOneAndUpdate({email:mail,password_hash:{$exists:false}},{$set:{name,phone,password_hash}},{new:true});

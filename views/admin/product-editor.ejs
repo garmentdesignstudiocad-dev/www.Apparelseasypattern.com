@@ -1,3 +1,12 @@
+<style>
+/* AEP_EMPTY_PREVIEW_FIX */
+[data-aep-target][hidden] {
+  display: none !important;
+}
+.aep-media-removal[hidden] {
+  display: none !important;
+}
+</style>
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,6 +15,37 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/admin-products.css">
+<style id="aep-simple-editor-css">
+.aep-simple-toggle {
+  margin-left:auto;
+  padding:10px 16px;
+  border:1px solid #d8d4ce;
+  border-radius:10px;
+  background:#fff;
+  color:#292524;
+  font-weight:700;
+  cursor:pointer;
+}
+.admin-product-section > header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.admin-product-section.aep-collapsed > :not(header) {
+  display:none !important;
+}
+.aep-simple-hint {
+  margin:12px 0;
+  padding:12px 16px;
+  border-radius:10px;
+  background:#f5f3ee;
+  color:#44403c;
+  line-height:1.6;
+}
+@media(max-width:600px) {
+  .aep-simple-toggle {padding:8px 10px;font-size:12px}
+}
+</style>
 </head>
 <body class="admin-product-editor">
   <%- include('../partials/admin_header') %>
@@ -28,7 +68,7 @@
           <span class="admin-badge <%= productSetup.missing.length ? 'admin-badge--setup' : 'admin-badge--active' %>"><%= productSetup.missing.length ? 'Setup Required' : 'Ready for Review' %></span>
         </div>
         <ol class="admin-setup-steps">
-          <% productSetup.steps.forEach(step => { %><li class="<%= step.complete ? 'is-complete' : '' %>"><span aria-hidden="true"><%= step.complete ? '✓' : '○' %></span><%= step.label %></li><% }) %>
+          <% productSetup.steps.forEach(step => { %><li class="<%= step.complete ? 'is-complete' : '' %>"><span aria-hidden="true"><%= step.complete ? 'âœ“' : 'â—‹' %></span><%= step.label %></li><% }) %>
         </ol>
         <% if (productSetup.missing.length) { %>
           <div class="admin-setup-missing"><strong>Setup Required</strong><ul><% productSetup.missing.forEach(item => { %><li><%= item %></li><% }) %></ul></div>
@@ -36,7 +76,9 @@
       </section>
     <% } %>
 
-    <form class="admin-product-form" method="POST" action="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/edit' : '/admin/products' %>">
+    <% const uploadCsrf = typeof productMediaCsrf === "string" ? productMediaCsrf : ""; %>
+    <form class="admin-product-form" method="POST" enctype="<%= editingProduct ? 'multipart/form-data' : 'application/x-www-form-urlencoded' %>" action="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/edit' : '/admin/products' %>">
+      <input type="hidden" name="_csrf" value="<%= uploadCsrf %>">
       <input type="hidden" name="pattern_configuration" value="1">
       <% if (editingProduct) { %>
         <input type="hidden" name="status" value="<%= productForm.status || 'draft' %>">
@@ -62,10 +104,102 @@
       <section class="admin-product-section">
         <header><span>2</span><div><h2>Images &amp; Preview</h2><p>Show customers what the pattern or finished product represents.</p></div></header>
         <div class="admin-product-fields">
-          <label class="admin-product-field--wide"><span>Main Product Image</span><small>Paste the owner-approved image URL customers will see first in the product listing and details page. This field links to an image; it does not upload a file.</small><input type="url" name="main_image_url" value="<%= (productForm.images || [])[0] || '' %>" placeholder="https://example.com/slim-fit-shirt.jpg"><% if (!(productForm.images || []).length) { %><small class="admin-no-images">No main image added.</small><% } %></label>
-          <label class="admin-product-field--wide"><span>Gallery Images</span><small>Optional additional owner-approved product or sample image URLs, one per line. Customers can browse these after the main image.</small><textarea name="gallery_image_urls" rows="3" placeholder="https://example.com/slim-fit-shirt-detail.jpg"><%= (productForm.images || []).slice(1).join('\n') %></textarea></label>
-          <label><span>Finished Sample Image</span><small>Optional separate image of a finished sample, shown with product details. Add only an approved image URL.</small><input type="url" name="sample_image_url" value="<%= productForm.sample_image_url || '' %>" placeholder="https://example.com/sample.jpg"></label>
-          <label><span>Optional Product Video</span><small>Optional direct video link shown on the product page. Use an approved product video URL.</small><input type="url" name="video_url" value="<%= productForm.video_url || '' %>" placeholder="https://example.com/product-video.mp4"></label>
+
+<label class="admin-product-field--wide">
+  <span>Upload Main Product Photo</span>
+  <% if (editingProduct) { %>
+    <small>JPEG, PNG or WebP. Maximum 10 MB.</small>
+    <input type="file" name="main_image"
+      accept="image/jpeg,image/png,image/webp"
+      data-aep-preview="main">
+    <img data-aep-target="main"
+      alt="Main image preview"
+      <%= (productForm.images || [])[0] ? '' : 'hidden' %>
+      <% if ((productForm.images || [])[0]) { %>
+        src="<%= productForm.images[0] %>"
+      <% } %>
+      style="max-width:220px;max-height:220px;object-fit:contain">
+    <label class="aep-media-removal" <%= (productForm.images || [])[0] ? "" : "hidden" %>><input type="checkbox" name="remove_main_image">
+      Remove existing main image</label>
+  <% } else { %>
+    <input type="hidden" name="main_image_url" value="">
+    <small>Create a Draft first, then upload media.</small>
+  <% } %>
+</label>
+
+<label class="admin-product-field--wide">
+  <span>Upload Gallery Photos</span>
+  <% if (editingProduct) { %>
+    <small>Choose up to 10 images, maximum 10 MB each.</small>
+    <div class="aep-pdf-manage-link" style="margin:18px 0;padding:16px;border:1px solid #ddd;border-radius:10px">
+  <h3>PDF Pattern Documents</h3>
+  <p>Upload pattern layouts, size charts and technical PDF files securely.</p>
+  <% if (editingProduct) { %>
+    <a href="/admin/products/<%= editingProduct._id %>/digital-files">
+      Manage PDF / DXF Files
+    </a>
+  <% } else { %>
+    <p>Save the product first to manage PDF documents.</p>
+  <% } %>
+</div>
+<input type="file" name="gallery_images" multiple
+      accept="image/jpeg,image/png,image/webp"
+      data-aep-gallery>
+    <div data-aep-gallery-preview
+      style="display:flex;gap:10px;flex-wrap:wrap"></div>
+    <% (productForm.images || []).slice(1).forEach((src,index)=>{ %>
+      <div>
+        <img src="<%= src %>" alt="Gallery preview"
+          style="max-width:120px;max-height:120px">
+        <label><input type="checkbox"
+          name="remove_gallery_image"
+          value="<%= index %>"> Remove</label>
+      </div>
+    <% }) %>
+  <% } else { %>
+    <input type="hidden" name="gallery_image_urls" value="">
+  <% } %>
+</label>
+
+<label>
+  <span>Finished Upload Sample Photo</span>
+  <% if (editingProduct) { %>
+    <input type="file" name="sample_image"
+      accept="image/jpeg,image/png,image/webp"
+      data-aep-preview="sample">
+    <img data-aep-target="sample" alt="Sample preview"
+      <%= productForm.sample_image_url ? '' : 'hidden' %>
+      <% if (productForm.sample_image_url) { %>
+        src="<%= productForm.sample_image_url %>"
+      <% } %>
+      style="max-width:180px;max-height:180px">
+    <label class="aep-media-removal" <%= productForm.sample_image_url ? "" : "hidden" %>><input type="checkbox" name="remove_sample_image">
+      Remove sample image</label>
+  <% } else { %>
+    <input type="hidden" name="sample_image_url" value="">
+  <% } %>
+</label>
+
+<label>
+  <span>Upload Product Video</span>
+  <% if (editingProduct) { %>
+    <small>MP4 or WebM. Maximum 100 MB.</small>
+    <input type="file" name="product_video"
+      accept="video/mp4,video/webm"
+      data-aep-preview="video">
+    <video data-aep-target="video" controls
+      preload="metadata"
+      <%= productForm.video_url ? '' : 'hidden' %>
+      <% if (productForm.video_url) { %>
+        src="<%= productForm.video_url %>"
+      <% } %>
+      style="width:100%;max-width:320px"></video>
+    <label class="aep-media-removal" <%= productForm.video_url ? "" : "hidden" %>><input type="checkbox" name="remove_video">
+      Remove current video</label>
+  <% } else { %>
+    <input type="hidden" name="video_url" value="">
+  <% } %>
+</label>
         </div>
       </section>
 
@@ -77,7 +211,7 @@
             <ul class="admin-product-file-list">
               <% productFiles.forEach(file => { %>
                 <% const reviewRequired=file.purpose==='other'&&(editingProduct.import_source_key||file.import_source_key); %>
-                <li><div><strong><%= file.file_name %></strong><small>Purpose: <%= reviewRequired ? 'Needs Review' : ({other:'Other file',dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[file.purpose] || 'Other file') %><% if (!file.active) { %> · Inactive<% } %></small><% if (reviewRequired) { %><small>This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</small><% } %></div><a class="btn small ghost" href="/admin/products/<%= editingProduct._id %>/files/<%= file._id %>/edit"><%= reviewRequired ? 'Set Purpose' : 'Edit File' %></a></li>
+                <li><div><strong><%= file.file_name %></strong><small>Purpose: <%= reviewRequired ? 'Needs Review' : ({other:'Other file',dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[file.purpose] || 'Other file') %><% if (!file.active) { %> Â· Inactive<% } %></small><% if (reviewRequired) { %><small>This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</small><% } %></div><a class="btn small ghost" href="/admin/products/<%= editingProduct._id %>/files/<%= file._id %>/edit"><%= reviewRequired ? 'Set Purpose' : 'Edit File' %></a></li>
               <% }) %>
             </ul>
           <% } else { %><p class="admin-product-empty">No product files have been added yet.</p><% } %>
@@ -100,7 +234,7 @@
         <header><span>5</span><div><h2>Pricing &amp; Paid Options</h2><p>Set what customers pay for each available option.</p></div></header>
         <div class="admin-option-list">
           <label class="admin-option-row"><input type="checkbox" name="printable_enabled" <%= productForm.pattern_options?.printable !== false ? 'checked' : '' %>><span><strong>Printable Soft Copy</strong><small>The ready-to-print pattern file for customers who want to print and use it. Requires its private file and confirmed price.</small></span></label>
-          <label class="admin-product-field"><span>Printable Soft Copy Price</span><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="base_price" min="0" step="0.01" value="<%= productForm.base_price ?? '' %>" placeholder="Final price"></label>
+          <label class="admin-product-field"><span>Printable Soft Copy Price</span><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use â‚¹0 as a temporary price.</small><input type="number" name="base_price" min="0" step="0.01" value="<%= productForm.base_price ?? '' %>" placeholder="Final price"></label>
           <label class="admin-product-field"><span>Additional Size Price</span><small>Extra amount charged for each additional selected size, if applicable. Leave blank until confirmed.</small><input type="number" name="additional_size_price" min="0" step="0.01" value="<%= productForm.additional_size_price ?? '' %>" placeholder="Optional"></label>
           <div class="admin-option-row admin-option-row--info"><span><strong>Editable DXF</strong><small>An editable professional pattern file. It is a separate paid option, not the normal printable pattern. Confirm its file purpose and price under Pattern Files.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
           <div class="admin-option-row admin-option-row--info"><span><strong>Basic Tech Pack</strong><small>Additional garment construction or specification information sold as a separate paid option.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
@@ -112,10 +246,10 @@
         <header><span>6</span><div><h2>Physical Delivery</h2><p>Configure pattern options that require manual courier fulfilment.</p></div></header>
         <div class="admin-product-fields">
           <label class="admin-option-row"><input type="checkbox" name="physical_enabled" <%= productForm.pattern_options?.physical !== false ? 'checked' : '' %>><span><strong>Physical Pattern</strong><small>Select this only when customers can receive a physical printed or cut pattern.</small></span></label>
-          <label><span>Physical Pattern Price</span><small>Enter the amount the customer must pay for this option, before any applicable shipping. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="physical_price" min="0" step="0.01" value="<%= productForm.physical_price ?? '' %>" placeholder="Final price"></label>
-          <label><span>Physical Price by Size</span><small>Optional confirmed amount per selected size, one per line. Example: M=500. Leave blank if one physical price applies to all sizes. Do not use ₹0 as a temporary price.</small><textarea name="size_prices" rows="3"><%= (productForm.size_prices || []).map(row => row.size + '=' + row.price).join('\n') %></textarea></label>
+          <label><span>Physical Pattern Price</span><small>Enter the amount the customer must pay for this option, before any applicable shipping. Leave unset until the final price is confirmed. Do not use â‚¹0 as a temporary price.</small><input type="number" name="physical_price" min="0" step="0.01" value="<%= productForm.physical_price ?? '' %>" placeholder="Final price"></label>
+          <label><span>Physical Price by Size</span><small>Optional confirmed amount per selected size, one per line. Example: M=500. Leave blank if one physical price applies to all sizes. Do not use â‚¹0 as a temporary price.</small><textarea name="size_prices" rows="3"><%= (productForm.size_prices || []).map(row => row.size + '=' + row.price).join('\n') %></textarea></label>
           <label class="admin-option-row"><input type="checkbox" name="trial_enabled" <%= productForm.pattern_options?.trial !== false ? 'checked' : '' %>><span><strong>Trial Sample</strong><small>Select this only when you can make an optional paid sample for customers to inspect.</small></span></label>
-          <label><span>Trial Sample Price</span><small>Enter the amount the customer must pay for this sample. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="trial_price" min="0" step="0.01" value="<%= productForm.trial_price ?? '' %>" placeholder="Final price"></label>
+          <label><span>Trial Sample Price</span><small>Enter the amount the customer must pay for this sample. Leave unset until the final price is confirmed. Do not use â‚¹0 as a temporary price.</small><input type="number" name="trial_price" min="0" step="0.01" value="<%= productForm.trial_price ?? '' %>" placeholder="Final price"></label>
           <label><span>Printable Dimensions / Format Notes</span><small>Optional confirmed print dimensions or format notes shown to customers.</small><input name="printable_dimensions" maxlength="500" value="<%= productForm.printable_dimensions || '' %>"></label>
         </div>
       </section>
@@ -146,7 +280,7 @@
         <div class="admin-product-fields">
           <label><span>SEO Title</span><small>Optional search result title. Leave blank to use the product name.</small><input name="seo_title" maxlength="200" value="<%= productForm.seo_title || '' %>"></label>
           <label><span>SEO Description</span><small>Optional short summary that may appear in search results. Describe only confirmed product details.</small><textarea name="seo_description" maxlength="320" rows="3"><%= productForm.seo_description || '' %></textarea></label>
-          <label class="admin-product-field--wide"><span>Amazon Listing URL</span><small>Optional HTTPS link to this product’s own Amazon listing. Leave blank if it has no listing.</small><input type="url" name="amazon_listing_url" value="<%= productForm.amazon_listing_url || '' %>" placeholder="https://www.amazon.in/..."></label>
+          <label class="admin-product-field--wide"><span>Amazon Listing URL</span><small>Optional HTTPS link to this productâ€™s own Amazon listing. Leave blank if it has no listing.</small><input type="url" name="amazon_listing_url" value="<%= productForm.amazon_listing_url || '' %>" placeholder="https://www.amazon.in/..."></label>
         </div>
       </details>
 
@@ -169,10 +303,214 @@
   <script>
     document.querySelector('[data-activate-product]')?.addEventListener('click', event => {
       const missing = JSON.parse(decodeURIComponent(event.currentTarget.dataset.setupMissing || '%5B%5D'));
-      if (missing.length && !window.confirm(`This product still needs setup:\n\n• ${missing.join('\n• ')}\n\nContinue to activation?`)) {
+      if (missing.length && !window.confirm(`This product still needs setup:\n\nâ€¢ ${missing.join('\nâ€¢ ')}\n\nContinue to activation?`)) {
         event.preventDefault();
       }
     });
   </script>
+<script id="aep-simple-editor-js">
+(function(){
+  const sections = [...document.querySelectorAll(
+    '.admin-product-form > section.admin-product-section'
+  )];
+
+  sections.forEach((section,index)=>{
+    const header = section.querySelector(':scope > header');
+    if(!header) return;
+
+    const title = header.querySelector('h2');
+    if(!title) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'aep-simple-toggle';
+
+    const defaultOpen = index === 0 || title.textContent.includes('Status');
+
+    function setOpen(open){
+      section.classList.toggle('aep-collapsed',!open);
+      button.textContent = open ? 'Hide -' : 'Open +';
+      button.setAttribute('aria-expanded',String(open));
+    }
+
+    button.addEventListener('click',()=>{
+      setOpen(section.classList.contains('aep-collapsed'));
+    });
+
+    header.appendChild(button);
+    setOpen(defaultOpen);
+  });
+
+  const status = sections.find(section =>
+    section.querySelector('h2')?.textContent.includes('Status')
+  );
+
+  if(status){
+    const hint=document.createElement('div');
+    hint.className='aep-simple-hint';
+    hint.textContent='Save Changes = keep the current visibility. Activate Product = make available to customers after review. Deactivate Product = hide from customers.';
+    status.appendChild(hint);
+  }
+
+  const footer=document.querySelector('.admin-product-form-actions');
+  if(footer){
+    const hint=document.createElement('p');
+    hint.className='aep-simple-hint';
+    hint.textContent='Tip: Open only the section you want to edit. Saving a draft does not activate it.';
+    footer.parentNode.insertBefore(hint,footer);
+  }
+})();
+</script>
+
+<script>
+// AEP_UPLOAD_FINAL
+(() => {
+  const urls = [];
+
+  function previewUrl(file) {
+    const url = URL.createObjectURL(file);
+    urls.push(url);
+    return url;
+  }
+
+  document.querySelectorAll('[data-aep-preview]')
+    .forEach(input => {
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        const target = document.querySelector(
+          '[data-aep-target="' +
+          input.dataset.aepPreview + '"]'
+        );
+
+        if (!target) return;
+
+        target.src = previewUrl(file);
+        target.hidden = false;
+
+        if (target.tagName === 'VIDEO') target.load();
+      });
+    });
+
+  document.querySelector('[data-aep-gallery]')
+    ?.addEventListener('change', event => {
+      const box = document.querySelector(
+        '[data-aep-gallery-preview]'
+      );
+
+      if (!box) return;
+      box.replaceChildren();
+
+      for (const file of event.target.files) {
+        const img = document.createElement('img');
+        img.src = previewUrl(file);
+        img.alt = file.name;
+        img.style.maxWidth = '120px';
+        img.style.maxHeight = '120px';
+        box.appendChild(img);
+      }
+    });
+
+  window.addEventListener('pagehide', () => {
+    urls.forEach(url => URL.revokeObjectURL(url));
+  });
+})();
+</script>
+
+<script id="aep-main-pdf-preview-support">
+(function () {
+  const picker = document.querySelector('input[name="main_image"]');
+  if (!picker) return;
+
+  picker.accept = ".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf";
+
+  const hint = document.createElement("p");
+  hint.style.cssText = "font-size:13px;color:#6b564a;margin:8px 0";
+  hint.textContent = "JPEG, PNG, WebP or PDF. PDF first page becomes the product picture automatically.";
+  picker.insertAdjacentElement("afterend", hint);
+
+  let busy = false;
+  const form = picker.closest("form");
+
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.onload = () => {
+        if (!window.pdfjsLib) return reject(new Error("PDF renderer unavailable"));
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = () => reject(new Error("PDF renderer could not load. Check internet connection."));
+      document.head.appendChild(script);
+    });
+  }
+
+  picker.addEventListener("change", async function () {
+    const file = picker.files && picker.files[0];
+    if (!file || !(file.type === "application/pdf" || /\.pdf$/i.test(file.name))) return;
+
+    if (busy) return;
+    busy = true;
+    hint.textContent = "Converting PDF first page into product picture...";
+    picker.disabled = true;
+
+    try {
+      if (file.size > 20 * 1024 * 1024) {
+        throw new Error("PDF must be 20 MB or smaller.");
+      }
+
+      const lib = await loadPdfJs();
+      const pdf = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+      const page = await pdf.getPage(1);
+      const base = page.getViewport({scale:1});
+      const scale = Math.min(2, 1800 / Math.max(base.width, base.height));
+      const viewport = page.getViewport({scale});
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+
+      const context = canvas.getContext("2d", {alpha:false});
+      await page.render({canvasContext:context,viewport}).promise;
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve,"image/png"));
+      if (!blob || blob.size > 10 * 1024 * 1024) {
+        throw new Error("Converted picture exceeds 10 MB.");
+      }
+
+      const png = new File(
+        [blob],
+        file.name.replace(/\.pdf$/i,"") + "-preview.png",
+        {type:"image/png"}
+      );
+
+      const transfer = new DataTransfer();
+      transfer.items.add(png);
+      picker.files = transfer.files;
+
+      hint.textContent = "Ready: PDF first page converted to PNG. Click Save Changes to upload.";
+    } catch (error) {
+      picker.value = "";
+      hint.textContent = "PDF conversion failed: " + error.message;
+      alert(hint.textContent);
+    } finally {
+      picker.disabled = false;
+      busy = false;
+    }
+  });
+
+  if (form) {
+    form.addEventListener("submit", function (event) {
+      if (busy) {
+        event.preventDefault();
+        alert("Wait until PDF conversion finishes.");
+      }
+    }, true);
+  }
+})();
+</script>
 </body>
 </html>

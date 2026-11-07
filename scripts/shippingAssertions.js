@@ -4,7 +4,7 @@ const os=require('node:os');
 const path=require('node:path');
 module.exports=async({models,request,input})=>{
   const {Order,DeliverySettings,Courier,Product,NotificationLog}=models;
-  await Courier.create({_id:'test-courier',name:'Test Courier',active:true,region_ids:['south'],pincodes:['560*'],tracking_url:'https://courier.example.test/{awb}'});
+  await Courier.create({_id:'test-courier',name:'Test Courier',active:true,region_ids:['south'],pincodes:['560*'],tracking_url:'https://courier.example.test/{awb}',charge:77,charge_approved:true});
   await models.DeliveryZone.updateOne({_id:'south'},{$addToSet:{partner_ids:'test-courier'}});
   await DeliverySettings.updateOne({key:'default'},{$set:{enabled:false}});
   const options=JSON.parse((await request('/checkout/delivery-info?state=Karnataka')).html);
@@ -19,7 +19,7 @@ module.exports=async({models,request,input})=>{
   const result=JSON.parse((await request('/checkout/payment-method/proceed',{},'shipping')).html);
   let order=await Order.findById(result.order_id);
   if(!order)order=await Order.findOne({razorpay_order_id:result.razorpay_order_id});
-  assert.equal(order.delivery_charge,undefined);assert.equal(order.shipping_arranged_separately,false);assert.equal(order.courier_id,'test-courier');
+  assert.equal(order.delivery_charge,77);assert.equal(order.shipping_arranged_separately,false);assert.equal(order.courier_id,'test-courier');
   const page=await request('/admin/orders/'+order._id,undefined,'admin');
   const csrf=page.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
   const shipment={_csrf:csrf,courier_id:'test-courier',tracking_number:'AWB123',dispatch_date:'2026-09-28',shipping_status:'Shipped'};

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title><%= title || 'Shopping Cart' %> — Garment Pattern Store</title>
+  <title><%= title || 'Shopping Cart' %> — <%= siteSettings?.store_name || 'Apparel Easy Patterns' %></title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1027,8 +1027,9 @@
                         <%= file.file_name %>
 
                         <span class="cart-option-price">
-                          +₹<%= Number(file.file_price || 0).toLocaleString('en-IN') %>
+                          +₹<%= Number((file.file_price || 0) * (file.price_per_selected_size ? (item.selected_sizes || []).length : 1) * Number(item.quantity || 0)).toLocaleString('en-IN') %>
                         </span>
+                        <% if(file.price_per_selected_size){ %><small>₹<%= Number(file.file_price || 0).toLocaleString('en-IN') %> per size × <%= (item.selected_sizes || []).length %> selected sizes × quantity <%= Number(item.quantity || 0) %></small><% } %>
 
                       </span>
 

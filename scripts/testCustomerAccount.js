@@ -34,7 +34,7 @@ async function run(){
   csrf=await token('/login','a');oldCookie=jars.a;assert.equal((await request('/account/login',{email:'A@EXAMPLE.TEST',password,_csrf:csrf})).status,303);assert.notEqual(jars.a,oldCookie);
   await request('/account/register',{...registration,name:'Account B',email:'b@example.test',_csrf:await token('/account/register','b')},'b');
   const Zone=require('../models/mongo/DeliveryZone');await require('../services/deliveryService').configureRegions();
-  await require('../models/mongo/Courier').create([{_id:'south-test',name:'South Courier',active:true},{_id:'north-test',name:'North Courier',active:true}]);
+  await require('../models/mongo/Courier').create([{_id:'south-test',name:'South Courier',active:true,charge:0,charge_approved:true},{_id:'north-test',name:'North Courier',active:true,charge:0,charge_approved:true}]);
   await Zone.updateOne({_id:'south'},{$set:{partner_ids:['south-test']}});await Zone.updateOne({_id:'north'},{$set:{states:['punjab'],partner_ids:['north-test']}});
   const orders=[];
   for(const [who,physical] of [['a',false],['b',false],['a',true],['b',true]]){

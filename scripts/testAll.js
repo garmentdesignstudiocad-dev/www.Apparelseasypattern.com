@@ -7,7 +7,7 @@ async function run(){
  try{
   const files=fs.readdirSync(__dirname).filter(name=>/^test.*\.js$/.test(name)&&!['testAll.js','testProductionStartup.js'].includes(name));
   for(const file of files){
-   const env={...process.env,NODE_ENV:'development',MONGODB_URI:mongo.getUri(),NOTIFICATIONS_WORKER_ENABLED:'false',SESSION_SECRET:'isolated-suite-session-secret',DB_HOST:'127.0.0.1',DB_PORT:'1',GMAIL_USER:'',GMAIL_APP_PASSWORD:'',EMAIL_HOST:'',EMAIL_USER:'',EMAIL_PASSWORD:'',EMAIL_FROM:'',WHATSAPP_ACCESS_TOKEN:'',RESEND_API_KEY:''};
+   const env={...process.env,NODE_OPTIONS:'--require '+JSON.stringify(path.join(__dirname,'isolatedTestGuard.js')),NODE_ENV:'development',MONGODB_URI:mongo.getUri(),NOTIFICATIONS_WORKER_ENABLED:'false',SESSION_SECRET:'isolated-suite-session-secret',DB_HOST:'127.0.0.1',DB_PORT:'1',SMTP_HOST:'',SMTP_PORT:'',SMTP_SECURE:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:'',LEAD_NOTIFICATION_TO:'',RAZORPAY_KEY_ID:'',RAZORPAY_KEY_SECRET:'',RAZORPAY_WEBHOOK_SECRET:'',GMAIL_USER:'',GMAIL_APP_PASSWORD:'',EMAIL_HOST:'',EMAIL_USER:'',EMAIL_PASSWORD:'',EMAIL_FROM:'',WHATSAPP_ACCESS_TOKEN:'',RESEND_API_KEY:''};
    const result=await new Promise(resolve=>{let output='';const child=spawn(process.execPath,[path.join(__dirname,file)],{env,stdio:['ignore','pipe','pipe']});child.stdout.on('data',b=>output+=b);child.stderr.on('data',b=>output+=b);const timer=setTimeout(()=>child.kill(),180000);child.on('exit',code=>{clearTimeout(timer);resolve({file,code,output});});});
    results.push(result);console.log((result.code===0?'PASS ':'FAIL ')+file);if(result.code!==0)console.log(result.output.slice(-2200));
   }

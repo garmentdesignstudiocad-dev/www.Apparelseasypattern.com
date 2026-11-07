@@ -38,6 +38,7 @@
               <label><strong>Watermark Supporting PDF</strong><small>Optional for confirmed measurement/specification or tech-pack PDFs. Do not enable for technical pattern layouts or signed files.</small><input name="watermark_pdf" type="checkbox" <%= fileForm.watermark_pdf?'checked':'' %>> Add the brand and order reference to a purchased PDF</label>
               <label><strong>Confirmed File Format</strong><small>The actual file format, such as PDF, DXF or ZIP. Do not guess from the filename.</small><input name="file_type" required value="<%= fileForm.file_type || '' %>"></label>
               <label><strong>Customer Price</strong><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input name="file_price" type="number" min="0" step="0.01" value="<%= fileForm.file_price ?? '' %>" placeholder="Final price"></label>
+              <label><strong>Price per selected size</strong><small>For a DXF or HPGL pattern, charge the entered file price once for each distinct size selected. Leave unchecked for flat-price files.</small><input type="checkbox" name="price_per_selected_size" <%= fileForm.price_per_selected_size ? 'checked' : '' %>></label>
               <label><strong>Offer This File</strong><small>Only active, correctly identified files can be offered as a paid option. The product also needs a confirmed positive customer price.</small><input type="checkbox" name="active" <%= fileForm.active ? 'checked' : '' %>> Active</label>
               <div style="margin-top:0.5rem"><button class="btn primary" type="submit"><%= editingFile ? 'Save File Changes' : 'Save Product File' %></button></div>
             </form>
@@ -59,7 +60,7 @@
               <tr style="border-top:1px solid rgba(0,0,0,0.06)">
                 <td style="padding:0.75rem"><strong><%= f.file_name %></strong><% if(f.purpose==='other'&&(product.import_source_key||f.import_source_key)){ %><p class="admin-product-guidance">This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</p><% } %></td>
                 <td style="padding:0.75rem;text-align:center"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Needs Review':({dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[f.purpose]||'Other file') %><br><small><%= f.file_type %></small></td>
-                <td style="padding:0.75rem;text-align:center"><%= f.file_price == null ? 'Not set' : (formatCurrency ? formatCurrency(f.file_price) : f.file_price) %></td>
+                <td style="padding:0.75rem;text-align:center"><%= f.file_price == null ? 'Not set' : (formatCurrency ? formatCurrency(f.file_price) : f.file_price) %><% if(f.price_per_selected_size){ %><br><small>per selected size</small><% } %></td>
                 <td style="padding:0.75rem;text-align:center"><%= f.active ? 'Active' : 'Inactive' %></td>
                 <td style="padding:0.75rem;text-align:center">
                   <a class="btn small" href="/admin/products/<%= product._id %>/files/<%= f._id %>/edit"><%= f.purpose==='other'&&(product.import_source_key||f.import_source_key)?'Review Purpose':'Edit File' %></a>

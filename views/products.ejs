@@ -14,6 +14,7 @@
     : typeof title !== 'undefined' && title
       ? title
       : 'Available Patterns | Apparel Easy Patterns' %></title>
+  <% if(typeof description === 'string' && description){ %><meta name="description" content="<%= description %>"><% } %>
 
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/customer-experience.css">
@@ -151,22 +152,16 @@
                 <p>
                   <%= p.description
                     ? p.description.substring(0, 110)
-                    : 'Customise your pattern with the options that suit your workflow.' %>
+                    : 'View available sizes, files and ordering options.' %>
                 </p>
 
                 <div class="fashion-product__bottom">
 
                   <strong class="fashion-price">
-                    <%= p.status === 'coming_soon'
-                      ? 'Coming soon'
-                      : 'From ' %>
-
-                    ₹<%= p.status === 'coming_soon'
-                      ? ''
-                      : Number(p.base_price || 0).toLocaleString(
-                          'en-IN',
-                          { minimumFractionDigits: 2 }
-                        ) %>
+                    <%= p.status === 'coming_soon' ? 'Coming soon'
+                      : p.base_price != null && String(p.base_price).trim() !== '' && Number.isFinite(Number(p.base_price)) && Number(p.base_price)>0
+                        ? 'From ₹'+Number(p.base_price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})
+                        : 'Price on enquiry' %>
                   </strong>
 
                   <% if (canVisit('/product/' + String(p.slug))) { %>

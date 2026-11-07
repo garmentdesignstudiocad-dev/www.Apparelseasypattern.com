@@ -18,7 +18,7 @@ async function run(){
     process.env.PATTERN_FILES_DIR=link;await assert.rejects(digital.privateRoot,/outside public/);
     await fs.unlink(link);
     process.env.PATTERN_FILES_DIR=path.resolve(__dirname,'../public/patterns');assert.throws(digital.root,/outside public/);
-    const pricing=require('../services/orderPricing');assert.deepEqual(pricing.totals(2000),{subtotal:2000,tax:360,total:2360,amount:236000});
+    const pricing=require('../services/orderPricing');assert.deepEqual(pricing.totals(2000),{subtotal:2000,courier:0,tax:360,total:2360,amount:236000});assert.deepEqual(pricing.totals(2000,300),{subtotal:2000,courier:300,tax:360,total:2660,amount:266000});
     console.log('PASS: explicit production APP_BASE_URL, HTTPS enforcement, no localhost/credential/path URLs, local development URL, private storage, traversal/junction rejection, and integer-paise GST totals.');
   }finally{
     for(const key of ['NODE_ENV','APP_BASE_URL','PUBLIC_BASE_URL','PATTERN_FILES_DIR']){if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key];}

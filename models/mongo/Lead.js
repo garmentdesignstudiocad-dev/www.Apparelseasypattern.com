@@ -8,6 +8,7 @@ for (const key of ['name', 'email', 'whatsapp']) fields[key].required = function
   return key==='email' || source!=='/books/notify';
 };
 const schema = new Schema({ ...fields,
+  business_notification_pending:{type:Boolean,default:true,index:true},
   signup_key:{type:String},consent_at:Date,consent_text:{type:String,maxlength:500},
   studying:{type:String,maxlength:300,default:''},current_role:{type:String,maxlength:300,default:''},
   notification_jobs:{...require('./communicationFields').notification_jobs,default:()=>[]},

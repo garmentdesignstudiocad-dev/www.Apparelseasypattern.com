@@ -736,28 +736,6 @@ async function postCheckout(
         );
 
 
-      const filesTotal =
-        selectedFiles.reduce(
-          (sum, file) =>
-            sum +
-            Number(
-              file.file_price || 0
-            ),
-          0
-        );
-
-
-      const addonsTotal =
-        selectedAddons.reduce(
-          (sum, addon) =>
-            sum +
-            Number(
-              addon.price || 0
-            ),
-          0
-        );
-
-
       const physicalPrice =
         Number(
           product.physical_price || 0
@@ -775,12 +753,6 @@ async function postCheckout(
       DIGITAL TOTAL
       -----------------------------------------------------
       */
-
-      const itemUnitTotal =
-        unitPrice +
-        filesTotal +
-        addonsTotal;
-
 
       const optionError=require('../services/patternOptions').validate(product,selectedFiles,item);
       if(optionError)return res.status(400).json({error:optionError});
@@ -869,6 +841,7 @@ async function postCheckout(
                 Number(
                   file.file_price || 0
                 ),
+              price_per_selected_size: file.price_per_selected_size === true,
 
             })
           ),
@@ -931,6 +904,10 @@ async function postCheckout(
       selectedCourier=courierOptions.find(row=>row._id===courierId);
       if(!selectedCourier)return res.status(400).json({error:'The selected delivery partner is unavailable for this dispatch hub. Refresh delivery options.'});
     }
+    const courierChargePaise=deliveryRequired?require('../services/courierService').chargePaise(selectedCourier):0;
+    if(deliveryRequired && courierChargePaise===null)return res.status(400).json({error:'This courier has no approved delivery charge yet. Please contact the studio before placing a physical order.'});
+    if(req.createRazorpayOrder && Number.isSafeInteger(shippingData.courier_charge_snapshot_paise) && shippingData.courier_charge_snapshot_paise!==courierChargePaise)return res.status(409).json({error:'The courier charge changed. Return to checkout to review the updated total before paying.'});
+    const courierCharge=courierChargePaise/100;
 
 
     /*
@@ -956,7 +933,8 @@ async function postCheckout(
     =======================================================
     */
 
-    const taxAmount = pricing.totals(taxableAmount).tax;
+    const totals=pricing.totals(taxableAmount,courierCharge);
+    const taxAmount = totals.tax;
 
 
     /*
@@ -965,7 +943,7 @@ async function postCheckout(
     =======================================================
     */
 
-    const grandTotal = pricing.totals(productSubtotal).total;
+    const grandTotal = totals.total;
 
 
     /*
@@ -1000,16 +978,17 @@ async function postCheckout(
       req.session.paymentDraft = {
         customer: { name: customerPayload.name, email, phone: customerPhone },
         items,
-        shipping: deliveryRequired ? { address, city, state, pincode, courier_id:courierId } : {},
+        shipping: deliveryRequired ? { address, city, state, pincode, courier_id:courierId, courier_charge_snapshot_paise:courierChargePaise } : {},
         summary: {
           destination: destination,
           product_total: Number(productSubtotal.toFixed(2)),
+          courier_name: selectedCourier?.name || '',
+          courier_charge: courierCharge,
           tax_rate: GST_RATE,
           tax_amount: Number(taxAmount.toFixed(2)),
           grand_total: Number(grandTotal.toFixed(2)),
           delivery_required: deliveryRequired,
           estimated_delivery: deliveryInfo.estimated_delivery || 'Not configured',
-          courier_name: selectedCourier?.name || '',
           shipping_arranged_separately:false,
         },
       };
@@ -1029,6 +1008,7 @@ async function postCheckout(
       await Order.create({
         shipping_address:deliveryRequired?address:'',shipping_city:deliveryRequired?city:'',shipping_state:deliveryRequired?state:'',
         courier_id:selectedCourier?._id || '',courier_name:selectedCourier?.name || '',
+        delivery_charge:courierCharge,
         customer_selected_courier:deliveryRequired,
         delivery_flow_version:2,
         destination_region_id:destination.region_id, destination_region:destination.region,dispatch_location:destination.dispatch_location,
@@ -1126,10 +1106,7 @@ async function postCheckout(
     const razorpayOrder =
       await razorpay.orders.create({
 
-        amount:
-          Math.round(
-            grandTotal * 100
-          ),
+        amount: totals.amount,
 
         currency:
           'INR',
@@ -1160,6 +1137,8 @@ async function postCheckout(
             String(
               taxAmount
             ),
+          courier_charge:
+            String(courierCharge),
 
         },
 

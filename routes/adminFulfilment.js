@@ -23,11 +23,15 @@ router.post('/settings/couriers',async(req,res)=>{
 
     const delivery_min_days=req.body.delivery_min_days?Number(req.body.delivery_min_days):null,delivery_max_days=req.body.delivery_max_days?Number(req.body.delivery_max_days):null;
     if((delivery_min_days!==null || delivery_max_days!==null) && (!Number.isInteger(delivery_min_days) || !Number.isInteger(delivery_max_days) || delivery_min_days<1 || delivery_max_days<delivery_min_days || delivery_max_days>365))return res.status(400).send('Enter both delivery estimates, from 1 to 365 days, with maximum at least minimum.');
+    const chargeText=text(req.body,'charge',32),chargeApproved=req.body.charge_approved==='on'||req.body.charge_approved===true;
+    let charge=null;
+    if(chargeText){if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(chargeText) || !Number.isFinite(Number(chargeText)) || Number(chargeText)>1000000)return res.status(400).send('Enter a courier charge from ₹0.00 to ₹1,000,000.00 with up to two decimal places.');charge=Number(chargeText);}
+    if(chargeApproved && charge===null)return res.status(400).send('Enter a courier charge before approving it for customer checkout.');
     const priority=Number(req.body.priority);
     const hubIds=[...new Set((Array.isArray(req.body.hub_ids)?req.body.hub_ids:[req.body.hub_ids]).filter(Boolean))];
     if(hubIds.some(id=>!['south','north'].includes(id)))return res.status(400).send('Choose Bengaluru or Mumbai.');
     if(!name || !/^[a-z0-9-]+$/.test(id) || !couriers.safeUrl(website_url) || !couriers.safeUrl(tracking_url) || !Number.isInteger(priority) || priority<0 || priority>10000)return res.status(400).send('Check name, HTTPS URLs, priority.');
-    await Courier.findOneAndUpdate({_id:id},{$set:{delivery_min_days,delivery_max_days,name,website_url,tracking_url,contact,priority,active:(req.body.enabled ?? req.body.active)==='on'}},{upsert:true,runValidators:true});
+    await Courier.findOneAndUpdate({_id:id},{$set:{delivery_min_days,delivery_max_days,charge,charge_approved:chargeApproved,name,website_url,tracking_url,contact,priority,active:(req.body.enabled ?? req.body.active)==='on'}},{upsert:true,runValidators:true});
     await require('../services/deliveryService').configureRegions();
     const Zone=require('../models/mongo/DeliveryZone');
     for(const hubId of ['south','north'])await Zone.updateOne({_id:hubId},hubIds.includes(hubId)?{$addToSet:{partner_ids:id}}:{$pull:{partner_ids:id}});

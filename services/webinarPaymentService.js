@@ -4,6 +4,7 @@ const Webinar = require('../models/mongo/Webinar');
 const Registration = require('../models/mongo/WebinarRegistration');
 function failure(message,status=409) { return Object.assign(new Error(message),{status}); }
 function createService({ gateway, WebinarModel = Webinar, RegistrationModel = Registration, purpose = 'webinar_registration', receiptPrefix = 'web', seatBased = true, secret = process.env.RAZORPAY_KEY_SECRET, key = process.env.RAZORPAY_KEY_ID } = {}) {
+  const schedulingReady=row=>purpose!=='consultation_booking' || RegistrationModel.schedulingReady(row);
   const client = () => {
     if(gateway) return gateway;
     if(!key || !secret) throw failure('Payment is not configured. Please contact the studio.',503);
@@ -20,7 +21,8 @@ function createService({ gateway, WebinarModel = Webinar, RegistrationModel = Re
   async function order(id) {
     let row = await RegistrationModel.findById(id);
     if(!row || row.registration_status === 'Cancelled') throw failure('Registration is unavailable.');
-    if(row.amount_paise === 0 || row.payment_status === 'Paid') return {confirmed:true};
+    if(purpose==='consultation_booking' && row.scheduling_status && row.payment_status==='Paid' && !schedulingReady(row))throw failure('Payment already received. Reload your booking to review scheduling; do not pay again.');
+    if(row.amount_paise === 0 || row.payment_status === 'Paid') return {confirmed:purpose==='consultation_booking' && row.scheduling_status?schedulingReady(row) && row.registration_status==='Confirmed':true};
     const api=client();
     if(!row.razorpay_order_id) {
       const locked = await RegistrationModel.findOneAndUpdate({_id:id,order_creating:false,razorpay_order_id:'',registration_status:'Payment Pending'},{$set:{order_creating:true}},{new:true});
@@ -48,15 +50,19 @@ function createService({ gateway, WebinarModel = Webinar, RegistrationModel = Re
     if(payment.status !== 'captured' || payment.captured !== true || Number(payment.amount_refunded || 0) > 0) return {confirmed:false,message:'Payment is not captured yet. Check payment status again shortly.'};
     await RegistrationModel.updateOne({_id:row._id},{$set:{payment_status:'Paid',razorpay_payment_id:payment.id,payment_verified_at:row.payment_verified_at || new Date()},$addToSet:{notification_jobs:{key:'paid',event:'payment_success',status:'Paid'}}});
     // Conditional transition prevents callbacks from undoing cancellation or attendance.
-    await RegistrationModel.updateOne({_id:row._id,registration_status:{$in:['Registered','Payment Pending']}},{$set:{registration_status:'Confirmed',payment_note:''}});
-    if(!seatBased) await RegistrationModel.updateOne({_id:row._id,registration_status:'Confirmed',status:{$in:['New','Contacted']}},{$set:{status:'Confirmed'}});
+    if(purpose==='consultation_booking' && row.scheduling_status)await RegistrationModel.confirmScheduled(row._id);
+    else {
+      await RegistrationModel.updateOne({_id:row._id,registration_status:{$in:['Registered','Payment Pending']}},{$set:{registration_status:'Confirmed',payment_note:''}});
+      if(!seatBased) await RegistrationModel.updateOne({_id:row._id,registration_status:'Confirmed',status:{$in:['New','Contacted']}},{$set:{status:'Confirmed'}});
+    }
     await require('./notificationService').safeFlush(purpose,row._id);
     const fresh=await RegistrationModel.findById(row._id);
     if(fresh.registration_status === 'Cancelled') {
       await RegistrationModel.updateOne({_id:row._id},{$set:{payment_note:'Payment received for a cancelled registration. Owner must review and arrange any refund in Razorpay.'}});
       return {confirmed:false,message:'Payment received for a cancelled registration. Contact the studio for review.'};
     }
-    return {confirmed:true,message:'Registration confirmed.'};
+    const confirmed=purpose!=='consultation_booking' || (schedulingReady(fresh) && ['Confirmed','Attended'].includes(fresh.registration_status));
+    return {confirmed,message:confirmed?'Registration confirmed.':'Payment received. Scheduling approval and any proposed-time acceptance are still required.'};
   }
   async function verify(id,body) {
     const row=await RegistrationModel.findById(id);
@@ -70,7 +76,7 @@ function createService({ gateway, WebinarModel = Webinar, RegistrationModel = Re
   async function reconcile(id) {
     const row=await RegistrationModel.findById(id);
     if(!row) throw failure('Registration not found.',404);
-    if(!row.amount_paise) return {confirmed:row.registration_status !== 'Cancelled',message:'No payment required.'};
+    if(!row.amount_paise) return {confirmed:schedulingReady(row) && row.registration_status !== 'Cancelled',message:'No payment required.'};
     if(!row.razorpay_order_id) return {confirmed:false,message:'No payment order has been created yet.'};
     const result=await client().orders.fetchPayments(row.razorpay_order_id);
     const paid=result.items.find(p=>p.status==='captured' && Number(p.amount_refunded || 0)===0);

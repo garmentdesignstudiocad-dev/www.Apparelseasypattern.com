@@ -60,7 +60,7 @@ async function run(){
   assert.equal(await Order.countDocuments(),0);
   const attempts=await Promise.all([request('/checkout/payment-method/proceed',{}),request('/checkout/payment-method/proceed',{})]);assert.ok(attempts.some(r=>r.status===200));assert.equal(gatewayOrders.length,1);
   const first=JSON.parse(attempts.find(r=>r.status===200).html);let order=await Order.findOne();
-  assert.equal(order.delivery_charge,undefined);assert.equal(order.subtotal,260);assert.equal(order.tax_amount,46.8);assert.equal(order.grand_total,306.8);assert.equal(order.items[0].quantity,2);assert.equal(first.amount,30680);assert.equal(gatewayOrders[0].amount,Math.round(order.grand_total*100));
+  assert.equal(order.delivery_charge,0);assert.equal(order.subtotal,260);assert.equal(order.tax_amount,46.8);assert.equal(order.grand_total,306.8);assert.equal(order.items[0].quantity,2);assert.equal(first.amount,30680);assert.equal(gatewayOrders[0].amount,Math.round(order.grand_total*100));
   assert.equal((await request('/checkout/payment-method/proceed',{})).status,200);assert.equal(gatewayOrders.length,1);
   const paymentId='pay_regression';const signature=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update(`${first.razorpay_order_id}|${paymentId}`).digest('hex');const callback={razorpay_order_id:first.razorpay_order_id,razorpay_payment_id:paymentId,razorpay_signature:signature};
   assert.equal((await request('/checkout/razorpay-callback',{...callback,razorpay_signature:'0'.repeat(64)})).status,400);assert.equal((await Order.findById(order._id)).payment_status,'unpaid');
@@ -71,11 +71,11 @@ async function run(){
   assert.equal((await request('/checkout/razorpay-callback',{...callback,razorpay_signature:'0'.repeat(64)})).status,400);assert.equal((await Order.findById(order._id)).payment_status,'paid');
   assert.match((await request('/checkout/success',undefined,'outsider')).html,/Check Your Order/);
   assert.ok(!(await request('/checkout/success',undefined,'outsider')).html.includes('Your payment was verified securely'));
-  await models.Courier.create({_id:'regression-courier',name:'Regression Courier',active:true,region_ids:['south'],pincodes:['560*']});
+  await models.Courier.create({_id:'regression-courier',name:'Regression Courier',active:true,region_ids:['south'],pincodes:['560*'],charge:30,charge_approved:true});
   const physical={...input,shipping:{...input.shipping,courier_id:'regression-courier'},items:[{...input.items[0],physical_quantity:2,trial_quantity:1}]};
   assert.equal((await request('/checkout',{...physical,shipping:{...input.shipping,pincode:'abc560001'}})).status,400);
   assert.equal((await request('/checkout',physical)).status,200);const physicalPayment=JSON.parse((await request('/checkout/payment-method/proceed',{})).html);order=await Order.findOne({razorpay_order_id:physicalPayment.razorpay_order_id});
-  assert.equal(order.delivery_charge,undefined);assert.equal(order.subtotal,440);assert.equal(order.tax_amount,79.2);assert.equal(order.grand_total,519.2);assert.equal(physicalPayment.amount,51920);assert.equal((await Customer.findOne({email:input.customer.email})).pincode,'560001');
+  assert.equal(order.delivery_charge,30);assert.equal(order.subtotal,440);assert.equal(order.tax_amount,79.2);assert.equal(order.grand_total,549.2);assert.equal(physicalPayment.amount,54920);assert.equal((await Customer.findOne({email:input.customer.email})).pincode,'560001');
   await TaxSettings.updateOne({key:'default'},{$set:{percentage:5}});assert.equal((await request('/checkout',input)).status,200);const gstPayment=JSON.parse((await request('/checkout/payment-method/proceed',{})).html);assert.equal(gstPayment.amount,30680);
   await TaxSettings.updateOne({key:'default'},{$set:{enabled:false}});assert.equal((await request('/checkout',input)).status,200);assert.equal(JSON.parse((await request('/checkout/payment-method/proceed',{})).html).amount,30680);
   assert.equal((await request('/checkout/delivery-charge?pincode=abc560001')).status,400);

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const { logError } = require('../services/safeLog');
 
-dotenv.config();
+dotenv.config({path:require('path').join(__dirname,'../.env')});
 
 const uri =
   process.env.MONGODB_URI ||

@@ -51,10 +51,10 @@ async function run(){
     if(privateText)assert.ok(!(await request(url,null,who)).html.includes(privateText));
     payments.get(paymentId).amount=1;assert.equal((await request(url+'/verify',valid,who)).status,400);payments.get(paymentId).amount=19900;
     payments.get(paymentId).status='authorized';assert.equal((await request(url+'/verify',valid,who)).json().confirmed,false);payments.get(paymentId).status='captured';
-    assert.equal((await request(url+'/verify',valid,who)).json().confirmed,true);
-    assert.equal((await request(url+'/verify',valid,who)).json().confirmed,true);
-    const row=await Model.findById(id);assert.equal(row.payment_status,'Paid');assert.equal(row.registration_status,'Confirmed');assert.equal(row.local_reference_id,id);assert.ok(row.payment_purpose);
-    page=await request(url,null,who);assert.match(page.html,/Payment Successful/);if(privateText)assert.ok(page.html.includes(privateText));
+    assert.equal((await request(url+'/verify',valid,who)).json().confirmed,Model!==ConsultationBooking);
+    assert.equal((await request(url+'/verify',valid,who)).json().confirmed,Model!==ConsultationBooking);
+    const row=await Model.findById(id);assert.equal(row.payment_status,'Paid');assert.equal(row.registration_status,Model===ConsultationBooking?'Payment Pending':'Confirmed');assert.equal(row.local_reference_id,id);assert.ok(row.payment_purpose);
+    page=await request(url,null,who);assert.match(page.html,Model===ConsultationBooking?/request has been received/:/Payment Successful/);if(privateText)assert.ok(page.html.includes(privateText));
     return {url,id,csrf,valid,who,Model};
   }
   assert.ok(!(await request('/courses/access-course')).html.includes('private-course'));

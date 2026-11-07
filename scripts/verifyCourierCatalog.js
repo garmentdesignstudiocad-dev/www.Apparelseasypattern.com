@@ -3,7 +3,7 @@ async function verify(){
   const controller=require('../controllers/checkoutController');
   const template=fs.readFileSync(require('node:path').join(__dirname,'../views/checkout.ejs'),'utf8');
   const code=template.slice(template.indexOf('    const cityInput='),template.indexOf('    const productTotalElement'))+
-    template.slice(template.indexOf('    async function loadDeliveryRoute()'),template.indexOf('    async function updateSummary()'));
+    template.slice(template.indexOf('    async function loadDeliveryRoute()'),template.indexOf('    function updateCheckoutTotals()'));
   for(const [state,city,region,hub] of [['Tamil Nadu','Tiruppur','South','Bengaluru'],['Punjab','Ludhiana','North','Mumbai']]){
     let data;
     await controller.getDeliveryCharge({query:{state,city,pincode:'638751'}},{json(body){data=body;},status(){throw new Error('Delivery API failed');}});
@@ -13,6 +13,7 @@ async function verify(){
     const context={document:{getElementById:id=>elements[id] ||= {...element(),value:id==='state'?state:id==='city'?city:''}},
       Option:function(text,value){this.text=text;this.value=value;},courierSelect:select,deliveryRequired:true,deliveryRequestId:0,
       courierHelp:element(),deliveryStatus:element(),deliveryEstimate:element(),deliveryEtaSummary:element(),estimatedDeliveryTime:element(),estimatedDeliveryDate:element(),
+      updateCheckoutTotals(){},formatCurrency:value=>'INR '+Number(value).toFixed(2),
       fetch:async url=>{assert.ok(url.startsWith('/checkout/delivery-info?'));return {ok:true,json:async()=>data};}};
     vm.createContext(context);vm.runInContext(code,context);await context.loadDeliveryRoute();
     assert.equal(select.disabled,false);assert.equal(elements['region-summary'].textContent,region);

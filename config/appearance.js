@@ -125,6 +125,52 @@ const headerFooter = {
   "footer_credit_name": "Innovix Projects"
 };
 
+const aboutPage = {
+  about_eyebrow: 'About Apparel Easy Patterns',
+  about_heading: 'Patterns for the work behind every garment.',
+  about_intro: 'Explore a flexible pattern store designed around digital files, physical patterns and trial samples—so you can choose the right format for your next garment project.',
+  about_cta_text: 'Explore Patterns',
+  about_cta_link: '/products',
+  about_tile_1_title: 'Digital patterns',
+  about_tile_1_text: 'Select the file formats that fit your design and production workflow.',
+  about_tile_2_title: 'Physical patterns',
+  about_tile_2_text: 'Choose printed patterns when physical development is the better fit.',
+  about_tile_3_title: 'Trial samples',
+  about_tile_3_text: 'Keep your options flexible with trial sample quantities where available.',
+};
+
+const servicesPage = {
+  services_heading: 'Garment Technology & Technical Services',
+  services_description: 'Practical garment technology, fit development, sampling review and pattern engineering services for fashion brands and manufacturers.',
+  services_cta_text: 'Request Service Details',
+  services_cta_link: '/contact',
+};
+
+const classesPage = {
+  classes_eyebrow: 'Online Pattern Making Class Enquiries',
+  classes_heading: 'Become a Professional Pattern Maker',
+  classes_description: 'Pattern making course online: learn basic blocks, womenswear, menswear, fit correction, grading and CAD garment patterns.',
+  classes_cta_text: 'Request Class Information',
+  classes_cta_link: '/classes/enquiry',
+};
+
+const consultingPage = {
+  consulting_heading: 'Book Your Consultation at Your Convenient Time',
+  consulting_subheading: 'Need expert guidance on garment patterns, fit development, or apparel production?',
+  consulting_description: 'Schedule a personalized consultation with our expert at a time convenient for you.',
+  consulting_cta_text: 'Submit Your Requirement',
+};
+
+const contactPage = {
+  contact_heading: 'Contact the Studio',
+  contact_description: 'Contact Apparel Easy Patterns by email, WhatsApp or phone for pattern enquiries, fit development and studio consultations.',
+};
+
+const socialSeo = {
+  og_image_url: '',
+  twitter_handle: '',
+};
+
 const content = {
   ...headerFooter,
   ...require('../services/seoService').settingsDefaults,
@@ -138,6 +184,12 @@ const content = {
   address: '',
 
   ...homepage,
+  ...aboutPage,
+  ...servicesPage,
+  ...classesPage,
+  ...consultingPage,
+  ...contactPage,
+  ...socialSeo,
 
   products_heading: 'READY-TO-USE AVAILABLE PATTERN TEMPLATES',
   products_description: 'Choose professional garment patterns with flexible digital files, physical pattern and trial-sample options.',
@@ -194,7 +246,7 @@ function valid(key, value) {
   }
 
   const maxLength = key.endsWith('_url') ? 2048 :
-    key.startsWith('home_') || key.startsWith('homepage_') ? 3000 : 600;
+    (['home_', 'homepage_', 'about_', 'services_', 'classes_', 'consulting_', 'contact_', 'products_'].some(p => key.startsWith(p)) ? 3000 : 600);
 
   if (
     typeof value !== 'string' ||
@@ -206,6 +258,10 @@ function valid(key, value) {
 
   if (key.endsWith('_url')) {
     return !value || Boolean(safeUrl(value));
+  }
+
+  if (key.endsWith('_link')) {
+    return !value || Boolean(safeImagePath(value));
   }
 
   if (key === 'contact_email') {

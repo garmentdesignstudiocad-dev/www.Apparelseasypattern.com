@@ -39,6 +39,7 @@ router.get('/access-records',wrap(async(req,res)=>{
   if(['Registered','Payment Pending','Confirmed','Attended','Cancelled'].includes(req.query.status))filter.registration_status=req.query.status;
   const page=Math.max(1,Math.min(100000,parseInt(req.query.page,10)||1));
   const [items,total]=await Promise.all([Model.find(filter).sort({createdAt:-1}).skip((page-1)*50).limit(50).lean(),Model.countDocuments(filter)]);
+  if(kind==='consulting')await require('../services/leadNotifications').statuses(items);
   res.render('admin/access-records',{title:'Registrations & Paid Access Payments',kind,items,total,page,query:req.query,error:typeof req.query.notice==='string'?req.query.notice.slice(0,500):''});
 }));
 router.post('/access-records/:kind/:id/:action',wrap(async(req,res)=>{
@@ -47,12 +48,19 @@ router.post('/access-records/:kind/:id/:action',wrap(async(req,res)=>{
   if(!row.payment_purpose && kind!=='webinars')return res.status(409).send('Manage this legacy booking in Course Bookings.');
   const payments=kind==='webinars'?require('../services/webinarPaymentService').createService():access.paymentService(Model,access.purposes[kind]);
   let notice='Saved.';
+  if(kind==='consulting' && ['approve','propose','decline'].includes(action)){
+    try {await Model.decideSchedule(id,action,req.body);}
+    catch(error){if(error.status)return res.status(error.status).send(error.message);throw error;}
+    await require('../services/notificationService').safeFlush(access.purposes[kind],id);
+    return res.redirect(303,'/admin/access-records?kind=consulting');
+  }
   try {
     if(action==='check')notice=(await payments.reconcile(id)).message;
     else if(action==='cancel'){await payments.cancel(id,req.body.refund_acknowledged==='on');notice='Cancelled. Any refund must be arranged separately in Razorpay.';}
     else if(action==='recover-order'){await payments.recoverOrder(id,req.body.order_id);notice='Order recovered. Check payment status.';}
     else if(action==='reset-order'){await payments.resetOrder(id,req.body.no_order_acknowledged==='on');notice='Payment setup unlocked.';}
     else if(action==='status' && kind==='consulting'){
+      if(row.scheduling_status)return res.status(409).send('Use the scheduling approval actions for this booking.');
       if(!['New','Contacted','Confirmed','Completed'].includes(req.body.status))return res.sendStatus(400);
       const filter={_id:id,registration_status:{$ne:'Cancelled'}};
       if(['Confirmed','Completed'].includes(req.body.status)){filter.registration_status='Confirmed';filter.payment_status={$in:['Paid','Not Required']};}

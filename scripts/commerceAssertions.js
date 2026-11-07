@@ -1,20 +1,20 @@
 const assert=require('node:assert/strict'),crypto=require('node:crypto'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
 module.exports=async({models,request,input,paymentOverrides})=>{
-  const {Product,Order,Payment,Courier,NotificationLog,Receipt,NotificationSettings}=models;
+  const {Product,ProductFile,Order,Payment,Courier,NotificationLog,Receipt,NotificationSettings}=models;
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'commerce-'));
   const old=process.env.PATTERN_FILES_DIR;process.env.PATTERN_FILES_DIR=dir;
   const uploaded=[];
   try{
     await fs.writeFile(path.join(dir,'p.dxf'),'test pattern');
     const product=await Product.create({name:'Shirt Pattern Collection – Fit 3 Basic Short-Sleeve',slug:'commerce-shirt',base_price:50,additional_size_price:50,physical_price:50,trial_price:1100,digital_file:'p.dxf'});
-    await Courier.create({_id:'commerce-courier',name:'Configured Courier',active:true,region_ids:['south'],pincodes:['560*'],charge:300,delivery_min_days:2,delivery_max_days:3});
-    await Courier.create({_id:'destination-courier',name:'Destination Courier',active:true,region_ids:['south'],pincodes:['638751'],charge:250,delivery_min_days:3,delivery_max_days:4});
+    await Courier.create({_id:'commerce-courier',name:'Configured Courier',active:true,region_ids:['south'],pincodes:['560*'],charge:300,charge_approved:true,delivery_min_days:2,delivery_max_days:3});
+    await Courier.create({_id:'destination-courier',name:'Destination Courier',active:true,region_ids:['south'],pincodes:['638751'],charge:250,charge_approved:true,delivery_min_days:3,delivery_max_days:4});
     await Courier.create({_id:'blank-courier',name:'Blank Rules',active:true,pincodes:[]});
     await Courier.create({_id:'inactive-courier',name:'Inactive',active:false,region_ids:['south'],pincodes:['638*']});
     await models.Pincode.create({pincode:'638751',district:'Tiruppur',state:'Tamil Nadu',region_id:'south',active:true});
     await models.DeliveryZone.updateOne({_id:'south'},{$set:{partner_ids:['commerce-courier','destination-courier','inactive-courier']}});
     const destination=JSON.parse((await request('/checkout/delivery-info?state=Tamil%20Nadu')).html);
-    assert.deepEqual(destination.couriers.map(c=>c._id),['commerce-courier','destination-courier']);assert.equal(destination.couriers[0].charge,undefined);assert.equal(destination.couriers[1].delivery_min_days,3);
+    assert.deepEqual(destination.couriers.map(c=>c._id),['commerce-courier','destination-courier']);assert.equal(destination.couriers[0].charge,300);assert.equal(destination.couriers[0].charge_approved,true);assert.equal(destination.couriers[1].delivery_min_days,3);
     const unserved=JSON.parse((await request('/checkout/delivery-info?state=Unassigned')).html);assert.equal(unserved.available,false);assert.deepEqual(unserved.couriers,[]);
     const productPage=await request('/product/'+product.slug);assert.ok(!productPage.html.includes('Contact the studio to confirm before ordering.'));assert.ok(!productPage.html.includes('Pattern Specifications'));
     process.env.ADMIN_NOTIFICATION_EMAIL='owner@example.test';
@@ -23,6 +23,7 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       {name:'digital',digital:1,physical:0,trial:0,sizes:['M'],subtotal:50},
       {name:'additional size',digital:1,physical:0,trial:0,sizes:['M','L'],subtotal:100},
       {name:'physical only',digital:0,physical:1,trial:0,sizes:['M'],subtotal:50},
+      {name:'physical two sizes',digital:0,physical:2,trial:0,sizes:['M','L'],subtotal:100},
       {name:'trial only',digital:0,physical:0,trial:1,sizes:['M'],subtotal:1100},
       {name:'digital physical',digital:1,physical:1,trial:0,sizes:['M'],subtotal:100},
       {name:'digital trial',digital:1,physical:0,trial:1,sizes:['M'],subtotal:1150},
@@ -39,11 +40,14 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       }
       payload.shipping.dispatch_location='Tampered';payload.shipping.region='Tampered';payload.shipping.courier_charge=1;payload.shipping.courier_name='Tampered';
       assert.equal((await request('/checkout',payload,who)).status,200,test.name);
-      assert.match((await request('/checkout/payment-method',undefined,who)).html,/Online Payment Total/);
+      const paymentPageSummary=await request('/checkout/payment-method',undefined,who);
+      assert.match(paymentPageSummary.html,/Product subtotal/);assert.match(paymentPageSummary.html,/Courier charge/);assert.match(paymentPageSummary.html,/Final payable total/);
+      if(physical){assert.match(paymentPageSummary.html,/Configured Courier/);assert.match(paymentPageSummary.html,/₹300\.00/);}
       const payResponse=await request('/checkout/payment-method/proceed',{},who);assert.equal(payResponse.status,200);
       const pay=JSON.parse(payResponse.html);let order=await Order.findOne({razorpay_order_id:pay.razorpay_order_id}).lean();
-      assert.equal(order.subtotal,test.subtotal);assert.equal(order.tax_amount,test.subtotal*.18);assert.equal(pay.amount,Math.round(test.subtotal*118));
-      assert.equal(order.delivery_charge,undefined);assert.equal(order.courier_payment_separate,false);
+      const expectedCourier=physical?300:0;
+      assert.equal(order.subtotal,test.subtotal);assert.equal(order.tax_amount,test.subtotal*.18);assert.equal(pay.amount,Math.round(test.subtotal*118+expectedCourier*100));
+      assert.equal(order.delivery_charge,expectedCourier);assert.equal(order.courier_payment_separate,false);
       assert.deepEqual(order.items[0].selected_sizes,test.sizes);assert.equal(order.items[0].quantity,test.digital);
       assert.equal(order.shipping_address,physical?input.shipping.address:'');assert.equal(order.courier_name,physical?'Configured Courier':'');
       assert.equal(await require('../services/digitalDeliveryService').ensure(order._id),null);
@@ -91,11 +95,11 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       assert.doesNotMatch(customerMail.message,/Courier Charge|Pay Separately|Pay on Delivery/i);
       assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id),event:'admin_successful_payment'}),1);
       const receipt=await Receipt.findOne({reference_id:order._id}).lean();
-      assert.equal(receipt.subtotal_paise,test.subtotal*100);assert.equal(receipt.total_paise,pay.amount);assert.equal(receipt.delivery_paise,0);
-      const page=await request('/admin/orders/'+order._id,undefined,'admin');assert.equal(page.status,200);assert.match(page.html,/Online Payment Total/);assert.doesNotMatch(page.html,/Delivery Charge|Courier Charge|Pay Separately|Pay on Delivery/i);
+      assert.equal(receipt.subtotal_paise,test.subtotal*100);assert.equal(receipt.total_paise,pay.amount);assert.equal(receipt.delivery_paise,expectedCourier*100);
+      const page=await request('/admin/orders/'+order._id,undefined,'admin');assert.equal(page.status,200);assert.match(page.html,/Online Payment Total/);if(physical)assert.match(page.html,/Courier Charge \(included in Razorpay amount\)/);else assert.doesNotMatch(page.html,/Courier Charge/);
       if(physical){assert.match(page.html,/Customer Selected Delivery Partner:/);const csrf=page.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];assert.equal((await request('/admin/orders/'+order._id+'/fulfilment',{_csrf:csrf,courier_id:'destination-courier',shipping_status:'Pending'},'admin')).status,409);}
       const payment=await Payment.findOne({order_id:order._id});
-      const paymentPage=await request('/admin/payments/'+payment._id,undefined,'admin');assert.equal(paymentPage.status,200);assert.match(paymentPage.html,/Online Payment Total/);assert.doesNotMatch(paymentPage.html,/Delivery Charge|Courier Charge|Pay Separately|Pay on Delivery/i);
+      const paymentPage=await request('/admin/payments/'+payment._id,undefined,'admin');assert.equal(paymentPage.status,200);assert.match(paymentPage.html,/Online Payment Total/);if(physical)assert.match(paymentPage.html,/Courier Charge \(included in Razorpay amount\)/);else assert.doesNotMatch(paymentPage.html,/Courier Charge/);
       const failing=require('../services/notificationService').createDispatcher({email:async()=>{throw new Error('Simulated SMTP failure');}});
       await failing(customerMail._id);
       assert.equal((await Order.findById(order._id)).payment_status,'paid');
@@ -104,24 +108,56 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       for(const log of digitalLogs)await Promise.all([dispatch(log._id),dispatch(log._id)]);
       assert.equal(sends,test.digital?1:0);
     }
+    const dxf=await ProductFile.create({product_id:product._id,file_name:'Slim Fit DXF',file_type:'DXF',purpose:'dxf',file_price:399,price_per_selected_size:true,active:true});
+    const hpgl=await ProductFile.create({product_id:product._id,file_name:'Slim Fit HPGL.plt',file_type:'HPGL',purpose:'other',file_price:399,price_per_selected_size:true,active:true});
+    const adminFiles=await request('/admin/products/'+product._id+'/files',undefined,'admin');assert.match(adminFiles.html,/name="price_per_selected_size"/);
+    const sizeProductPage=await request('/product/'+product.slug);
+    assert.match(sizeProductPage.html,/Editable DXF Pattern/);assert.match(sizeProductPage.html,/HPGL Pattern/);assert.match(sizeProductPage.html,/per selected size/);
+    const sizeOptionPayload={product_id:String(product._id),quantity:1,physical_quantity:0,trial_quantity:0,printable_selected:false,selected_sizes:['M','L'],files:[String(dxf._id),String(hpgl._id)],addons:[]};
+    assert.equal((await request('/cart/add',{...sizeOptionPayload,selected_sizes:[],files:[String(dxf._id)]},'no-size-file')).status,400,'Cart rejects a per-size file when no size is selected.');
+    assert.equal((await request('/cart/add',{...sizeOptionPayload,selected_sizes:['M','M'],files:[String(dxf._id)]},'duplicate-size-file')).status,400,'Cart rejects duplicate sizes for a per-size file.');
+    assert.equal((await request('/cart/add',sizeOptionPayload,'size-cart')).status,200,'Cart accepts configured DXF and HPGL files.');
+    const sizeCart=await request('/cart',undefined,'size-cart');
+    assert.match(sizeCart.html,/M, L/);assert.match(sizeCart.html,/399 per size × 2 selected sizes × quantity 1/i);assert.match(sizeCart.html,/798/);
+    const priceWho='per-size-price';
+    const forgedItem={product_id:String(product._id),quantity:1,physical_quantity:0,trial_quantity:0,selected_sizes:['M','L'],printable_selected:false,selected_files:[{id:String(dxf._id),file_price:0,price_per_selected_size:false},{id:String(hpgl._id),file_price:0,price_per_selected_size:false}],selected_addons:[],total:1,unit_price:1};
+    assert.equal((await request('/checkout',{customer:input.customer,items:[forgedItem],shipping:{},grand_total:1,tax_amount:0,payment_status:'paid'},priceWho)).status,200,'Checkout accepts configured per-size options despite forged client prices.');
+    const sizePayment=JSON.parse((await request('/checkout/payment-method/proceed',{},priceWho)).html);
+    const sizeOrder=await Order.findOne({razorpay_order_id:sizePayment.razorpay_order_id}).lean();
+    assert.equal(sizeOrder.subtotal,1596,'Checkout loads each file price and unit from MongoDB and charges both formats for both selected sizes.');
+    assert.equal(sizePayment.amount,Math.round(1596*118),'Razorpay draft amount uses the server-calculated per-size subtotal and GST.');
+    assert.equal(sizeOrder.items[0].selected_files[0].price_per_selected_size,true,'Order snapshots retain the per-size pricing unit.');
     const routingPage=await request('/admin/settings/delivery',undefined,'admin');
     assert.equal(routingPage.status,200);assert.doesNotMatch(routingPage.html,/Charge Delivery Amount|Delivery Charge/i);
     const routeCsrf=routingPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
     assert.equal((await request('/admin/settings/delivery',{region_id:'north',name:'North',dispatch_location:'Mumbai',active:'on'},'admin')).status,403);
     assert.equal((await request('/admin/settings/delivery',{_csrf:routeCsrf,region_id:'north',name:'North',dispatch_location:'Mumbai',states:'Delhi',active:'on'},'admin')).status,302);
-    const partnersPage=await request('/admin/settings/couriers',undefined,'admin');assert.equal(partnersPage.status,200);assert.doesNotMatch(partnersPage.html,/name="charge"/);
+    const partnersPage=await request('/admin/settings/couriers',undefined,'admin');assert.equal(partnersPage.status,200);assert.match(partnersPage.html,/name="charge"/);assert.match(partnersPage.html,/name="charge_approved"/);
     const partnerCsrf=partnersPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
-    for(const id of ['north-one','north-two'])assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:id,name:id,hub_ids:['north'],priority:'1',active:'on'},'admin')).status,303);
+    for(const [id,charge] of [['north-one','25.50'],['north-two','44.75']])assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:id,name:id,hub_ids:['north'],priority:'1',active:'on',charge,charge_approved:'on'},'admin')).status,303);
+    assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:'bad-rate',name:'Bad Rate',hub_ids:['north'],priority:'1',active:'on',charge:'-1',charge_approved:'on'},'admin')).status,400,'Admin rejects negative courier rates.');
+    assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:'bad-precision',name:'Bad Precision',hub_ids:['north'],priority:'1',active:'on',charge:'10.999',charge_approved:'on'},'admin')).status,400,'Admin rejects more than two decimal places.');
     const north=JSON.parse((await request('/checkout/delivery-info?state=Delhi')).html);
     assert.equal(north.region,'North');assert.equal(north.dispatch_location,'Mumbai');assert.deepEqual(north.couriers.map(c=>c._id),['north-one','north-two']);
-    const routePayload={customer:input.customer,items:[{product_id:String(product._id),quantity:0,physical_quantity:1,selected_sizes:['M']}],shipping:{...input.shipping,state:'Delhi',pincode:'110001',courier_id:'north-one',dispatch_location:'Tampered',region:'South'}};
+    const routePayload={customer:input.customer,items:[{product_id:String(product._id),quantity:0,physical_quantity:1,selected_sizes:['M']}],shipping:{...input.shipping,state:'Delhi',pincode:'110001',courier_id:'north-one',courier_charge:0.01,dispatch_location:'Tampered',region:'South'}};
     for(const id of ['north-one','north-two']){
       const who='route-'+id;routePayload.shipping.courier_id=id;
       assert.equal((await request('/checkout',routePayload,who)).status,200);
+      const quotePage=await request('/checkout/payment-method',undefined,who);
+      assert.match(quotePage.html,/Courier company:/);assert.match(quotePage.html,new RegExp(id==='north-one'?'₹25\.50':'₹44\.75'));
       const pay=JSON.parse((await request('/checkout/payment-method/proceed',{},who)).html);
       const row=await Order.findOne({razorpay_order_id:pay.razorpay_order_id}).lean();
-      assert.equal(pay.amount,5900);assert.equal(row.tax_amount,9);assert.equal(row.dispatch_location,'Mumbai');assert.equal(row.destination_region,'North');assert.equal(row.delivery_charge,undefined);
+      const approvedCharge=id==='north-one'?25.5:44.75;
+      assert.equal(pay.amount,Math.round((50+9+approvedCharge)*100));assert.equal(row.tax_amount,9);assert.equal(row.dispatch_location,'Mumbai');assert.equal(row.destination_region,'North');assert.equal(row.delivery_charge,approvedCharge);
     }
+    await Courier.create({_id:'unapproved-courier',name:'Unapproved Courier',active:true,charge:800,charge_approved:false});
+    await models.DeliveryZone.updateOne({_id:'north'},{$addToSet:{partner_ids:'unapproved-courier'}});
+    const blockedRate=await request('/checkout',{...routePayload,shipping:{...routePayload.shipping,courier_id:'unapproved-courier'}},'unapproved-rate');
+    assert.equal(blockedRate.status,400);assert.match(blockedRate.html,/no approved delivery charge.*contact the studio/i);
+    const historical=await Order.findOne({courier_id:'commerce-courier',delivery_charge:300}).lean();assert.ok(historical);
+    await Courier.updateOne({_id:'commerce-courier'},{$set:{charge:999,charge_approved:true}});
+    assert.equal((await Order.findById(historical._id)).delivery_charge,300,'Historical orders retain the approved charge snapshot after Admin rate changes.');
+    await Courier.updateOne({_id:'commerce-courier'},{$set:{charge:300,charge_approved:true}});
     routePayload.shipping.courier_id='commerce-courier';assert.equal((await request('/checkout',routePayload,'wrong-region')).status,400);
     await models.DeliveryZone.updateOne({_id:'north'},{$set:{active:false}});
     assert.equal(JSON.parse((await request('/checkout/delivery-info?state=Delhi')).html).available,false);

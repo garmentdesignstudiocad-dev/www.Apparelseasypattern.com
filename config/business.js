@@ -1,4 +1,4 @@
-const interests = ['Online Classes', 'Pattern Making Course', 'Garment Technology Training', 'Digital Patterns', 'Consulting', 'Corporate Training', 'Books', 'Other'];
+const interests = ['Fit Blocks', 'Online Classes', 'Training', 'Custom Consulting', 'Other Services', 'Pattern Making Course', 'Garment Technology Training', 'Digital Patterns', 'Consulting', 'Corporate Training', 'Books', 'Other'];
 const statuses = ['New', 'Contacted', 'Interested', 'Converted', 'Closed'];
 const categories = ['New Fashion Designs', 'Market Trends', 'Technical Trends', 'Industry News', 'Garment Technology'];
 const services = ['Pattern Development', 'Tech Pack Development', 'Fit Correction', 'POM / Measurement Support', 'Grading', 'CAD Pattern Support', 'Sample Development', 'Vendor Support', 'Technical Consultation'];

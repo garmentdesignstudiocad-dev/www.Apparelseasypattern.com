@@ -2,6 +2,7 @@ const {Schema,model}=require('mongoose');
 module.exports=model('Courier',new Schema({
   _id:{type:String},name:{type:String,required:true,maxlength:100},
   charge:{type:Number,min:0,max:1000000,default:null},
+  charge_approved:{type:Boolean,default:false},
   region_ids:{type:[String],default:[]},
   delivery_min_days:{type:Number,min:1,max:365,default:null},
   delivery_max_days:{type:Number,min:1,max:365,default:null},

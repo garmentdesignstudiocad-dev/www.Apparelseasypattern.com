@@ -6,5 +6,5 @@ for(const [prefix,label] of Object.entries({order:'Product order',class:'Class',
   }
 }
 Object.assign(labels,{order_digital_ready:'Digital pattern download ready',order_shipped:'Order shipped',webinar_reminder:'Webinar reminder'});
-const ownerLabels={admin_new_order_alert:'Owner: new product order',admin_course_enquiry:'Owner: new course enquiry',admin_webinar_registration:'Owner: new webinar registration',admin_book_purchase:'Owner: new book purchase',admin_consulting_booking:'Owner: new consulting booking',admin_successful_payment:'Owner: successful payment',admin_notification_failed:'Owner: failed notification'};
+const ownerLabels={admin_new_order_alert:'Owner: new product order',admin_course_enquiry:'Owner: new course enquiry',admin_course_booking:'Owner: new course booking',admin_lead_enquiry:'Owner: new customer enquiry',admin_webinar_registration:'Owner: new webinar registration',admin_book_purchase:'Owner: new book purchase',admin_consulting_booking:'Owner: new consulting booking',admin_successful_payment:'Owner: successful payment',admin_notification_failed:'Owner: failed notification'};
 module.exports={labels,ownerLabels};

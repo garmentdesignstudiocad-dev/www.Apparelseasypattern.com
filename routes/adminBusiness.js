@@ -33,6 +33,7 @@ router.get('/leads', wrap(async (req, res) => {
   const page = Math.max(1, Math.min(100000, parseInt(req.query.page, 10) || 1));
   const filter = leadFilter(req.query);
   const [items, total] = await Promise.all([Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * 50).limit(50).lean(), Lead.countDocuments(filter)]);
+  await require('../services/leadNotifications').statuses(items);
   res.render('admin/business-leads', { title: 'Leads / Enquiries', items, total, page, query: req.query, item: null });
 }));
 router.get('/leads/export.csv', wrap(async (req, res) => {
@@ -48,6 +49,7 @@ router.param('id', (req, res, next, id) => /^[a-f\d]{24}$/i.test(id) && mongoose
 router.get('/leads/:id', wrap(async (req, res) => {
   const item = await Lead.findById(req.params.id).lean();
   if (!item) return res.status(404).send('Lead not found.');
+  await require('../services/leadNotifications').statuses([item]);
   res.render('admin/business-leads', { title: 'Enquiry Details', item });
 }));
 router.post('/leads/:id/status', wrap(async (req, res) => {

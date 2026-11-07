@@ -15,7 +15,7 @@ async function run(){
   await require('../models/mongo/NotificationSettings').create({_id:'default',email_enabled:true,whatsapp_enabled:false,admin_successful_payment:true});
   const product=await require('../models/mongo/Product').create({name:'Confirmation Pattern',slug:'confirmation-pattern',base_price:100,physical_price:50,digital_file:'pattern.pdf'});
   await require('../services/deliveryService').configureRegions();
-  await require('../models/mongo/Courier').create({_id:'fixture',name:'Fixture Courier',active:true});
+  await require('../models/mongo/Courier').create({_id:'fixture',name:'Fixture Courier',active:true,charge:0,charge_approved:true});
   await require('../models/mongo/DeliveryZone').updateOne({_id:'south'},{$set:{partner_ids:['fixture']}});
   const sent=[];
   const email=require('../services/emailService').createEmailService({env:{EMAIL_HOST:'smtp.example.test',EMAIL_PORT:'587',EMAIL_SECURE:'false',EMAIL_USER:'test',EMAIL_PASSWORD:'test',EMAIL_FROM:'store@example.test'},createTransport:()=>({sendMail:async mail=>{sent.push(mail);return {accepted:[mail.to],messageId:mail.messageId};}})});
@@ -30,12 +30,12 @@ async function run(){
    const shipping=physical?{address:'12 Test Street',city:'Tiruppur',state:'Tamil Nadu',pincode:'638751',courier_id:'fixture'}:{};
    const result=await call(controller.postCheckout,{createRazorpayOrder:true,session:{customerId:String(testAccount._id)},body:{customer:{name:'Order Customer',email:'customer@example.test',phone:'9876543210'},shipping,items:[{product_id:String(product._id),quantity:1,physical_quantity:physical?1:0}]}});
    assert.equal(result.code,200);const id=result.body.order_id;
-   let order=await Order.findById(id).lean();assert.equal(order.payment_status,'unpaid');assert.equal(await Log.countDocuments({reference_id:id}),0);
+   let order=await Order.findById(id).lean();assert.equal(order.payment_status,'unpaid');assert.equal(await Log.countDocuments({reference_id:id,event:{$ne:'admin_new_order_alert'}}),0);
    const paymentId='pay_test'+(gateway.length-1),orderId=result.body.razorpay_order_id;
    const signature=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update(orderId+'|'+paymentId).digest('hex');
    const body={razorpay_order_id:orderId,razorpay_payment_id:paymentId,razorpay_signature:signature};
    assert.equal((await call(controller.postRazorpayCallback,{body:{...body,razorpay_signature:'0'.repeat(64)}})).code,400);
-   assert.equal(await Log.countDocuments({reference_id:id}),0);
+   assert.equal(await Log.countDocuments({reference_id:id,event:{$ne:'admin_new_order_alert'}}),0);
    assert.equal((await call(controller.postRazorpayCallback,{body})).code,302);
    const raw=Buffer.from(JSON.stringify({event:'payment.captured',payload:{payment:{entity:{id:paymentId,order_id:orderId}}}}));
    const webhook={body:raw,get:()=>crypto.createHmac('sha256',process.env.RAZORPAY_WEBHOOK_SECRET).update(raw).digest('hex')};
@@ -60,7 +60,9 @@ async function run(){
    const html=ejs.render(strip('views/admin/orders.ejs'),{title:'Orders',filters:{},orders:[{id,customer_name:customer.name,customer_email:customer.email,customer_phone:customer.phone,customer_address:physical?'12 Test Street':'',courier_name:order.courier_name,dispatch_location:order.dispatch_location,order_status:order.order_status,payment_status:order.payment_status,grand_total:order.grand_total}],formatCurrency:v=>String(v)});
    assert.ok(html.includes('tel:9876543210'));if(physical){assert.ok(html.includes('Bengaluru'));assert.ok(html.includes('Fixture Courier'));}
   }
-  assert.equal(sent.length,4);console.log('PASS: customer confirmation, owner paid-order email, saved contacts/address, Admin contact links, signature gate, callback/webhook deduplication, secure digital links; mocked SMTP accepted exactly four confirmation emails.');
+  assert.equal(sent.length,4);
+  for(const mail of sent){assert.match(mail.html,/<html lang="en">/);assert.ok(mail.html.includes('Order Customer'));assert.equal(mail.replyTo,mail.to==='owner@example.test'?'customer@example.test':'owner@example.test');}
+  console.log('PASS: customer confirmation, owner paid-order email, HTML/Reply-To after queue reload, saved contacts/address, Admin contact links, signature gate, callback/webhook deduplication, secure digital links; mocked SMTP accepted exactly four confirmation emails.');
  }finally{await mongoose.disconnect();await mongo.stop();fs.unlinkSync(path.join(dir,'pattern.pdf'));fs.rmdirSync(dir);}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

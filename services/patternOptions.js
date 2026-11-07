@@ -7,6 +7,10 @@ function availability(product) {
 function printable(item) { return item.printable_selected !== false; }
 function validate(product, files, item) {
   const available=availability(product), selected=item.selected_sizes || [];
+  if(files.some(file=>file.price_per_selected_size)) {
+    if(!Array.isArray(item.selected_sizes) || !selected.length)return 'Select at least one size for per-size digital files.';
+    if(selected.some(size=>typeof size!=='string' || !/^[a-zA-Z0-9 ._-]{1,40}$/.test(size.trim())) || new Set(selected.map(size=>size.trim().toLowerCase())).size!==selected.length)return 'Choose each size only once for per-size digital files.';
+  }
   if(product.status==='draft' || product.status==='coming_soon')return 'This pattern is not available to purchase yet.';
   if(Number(item.quantity ?? 1)>0 && printable(item) && !available.printable)return 'Printable soft copy is unavailable.';
   if(Number(item.quantity ?? 1)>0 && !printable(item) && !files.length)return 'Select a digital option.';

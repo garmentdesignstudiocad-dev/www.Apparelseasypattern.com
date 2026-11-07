@@ -4,7 +4,9 @@ const dotenv = require('dotenv');
 const session = require('express-session');
 const { logError } = require('./services/safeLog');
 
-dotenv.config();
+dotenv.config({path:path.join(__dirname,'.env')});
+const paymentStatus=require('./config/payment').validate();
+if(!paymentStatus.configured)console.warn('Razorpay unavailable: configure '+paymentStatus.missing.join(', ')+' in the hosting service environment.');
 if(process.env.NODE_ENV==='production' && !process.env.SESSION_SECRET) throw new Error('SESSION_SECRET must be configured in production.');
 
 const app = express();
@@ -89,6 +91,7 @@ if (isProduction) {
 }
 
 app.use(session(sessionConfig));
+app.use(require('./middleware/leadProtection'));
 
 const { getSiteSettings } = require('./services/siteSettingsService');
 app.use(async (req, res, next) => {
@@ -215,15 +218,18 @@ async function startServer() {
   async function connectMongoWithRetry() {
     try {
       await connectMongo();
+      if (!stopNotifications) {
+        stopNotifications = require('./services/notificationService').startWorker();
+        httpServer.on('close', stopNotifications);
+      }
     } catch (err) {
       console.error('MongoDB is unavailable; the web server will remain running and retry in 30 seconds.');
       setTimeout(connectMongoWithRetry, 30000);
     }
   }
 
+  let stopNotifications;
   connectMongoWithRetry();
-  const stopNotifications=require('./services/notificationService').startWorker();
-  httpServer.on('close',stopNotifications);
 }
 
 if (require.main === module) startServer();

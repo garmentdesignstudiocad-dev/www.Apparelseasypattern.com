@@ -8,6 +8,7 @@ const ProductFileSchema = new Schema({
   purpose: {type:String,enum:['other','dxf','tech_pack','specs'],default:'other'},
   file_type: { type: String, required: true },
   file_price: { type: Number, default: 0, min: 0, max: 1000000 },
+  price_per_selected_size: { type: Boolean, default: false },
   active: { type: Boolean, default: true },
   digital_file:{type:String,select:false},
 }, { timestamps: true });

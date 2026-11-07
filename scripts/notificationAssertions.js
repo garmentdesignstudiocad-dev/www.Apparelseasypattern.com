@@ -115,9 +115,9 @@ module.exports=async function({models,request,token,course,book,adminCsrf,gatewa
   const lead=await models.Lead.findOne({email:enquiry.email});
   await notifications.flush('course_enquiry',lead._id);
   assert.equal(await Log.countDocuments({reference_id:lead._id,event:'course_enquiry_created'}),2);
-  assert.equal(await Log.countDocuments({reference_id:lead._id,event:'admin_course_enquiry'}),1);
+  assert.equal(await Log.countDocuments({reference_id:lead._id,event:'admin_lead_enquiry'}),1);
   assert.equal((await Log.findOne({reference_id:lead._id,channel:'whatsapp'})).destination,'+919791753067');
-  for(const event of ['admin_webinar_registration','admin_book_purchase','admin_consulting_booking','admin_successful_payment','admin_notification_failed'])assert.ok(await Log.exists({event}),event);
+  for(const event of ['admin_webinar_registration','admin_book_purchase','admin_lead_enquiry','admin_successful_payment','admin_notification_failed'])assert.ok(await Log.exists({event}),event);
   await NotificationSettings.updateOne({_id:'default'},{$set:{event_course_enquiry_created:false}});
   await notifications.enqueue('course_enquiry',lead._id,{key:'disabled-event',event:'created'});
   assert.equal(await Log.countDocuments({reference_id:lead._id,event:'course_enquiry_created',status:'skipped'}),2);

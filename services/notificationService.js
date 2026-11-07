@@ -6,21 +6,22 @@ const {createProviders}=require('./notificationProviders');
 const categories={course_enquiry:'course_updates',class_registration:'course_updates',product_order:'order_updates',course_registration:'course_updates',webinar_registration:'webinar_updates',book_purchase:'book_updates',consultation_booking:'consulting_updates'};
 async function getSettings(){return {...new Settings().toObject(),...await Settings.findById('default').lean()};}
 function statusJob(status,detail=''){return {key:crypto.randomUUID(),event:'status_update',status,detail};}
-function enabled(settings,log){return settings[log.channel+'_enabled'] && settings[log.category] && settings['event_'+log.event]!==false;}
+function enabled(settings,log){if(log.event==='admin_lead_enquiry')return true;return settings[log.channel+'_enabled'] && settings[log.category] && settings['event_'+log.event]!==false;}
 function eventName(type,event){const prefix={course_enquiry:'course_enquiry',class_registration:'class',product_order:'order',course_registration:'course',webinar_registration:'webinar',book_purchase:'book',consultation_booking:'consulting'}[type];return `${prefix}_${event}`;}
 async function enqueue(type,id,job){
   await Log.init();
   const data=await receiptService.context(type,id);if(!data)return;
   const {row,customer,items,amount}=data,settings=await getSettings();
-  // Product orders are confirmed only by the payment verifier, never by creation.
-  if(type==='product_order' && job.event==='created')return;
+  if((type==='consultation_booking' || (type==='course_enquiry' && row.business_notification_pending)) && job.event==='created')await require('./leadNotifications').enqueue(row,type);
+  // An owner-only creation alert is not a payment/order confirmation.
+  const newOrder=type==='product_order' && job.event==='created';
   if(type==='product_order' && job.event==='payment_success' && (!row.payment_verified_at || row.payment_status!=='paid'))return;
   const site=await require('./siteSettingsService').getSiteSettings();
   const receipt=row.payment_verified_at?await receiptService.ensure(type,id):null;
   if(job.event==='payment_success' && !receipt)throw new Error('A verified receipt is required.');
   const origin=receiptService.publicOrigin(),receiptLink=receipt && origin?`${origin}/receipts/${receipt.token}`:'';
   const cancelled=row.registration_status==='Cancelled' || row.order_status==='cancelled';
-  const status=type==='course_enquiry'?'Enquiry received':job.event==='payment_success'?(cancelled?'Paid — cancelled; contact studio':'Payment Successful'):job.event==='created'?(cancelled?'Cancelled':['Paid','paid'].includes(row.payment_status)?'Received ? payment successful':row.payment_status==='Not Required' && row.registration_status==='Confirmed'?'Confirmed — no payment required':'Received — complete payment if required'):job.status;
+  const status=type==='consultation_booking' && row.scheduling_status && job.event==='created'?'Booking request received — not an appointment confirmation':type==='course_enquiry'?'Enquiry received':job.event==='payment_success'?(cancelled?'Paid — cancelled; contact studio':'Payment Successful'):job.event==='created'?(cancelled?'Cancelled':['Paid','paid'].includes(row.payment_status)?'Received ? payment successful':row.payment_status==='Not Required' && row.registration_status==='Confirmed'?'Confirmed — no payment required':'Received — complete payment if required'):job.status;
   let next=job.detail || (job.event==='payment_success'?'Keep your reference. View your confirmation in the registering browser.':'View your booking/order in the registering browser or contact the studio.');
   if(type==='product_order' && job.event==='digital_ready'){
     const grant=await require('./digitalDeliveryService').ensure(id);
@@ -34,6 +35,11 @@ async function enqueue(type,id,job){
   const amountText=type==='course_enquiry'?'Not applicable':'INR '+(amount/100).toFixed(2);
   const event=eventName(type,job.event);let subject=`${site.store_name}: ${event.replaceAll('_',' ')}`;
   let message=`Hello ${customer.name || 'Customer'},\n\n${items.map(item=>item.name).join(', ')}\nReference: ${id}\nAmount: ${amountText}\nStatus: ${status}\n${next}\n${receiptLink?'Receipt: '+receiptLink:receipt?'Your paid receipt is available from your confirmation page.':''}\n\n${site.store_name}`;
+  if(type==='consultation_booking' && row.scheduling_status){
+    message+=`\nRequested time: ${row.preferred_date} ${row.preferred_time} Asia/Kolkata (UTC+05:30).\n`;
+    if(row.scheduled_date)message+=`Approved/proposed time: ${row.scheduled_date} ${row.scheduled_time} Asia/Kolkata (UTC+05:30).\n`;
+    message+='An alternative requires explicit customer acceptance in the booking browser. Payment alone does not confirm availability.\n';
+  }
   if(type==='product_order'){
     const money=value=>'INR '+Number(value || 0).toFixed(2);
     const detail=row.items.map(item=>[
@@ -53,20 +59,44 @@ async function enqueue(type,id,job){
     message+=`\n${next}\n${receiptLink?'Receipt: '+receiptLink:''}\n${site.store_name}`;
   }
   let ownerMessage=message;
+  if(newOrder){
+    ownerMessage=`NEW ORDER RECEIVED — NOT A PAYMENT CONFIRMATION\nOrder status: ${row.order_status}\n${message}`;
+  }
   if(type==='product_order' && job.event==='payment_success'){
     subject=`Order Confirmed - Garment Pattern Store - ${id}`;
     const physical=require('./digitalDeliveryService').physical(row);
     ownerMessage=`NEW PAID ORDER\n\nCUSTOMER\nName: ${customer.name || ''}\nPhone: ${customer.phone || ''}\nEmail: ${customer.email || ''}\n\nORDER\nRazorpay Payment ID: ${row.payment_reference}\n${message}`;
     if(physical)ownerMessage+=`\nDELIVERY\nAddress: ${row.shipping_address || ''}\nCity: ${row.shipping_city || ''}\nState: ${row.shipping_state || row.delivery_state || ''}\nPincode: ${row.delivery_pincode || ''}\nZone: ${row.destination_region || row.delivery_zone || ''}\nDispatch Hub: ${row.dispatch_location || ''}\nSelected Courier: ${row.courier_name || ''}\n`;
-    if(row.items.some(item=>Number(item.quantity ?? 1)>0)){
+    const hasDigital = row.items.some(item => (Number(item.quantity ?? 1) > 0 && item.printable_selected !== false) || (Array.isArray(item.selected_files) && item.selected_files.length > 0));
+    if(hasDigital){
       const grant=await require('./digitalDeliveryService').ensure(id);
       message+=grant?.download_token && origin?`\nSecure digital download: ${origin}/downloads/${grant.download_token}\nValid until: ${grant.download_expires_at.toISOString()}\n`:'\nYour secure digital download information will be sent when your files are ready.\n';
     }
   }
   const category=job.event==='payment_success' ?'payment_confirmation':categories[type];
-  const targets=job.event==='digital_ready'?[{channel:'email',destination:customer.email}]:[{channel:'email',destination:customer.email},{channel:'whatsapp',destination:customer.phone}];
-  const ownerEvent=job.event==='payment_success'?'admin_successful_payment':job.event==='created'?{product_order:'admin_new_order_alert',course_enquiry:'admin_course_enquiry',webinar_registration:'admin_webinar_registration',book_purchase:'admin_book_purchase',consultation_booking:'admin_consulting_booking'}[type]:null;
-  if(ownerEvent && settings[ownerEvent])targets.push({channel:'email',destination:process.env.ADMIN_NOTIFICATION_EMAIL || site.contact_email,admin:true});
+  const targets=newOrder?[]:job.event==='digital_ready'?[{channel:'email',destination:customer.email}]:[{channel:'email',destination:customer.email},{channel:'whatsapp',destination:customer.phone}];
+  const ownerEvents={product_order:'admin_new_order_alert',course_enquiry:'admin_course_enquiry',class_registration:'admin_course_booking',course_registration:'admin_course_booking',webinar_registration:'admin_webinar_registration',book_purchase:'admin_book_purchase',consultation_booking:'admin_consulting_booking'};
+  const bookingUpdate=job.event==='status_update' && (type==='consultation_booking' || (type!=='product_order' && job.status==='Cancelled'));
+  const ownerEvent=job.event==='payment_success'?'admin_successful_payment':job.event==='created' || bookingUpdate?ownerEvents[type]:null;
+  if(ownerEvent && job.event!=='created' && type!=='product_order'){
+    ownerMessage=`Customer Name: ${customer.name || ''}\nCustomer Email: ${customer.email || ''}\nPhone or WhatsApp: ${customer.phone || ''}\nCustomer Message: ${row.notes || row.message || ''}\nBooking status: ${row.registration_status || row.status || ''}\n${message}`;
+  }
+  if(ownerEvent && job.event==='created' && !['product_order','course_enquiry'].includes(type)){
+    const source={course_registration:'/courses',webinar_registration:'/webinars',book_purchase:'/books',consultation_booking:'/consulting'}[type] || '/';
+    const details={
+      'Customer Name':customer.name || row.name || row.full_name,
+      'Customer Email':customer.email || row.email,
+      'Phone or WhatsApp':customer.phone || row.phone || row.whatsapp,
+      'Enquiry or Booking Type':{course_registration:'Course booking',webinar_registration:'Webinar registration',book_purchase:'Book enquiry or purchase',consultation_booking:'Consulting enquiry or booking'}[type],
+      'Product or Service':items.map(item=>item.name).filter(Boolean).join(', ') || row.item_name || row.course_name,
+      'Customer Message':row.message || row.notes,
+      'Submission Date and Time':row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
+      'Reference ID':String(id),
+      'Enquiry Source':row.source || source
+    };
+    ownerMessage=Object.entries(details).filter(([,value])=>value!==undefined && value!==null && String(value).trim()!=='').map(([label,value])=>`${label}: ${value}`).join('\n')+'\n\n'+ownerMessage;
+  }
+  if(ownerEvent && !(job.event==='created' && (type==='consultation_booking' || (type==='course_enquiry' && row.business_notification_pending!==undefined))))targets.push({channel:'email',destination:require('./leadNotifications').ownerDestination(site),admin:true});
   for(const target of targets){
     const key=crypto.createHash('sha256').update(`${type}|${id}|${job.key}|${target.channel}|${target.admin?'admin':'customer'}`).digest('hex');
     const cat=target.admin?ownerEvent:category;
@@ -79,6 +109,8 @@ async function enqueue(type,id,job){
 async function flush(type,id){
   if(type==='product_order')await require('./digitalDeliveryService').ensure(id);
   const Model=require('../models/mongo/'+receiptService.types[type]);
+  // Recover the second gate after an interrupted scheduling/payment request.
+  if(type==='consultation_booking')await Model.confirmScheduled(id);
   const row=await Model.findById(id).lean();if(!row)return;
   if(row.payment_verified_at)await receiptService.ensure(type,id);
   for(const job of row.notification_jobs || []){
@@ -118,6 +150,19 @@ function createDispatcher(providers=createProviders()){
     const row=await Log.findOneAndUpdate({_id:id,status:{$in:['queued','pending']}},{$set:{status:'sending',locked_at:new Date(),error_message:''},$inc:{attempts:1}},{new:true});if(!row)return false;
     let providerId;
     try{
+      if(row.event==='admin_lead_enquiry'){
+        row.destination=require('./leadNotifications').ownerDestination(await require('./siteSettingsService').getSiteSettings(),true);
+        await Log.updateOne({_id:id,status:'sending'},{$set:{destination:row.destination}});
+        const Contact=require('../models/mongo/'+(row.reference_type==='consultation_booking'?'ConsultationBooking':'Lead'));
+        const contact=await Contact.findById(row.reference_id).select('email name full_name message notes').lean();
+        require('./leadNotifications').enrichEnquiryLog(row,contact || '');
+      }
+      else if(row.channel==='email'){
+        const site=await require('./siteSettingsService').getSiteSettings();
+        const context=Object.hasOwn(receiptService.types,row.reference_type)?await receiptService.context(row.reference_type,row.reference_id):null;
+        const replyTo=row.event.startsWith('admin_')?context?.customer.email:require('./leadNotifications').ownerDestination(site);
+        require('./leadNotifications').enrichNotificationLog(row,replyTo);
+      }
       providerId=await providers[row.channel](row);
       await Log.updateOne({_id:id,status:'sending'},{$set:{status:'sent',provider_response_id:providerId,sent_at:new Date(),error_message:''}});
       return true;
@@ -145,6 +190,7 @@ async function reminders(now=new Date()){
   }
 }
 async function tick(){
+  await require('./leadNotifications').reconcile();
   await require('./digitalDeliveryService').reconcile();
   for(const [type,name] of Object.entries(receiptService.types)){
     const Model=require('../models/mongo/'+name);

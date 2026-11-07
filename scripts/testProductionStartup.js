@@ -1,4 +1,4 @@
-// Production startup smoke test with temporary MongoDB; notification worker disabled.
+// Production startup smoke test with temporary MongoDB and the notification worker enabled.
 const assert=require('node:assert/strict'),net=require('node:net'),{spawn}=require('node:child_process'),mongoose=require('mongoose');
 const {MongoMemoryServer}=require('mongodb-memory-server');
 async function run(){
@@ -9,7 +9,7 @@ async function run(){
   await require('../models/mongo/Product').create({name:'SEO Smoke Test Shirt',slug:'seo-smoke-test-shirt',description:'PDF shirt pattern for startup testing.',images:['/images/basic-shirt-pattern.svg'],base_price:250,active:true});
   await mongoose.disconnect();
   const socket=net.createServer();await new Promise(resolve=>socket.listen(0,'127.0.0.1',resolve));const port=socket.address().port;await new Promise(resolve=>socket.close(resolve));
-  child=spawn(process.execPath,['server.js'],{env:{...process.env,NODE_ENV:'production',PORT:String(port),MONGODB_URI:mongo.getUri(),SESSION_SECRET:require('node:crypto').randomBytes(32).toString('hex'),ADMIN_USERNAME:'startup-test',ADMIN_PASSWORD:'startup-test-only',APP_BASE_URL:'https://store.example.test',SITE_URL:'https://store.example.test',NOTIFICATIONS_WORKER_ENABLED:'false',DB_HOST:'127.0.0.1',DB_PORT:'1'},stdio:['ignore','pipe','pipe']});
+  child=spawn(process.execPath,['server.js'],{env:{...process.env,NODE_OPTIONS:'--require '+JSON.stringify(require('node:path').join(__dirname,'isolatedTestGuard.js')),SMTP_HOST:'',SMTP_PORT:'',SMTP_SECURE:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:'',LEAD_NOTIFICATION_TO:'',RAZORPAY_KEY_ID:'',RAZORPAY_KEY_SECRET:'',RAZORPAY_WEBHOOK_SECRET:'',GMAIL_USER:'',GMAIL_APP_PASSWORD:'',EMAIL_HOST:'',EMAIL_PASSWORD:'',WHATSAPP_ACCESS_TOKEN:'',NODE_ENV:'production',PORT:String(port),MONGODB_URI:mongo.getUri(),SESSION_SECRET:require('node:crypto').randomBytes(32).toString('hex'),ADMIN_USERNAME:'startup-test',ADMIN_PASSWORD:'startup-test-only',APP_BASE_URL:'https://store.example.test',SITE_URL:'https://store.example.test',DB_HOST:'127.0.0.1',DB_PORT:'1'},stdio:['ignore','pipe','pipe']});
   child.stdout.on('data',b=>output+=b);child.stderr.on('data',b=>output+=b);
   const until=Date.now()+30000;
   while(!output.includes('MongoDB connected successfully.') && Date.now()<until){if(child.exitCode!==null)throw new Error('Production process exited');await new Promise(resolve=>setTimeout(resolve,200));}

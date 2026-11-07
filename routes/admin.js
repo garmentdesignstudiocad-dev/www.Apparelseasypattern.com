@@ -129,6 +129,7 @@ function parseFilePayload(body) {
     file_name: String(body?.file_name || '').trim(),
     file_type: String(body?.file_type || '').trim(),
     ...(price !== undefined && String(price).trim() !== '' ? { file_price: Number(price) } : {}),
+    price_per_selected_size: body?.price_per_selected_size === 'on' || body?.price_per_selected_size === true || body?.price_per_selected_size === '1',
     active: body?.active === 'on' || body?.active === true || body?.active === '1',
   };
 }
@@ -960,8 +961,8 @@ router.get('/orders-export.csv', adminAuth, async (req, res) => {
   try {
     const orders = await Order.find().populate('customer_id').sort({ createdAt: -1 }).lean();
     const { csvCell } = require('../services/businessValidation');
-    const rows = [['Order ID','Customer','Email','Phone','Pincode','Subtotal','Historical Delivery','GST','Grand Total','Payment Status','Order Status','Razorpay Reference','Date']];
-    orders.forEach(order => rows.push([order._id,order.customer_id?.name,order.customer_id?.email,order.customer_id?.phone,order.delivery_pincode,order.subtotal,order.delivery_flow_version===2?undefined:order.delivery_charge,order.tax_amount,order.grand_total,order.payment_status,order.order_status,order.payment_reference,order.createdAt]));
+    const rows = [['Order ID','Customer','Email','Phone','Pincode','Subtotal','Courier Charge','GST','Grand Total','Payment Status','Order Status','Razorpay Reference','Date']];
+    orders.forEach(order => rows.push([order._id,order.customer_id?.name,order.customer_id?.email,order.customer_id?.phone,order.delivery_pincode,order.subtotal,order.delivery_charge,order.tax_amount,order.grand_total,order.payment_status,order.order_status,order.payment_reference,order.createdAt]));
     res.type('text/csv').attachment('orders.csv').send(rows.map(row => row.map(csvCell).join(',')).join('\n'));
   } catch (error) { logError('Order CSV export error:', error); res.status(500).send('Unable to export orders.'); }
 });

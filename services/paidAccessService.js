@@ -18,7 +18,7 @@ function quote(kind,item,settings) {
 function snapshot(kind,item,settings) {
   const price=quote(kind,item,settings);
   if(!price.active || price.external) throw Object.assign(new Error('Direct access is unavailable.'),{status:409});
-  return {payment_purpose:purposes[kind],amount_paise:price.amount_paise,currency:'INR',payment_status:price.amount_paise?'Pending':'Not Required',registration_status:price.amount_paise?'Payment Pending':'Confirmed'};
+  return {payment_purpose:purposes[kind],amount_paise:price.amount_paise,currency:'INR',payment_status:price.amount_paise?'Pending':'Not Required',registration_status:price.amount_paise?'Payment Pending':kind==='consulting'?'Registered':'Confirmed',...(kind==='consulting'?{scheduling_status:'Pending'}:{})};
 }
 function paymentService(Model,purpose,options={}) {
   return createService({...options,RegistrationModel:Model,purpose,receiptPrefix:purpose==='course_registration'?'crs':purpose==='book_purchase'?'book':'con',seatBased:false});

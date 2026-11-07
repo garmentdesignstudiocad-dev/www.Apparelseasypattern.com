@@ -14,7 +14,7 @@ async function renderForm(req,res,kind,item,fee,{status=200,error='',values={}}=
   forms.fresh(req,res);
   const nonce=tokens.issue(req,`${kind}/${item._id}`);
   await saveSession(req);
-  return res.status(status).render('learning/access-form',{title:status===200?(kind==='books'?'Buy / Access Book':'Book Consultation'):'Review Your Details',kind,item,fee,nonce,error,values});
+  return res.status(status).render('learning/access-form',{title:status===200?(kind==='books'?'Buy / Access Book':'Request a Consultation'):'Review Your Details',kind,item,fee,nonce,error,values});
 }
 router.use((req,res,next)=>/^\/(books\/[^/]+\/access|consulting(?:\/|$)|book-purchases(?:\/|$)|consultation-bookings(?:\/|$))/.test(req.path)?next():next('router'));
 router.use(forms.withRecovery(async(req,res)=>{
@@ -73,9 +73,15 @@ for(const [kind,Parent,Model,base] of [['books',Book,Purchase,'book-purchases'],
   const owner=wrap(async(req,res,next)=>req.session[base]?.includes(req.params.id) || await Model.exists({_id:req.params.id,session_owner:tokens.owner(req)})?next():res.status(403).send('Use the browser used to register, or contact the studio with your reference.'));
   router.get(`/${base}/:id`,owner,wrap(async(req,res)=>{
     const item=await Model.findById(req.params.id).lean();if(!item)return res.sendStatus(404);
-    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && ['Paid','Not Required'].includes(item.payment_status);
+    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && ['Paid','Not Required'].includes(item.payment_status) && (kind!=='consulting' || Model.schedulingReady(item));
     const parent=confirmed && kind==='books'?await Parent.findById(item.item_id).select('+ebook_url').lean():null;
     res.set('Cache-Control','no-store').render('learning/access-confirmation',{title:kind==='books'?'Book Purchase':'Consultation Booking',item,itemName:item.item_name,kind,base:`/${base}`,confirmed,privateUrl:parent?.ebook_url || ''});
+  }));
+  if(kind==='consulting')for(const response of ['accept','reject'])router.post(`/${base}/:id/${response}-alternative`,owner,wrap(async(req,res)=>{
+    try {await Model.decideSchedule(req.params.id,response,req.body);}
+    catch(error){if(error.status)return res.status(error.status).send(error.message);throw error;}
+    await require('../services/notificationService').safeFlush(access.purposes[kind],req.params.id);
+    res.redirect(303,`/${base}/${req.params.id}`);
   }));
   for(const action of ['order','verify','check']) router.post(`/${base}/:id/${action}`,owner,wrap(async(req,res)=>{
     try {const result=action==='order'?await payments.order(req.params.id):action==='verify'?await payments.verify(req.params.id,req.body):await payments.reconcile(req.params.id);res.json({...result,redirect:`/${base}/${req.params.id}`});}

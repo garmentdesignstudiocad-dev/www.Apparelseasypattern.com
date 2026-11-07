@@ -8,7 +8,7 @@ Object.assign(labels,require('../config/notificationEvents').ownerLabels,Object.
 router.use((req,res,next)=>/^\/(notifications|settings\/notifications)(\/|$)/.test(req.path)?next():next('router'));
 router.use(require('../middleware/adminAuth'),require('../middleware/learningForms'));
 router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
-router.get('/settings/notifications',wrap(async(req,res)=>res.render('admin/notification-settings',{title:'Notification Settings',settings:await service.getSettings(),labels,providerReady:{email:Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) || ['EMAIL_HOST','EMAIL_PORT','EMAIL_SECURE','EMAIL_USER','EMAIL_PASSWORD','EMAIL_FROM'].every(key=>Boolean(process.env[key])),whatsapp:['WHATSAPP_PHONE_NUMBER_ID','WHATSAPP_ACCESS_TOKEN','WHATSAPP_API_VERSION','WHATSAPP_TEMPLATE_NAME'].every(key=>Boolean(process.env[key]))}})));
+router.get('/settings/notifications',wrap(async(req,res)=>res.render('admin/notification-settings',{title:'Notification Settings',settings:await service.getSettings(),labels,providerReady:{email:require('../services/emailService').isConfigured(),whatsapp:['WHATSAPP_PHONE_NUMBER_ID','WHATSAPP_ACCESS_TOKEN','WHATSAPP_API_VERSION','WHATSAPP_TEMPLATE_NAME'].every(key=>Boolean(process.env[key]))}})));
 router.post('/settings/notifications',wrap(async(req,res)=>{
   const data=Object.fromEntries(Object.keys(labels).map(key=>[key,req.body[key]==='on']));
   await Settings.findOneAndUpdate({_id:'default'},{$set:data},{upsert:true,runValidators:true});

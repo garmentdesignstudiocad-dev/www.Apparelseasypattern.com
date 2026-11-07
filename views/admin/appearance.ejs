@@ -62,7 +62,7 @@
     }
 
     .cms-section[open] > summary::after {
-      content: "âˆ’";
+      content: "\2212";
     }
 
     .cms-section[open] > summary {
@@ -257,6 +257,109 @@
         position: static;
       }
     }
+
+    .cms-quick-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 14px;
+      background: #faf8f5;
+      border: 1px solid #e7ded7;
+      border-radius: 12px;
+    }
+
+    .cms-quick-pill {
+      display: inline-block;
+      padding: 7px 14px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid #d4c8bf;
+      color: #62392d;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .cms-quick-pill:hover,
+    .cms-quick-pill:focus {
+      background: #62392d;
+      color: #fff;
+      border-color: #62392d;
+    }
+
+    .cms-summary-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 12px;
+    }
+
+    .cms-open {
+      padding: 6px 12px;
+      border: 1px solid #d4c8bf;
+      border-radius: 6px;
+      text-decoration: none;
+      color: #62392d;
+      font-size: 12px;
+      font-weight: 600;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cms-open:hover {
+      background: #62392d;
+      color: #fff;
+      border-color: #62392d;
+    }
+
+    .cms-floating-bar {
+      position: sticky;
+      bottom: 20px;
+      z-index: 100;
+      margin-top: 30px;
+      padding: 14px 20px;
+      background: #201b1a;
+      color: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .cms-floating-bar span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .cms-floating-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cms-save-btn {
+      padding: 10px 20px;
+      background: #c58b62;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .cms-save-btn:hover {
+      background: #b0754d;
+    }
+
   </style>
 </head>
 
@@ -292,6 +395,22 @@
       </div>
     <% } %>
 
+    <!-- QUICK PAGE JUMP NAVIGATION -->
+    <nav class="cms-quick-nav" aria-label="Quick page navigation">
+      <strong style="align-self:center;margin-right:6px;font-size:13px;color:#201b1a;">Quick Edit:</strong>
+      <a href="#sec-0" class="cms-quick-pill" onclick="expandSec(0)">Home</a>
+      <a href="#sec-1" class="cms-quick-pill" onclick="expandSec(1)">About Us</a>
+      <a href="#sec-2" class="cms-quick-pill" onclick="expandSec(2)">Products</a>
+      <a href="#sec-3" class="cms-quick-pill" onclick="expandSec(3)">Services</a>
+      <a href="#sec-4" class="cms-quick-pill" onclick="expandSec(4)">Classes</a>
+      <a href="#sec-5" class="cms-quick-pill" onclick="expandSec(5)">Consulting</a>
+      <a href="#sec-6" class="cms-quick-pill" onclick="expandSec(6)">Contact</a>
+      <a href="#sec-7" class="cms-quick-pill" onclick="expandSec(7)">Header &amp; Footer</a>
+      <a href="#sec-8" class="cms-quick-pill" onclick="expandSec(8)">SEO &amp; Social</a>
+      <a href="#sec-9" class="cms-quick-pill" onclick="expandSec(9)">Colors &amp; Theme</a>
+    </nav>
+
+
     <%
       const humanLabel = key =>
         key.replaceAll('_', ' ')
@@ -299,16 +418,16 @@
           .replace(/\bUrl\b/g, 'URL')
           .replace(/\bSeo\b/g, 'SEO');
 
-      const descriptions = {
+            const descriptions = {
         store_name: 'Store name shown on the website.',
         logo_url: 'Full HTTPS URL to your business logo.',
         favicon_url: 'Browser tab icon URL.',
         main_website_url: 'Main consultancy / Wix website link.',
-        contact_email: 'Public contact email.',
-        contact_phone: 'Public phone number.',
-        whatsapp_number: 'WhatsApp number with country code.',
-        support_cta: 'Short support message.',
-        address: 'Business address.',
+        contact_email: 'Public contact email for customer and lead enquiries.',
+        contact_phone: 'Public phone number with international country code.',
+        whatsapp_number: 'WhatsApp number with country code (e.g. +91 9791753067).',
+        support_cta: 'Short support response message shown in the footer and contact pages.',
+        address: 'Business address shown on contact pages and receipts.',
 
         homepage_heading: 'Main heading displayed on the homepage.',
         homepage_subheading: 'Text directly below the homepage heading.',
@@ -318,11 +437,52 @@
         home_primary_button: 'Text of the primary homepage button.',
         home_secondary_button: 'Text of the secondary homepage button.',
 
+        about_eyebrow: 'Small label above the About Us title.',
+        about_heading: 'Main heading on the About Us page.',
+        about_intro: 'Introductory story paragraph on the About Us page.',
+        about_cta_text: 'Text on the explore button on About Us.',
+        about_cta_link: 'Destination link for the About Us explore button (e.g. /products).',
+        about_tile_1_title: 'First feature column heading (e.g. Digital patterns).',
+        about_tile_1_text: 'First feature column explanation.',
+        about_tile_2_title: 'Second feature column heading (e.g. Physical patterns).',
+        about_tile_2_text: 'Second feature column explanation.',
+        about_tile_3_title: 'Third feature column heading (e.g. Trial samples).',
+        about_tile_3_text: 'Third feature column explanation.',
+
         products_heading: 'Main heading on the Products page.',
         products_description: 'Introductory paragraph on the Products page.',
+        view_products_label: 'Catalog button text.',
+
+        services_heading: 'Main heading on the Services page.',
+        services_description: 'Introductory explanation of studio services.',
+        services_cta_text: 'Service enquiry button label.',
+        services_cta_link: 'Service button destination link.',
+
+        classes_eyebrow: 'Small label above the Online Classes heading.',
+        classes_heading: 'Main heading on the Online Classes page.',
+        classes_description: 'Course overview and learning topics explanation.',
+        classes_cta_text: 'Button text to submit class enquiry.',
+        classes_cta_link: 'Button destination for online classes.',
+
+        consulting_heading: 'Heading for the Consulting booking page.',
+        consulting_subheading: 'Subheading question for consulting clients.',
+        consulting_description: 'Explanation of what is covered in technical consulting.',
+        consulting_cta_text: 'Submit button text on the consulting page.',
+
+        contact_heading: 'Heading for the Contact page.',
+        contact_description: 'Introduction text displayed above contact details.',
+
         cart_heading: 'Shopping cart page heading.',
         checkout_heading: 'Checkout page heading.',
         footer_text: 'Business description in the footer.',
+        footer_tagline: 'Tagline shown below the logo in the footer.',
+        footer_security_label: 'Security assurance notice in the footer.',
+        footer_credit_label: 'Footer created-by label.',
+        footer_credit_name: 'Footer creator organization name.',
+        back_website_label: 'Link label pointing back to main website.',
+
+        og_image_url: 'Image URL for WhatsApp, LinkedIn, and Facebook social share previews.',
+        twitter_handle: 'Twitter / X username for social card attribution.',
 
         main_font: 'Font used for normal text.',
         heading_font: 'Font used for headings.',
@@ -551,8 +711,7 @@
         'home_expertise_description',
         'home_books_description',
         'home_classes_description',
-        'products_description',
-        'address'
+        'products_description', 'address', 'about_intro', 'about_tile_1_text', 'about_tile_2_text', 'about_tile_3_text', 'services_description', 'classes_description', 'consulting_description', 'contact_description'
       ]);
 
       for (let i = 1; i <= 4; i++) {
@@ -575,16 +734,16 @@
           <%= index === 0 ? 'open' : '' %>
         >
 
-          <summary>
-            <span>
-              <span class="cms-section-title">
-                <%= section.title %>
-              </span>
-
-              <span class="cms-section-description">
-                <%= section.description %>
-              </span>
+          <summary id="sec-<%= index %>">
+            <span style="flex:1">
+              <span class="cms-section-title"><%= section.title %></span>
+              <span class="cms-section-description"><%= section.description %></span>
             </span>
+            <% if (section.viewUrl) { %>
+              <div class="cms-summary-actions" onclick="event.stopPropagation()">
+                <a class="cms-open" href="<%= section.viewUrl %>" target="_blank" rel="noopener">View Page ↗</a>
+              </div>
+            <% } %>
           </summary>
 
           <div class="cms-section-body">
@@ -732,7 +891,7 @@
 
               <strong data-preview="store_name"></strong>
 
-              <span>Patterns Â· Cart</span>
+              <span>Patterns &middot; Cart</span>
 
             </header>
 
@@ -757,7 +916,7 @@
                 </p>
 
                 <strong class="preview-accent">
-                  â‚¹500
+                  ₹500
                 </strong>
 
                 <p>
@@ -799,7 +958,7 @@
           rel="noopener"
           class="cms-open"
         >
-          View Homepage â†—
+          View Homepage &nearr;
         </a>
 
         <a
@@ -808,9 +967,19 @@
           rel="noopener"
           class="cms-open"
         >
-          View Products â†—
+          View Products &nearr;
         </a>
 
+      </div>
+
+
+      <!-- STICKY BOTTOM SAVE ACTION BAR -->
+      <div class="cms-floating-bar">
+        <span>Ready to apply your updates?</span>
+        <div class="cms-floating-actions">
+          <a class="cms-open" href="/" target="_blank" rel="noopener" style="background:#332927;color:#fff;border-color:#4a3f3c">View Storefront ↗</a>
+          <button type="submit" class="cms-save-btn">Save All Changes</button>
+        </div>
       </div>
 
     </form>
@@ -851,6 +1020,17 @@
   </main>
 
   <script src="/js/admin-appearance.js"></script>
+
+
+  <script>
+    function expandSec(index) {
+      const details = document.querySelectorAll('.cms-section');
+      if (details[index]) {
+        details[index].open = true;
+        details[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  </script>
 
 </body>
 </html>

@@ -51,9 +51,9 @@ module.exports=async function({models,request,token,nonce,person,gateway}){
   const paymentId='pay_cadformtest',originalFetch=gateway.payments.fetch;
   gateway.payments.fetch=async id=>id===paymentId?{id,order_id:firstOrder,amount:19900,currency:'INR',status:'captured',captured:true}:originalFetch(id);
   await checkout.handler({razorpay_order_id:firstOrder,razorpay_payment_id:paymentId,razorpay_signature:crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update(firstOrder+'|'+paymentId).digest('hex')});
-  assert.equal(window.redirect,bookingUrl);assert.equal((await Booking.findById(id)).registration_status,'Confirmed');assert.equal((await Booking.findById(id)).payment_status,'Paid');
+  assert.equal(window.redirect,undefined);assert.match(message.textContent,/Scheduling approval/);assert.equal((await Booking.findById(id)).registration_status,'Payment Pending');assert.equal((await Booking.findById(id)).payment_status,'Paid');
   assert.equal((await request(bookingUrl,null,'other-browser')).status,403);
   gateway.orders.create=originalCreate;gateway.payments.fetch=originalFetch;
-  console.log('PASS consulting forms: fresh GET/error tokens, preserved values, stale-CSRF recovery without writes, cross-session/service rejection, multiple tabs, concurrent submissions, pending-booking reuse, rejected gateway retry, one Razorpay order, popup open, verified confirmation.');
+  console.log('PASS consulting forms: fresh GET/error tokens, preserved values, stale-CSRF recovery without writes, cross-session/service rejection, multiple tabs, concurrent submissions, pending-booking reuse, rejected gateway retry, one Razorpay order, popup open, verified payment awaiting scheduling approval.');
   console.log('Tested paths: /consulting ; /consulting/cad-pattern-support ; /consulting/cad-pattern-support/access ; /consultation-bookings/:id (isolated HTTP server).');
 };

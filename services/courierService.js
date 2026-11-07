@@ -6,6 +6,13 @@ async function available(route){
  return Courier.find({_id:{$in:route.partner_ids || []},active:true}).sort({priority:1,name:1}).lean();
 }
 function safeUrl(value){if(!value)return true;try{const u=new URL(value);return u.protocol==='https:' && !u.username && !u.password;}catch{return false;}}
-function option(row){return {_id:row._id,name:row.name,delivery_min_days:row.delivery_min_days,delivery_max_days:row.delivery_max_days,
+function chargePaise(row){
+ if(!row || row.charge_approved!==true || row.charge===null || row.charge===undefined || (typeof row.charge==='string' && !row.charge.trim()))return null;
+ const amount=Number(row.charge),amountPaise=Math.round(amount*100);
+ if(!Number.isFinite(amount) || amount<0 || amount>1000000 || !Number.isSafeInteger(amountPaise) || Math.abs(amount*100-amountPaise)>1e-7)return null;
+ return amountPaise;
+}
+function option(row){const charge=chargePaise(row);return {_id:row._id,name:row.name,delivery_min_days:row.delivery_min_days,delivery_max_days:row.delivery_max_days,
+  charge_approved:charge!==null,charge:charge===null?null:charge/100,
   estimated_delivery:row.delivery_min_days && row.delivery_max_days?row.delivery_min_days+' - '+row.delivery_max_days+' Days':'Not configured'};}
-module.exports={defaults,available,safeUrl,option};
+module.exports={defaults,available,safeUrl,chargePaise,option};

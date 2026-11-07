@@ -42,6 +42,19 @@ async function run(){
   assert.match(head,/<meta name="description" content="Explore ready-to-use garment pattern blocks, printable sewing patterns and optional editable DXF files\. Browse the apparel pattern library for sampling and garment development\.">/);
   assert.match(head,/<link rel="canonical" href="https:\/\/store\.example\.test\/">/);
   assert.match(head,/<meta property="og:image" content="https:\/\/store\.example\.test\/logo\.png">/);
+  const Product=require('../models/mongo/Product'),find=Product.find,distinct=Product.distinct;
+  const fixtures=[null,undefined,'',0,25].map((price,i)=>({name:'Fixture '+i,slug:'fixture-'+i,base_price:price}));
+  fixtures.push({name:'Upcoming fixture',slug:'upcoming-fixture',status:'coming_soon',base_price:25});
+  let rendered;
+  try{
+    Product.distinct=async()=>[];Product.find=()=>({sort:()=>({lean:async()=>fixtures})});
+    await require('../controllers/productsController').listProducts({query:{}},{locals:{siteSettings:{products_seo_title:'Owner-edited title',products_seo_description:'Owner-edited description'}},render:(view,data)=>{rendered=data;}},error=>{throw error;});
+  }finally{Product.find=find;Product.distinct=distinct;}
+  assert.equal(rendered.seoTitle,'Owner-edited title');assert.equal(rendered.description,'Owner-edited description');
+  const catalogue=await ejs.renderFile('views/products.ejs',{...rendered,siteSettings:settings,themeVariables:appearance.cssVariables(settings),...require('../config/features').helpers()});
+  assert.match(catalogue,/<title>Owner-edited title<\/title>/);assert.match(catalogue,/<meta name="description" content="Owner-edited description">/);
+  assert.equal((catalogue.match(/Price on enquiry/g)||[]).length,4);assert.match(catalogue,/From ₹25\.00/);assert.doesNotMatch(catalogue,/Coming soon\s*₹|₹0\.00/);
+  console.log('PASS: owner-edited catalogue SEO reaches rendered metadata; missing/blank/zero prices do not claim a free price; Coming soon has no dangling currency.');
   console.log('PASS: homepage metadata, dynamic product metadata, safe image URLs, and factual Product structured data.');
 }
 

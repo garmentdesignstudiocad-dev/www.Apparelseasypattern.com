@@ -52,8 +52,8 @@ async function run(){
     }
     const login=await request('/admin/login',{username:process.env.ADMIN_USERNAME,password:process.env.ADMIN_PASSWORD});
     assert.equal(login.status,302,'Admin fixture login must succeed.');
-    const update=async(id,price)=>request(`/admin/products/${product._id}/files/${id}/edit`,{
-      file_name:'Updated DXF',purpose:'dxf',file_type:'DXF',file_price:price,
+    const update=async(id,price,perSize=false)=>request(`/admin/products/${product._id}/files/${id}/edit`,{
+      file_name:'Updated DXF',purpose:'dxf',file_type:'DXF',file_price:price,...(perSize?{price_per_selected_size:'on'}:{}),
     });
 
     assert.equal((await update(nullPrice._id,'')).status,302);
@@ -66,6 +66,10 @@ async function run(){
     assert.equal((await ProductFile.collection.findOne({_id:nullPrice._id})).file_price,0,'An explicit zero must be stored.');
     assert.equal((await update(numericPrice._id,'42')).status,302);
     assert.equal((await ProductFile.collection.findOne({_id:numericPrice._id})).file_price,42,'An entered numeric price must update normally.');
+    assert.equal((await update(numericPrice._id,'42',true)).status,302);
+    assert.equal((await ProductFile.collection.findOne({_id:numericPrice._id})).price_per_selected_size,true,'Admin can enable per-selected-size file pricing.');
+    assert.equal((await update(numericPrice._id,'42')).status,302);
+    assert.equal((await ProductFile.collection.findOne({_id:numericPrice._id})).price_per_selected_size,false,'Unchecking restores the legacy flat-price behavior.');
     assert.equal(await ProductFile.countDocuments({product_id:product._id}),countBefore,'Metadata edits must not create ProductFiles.');
     assert.equal((await ProductFile.collection.findOne({_id:nullPrice._id})).active,false);
     assert.equal((await ProductFile.collection.findOne({_id:numericPrice._id})).active,false);

@@ -13,7 +13,7 @@ async function run(){
   const prepared=await require('../services/launchSetup').prepare();
   assert.equal(prepared.product_id,null);
   assert.equal(await Product.countDocuments(),0,'Launch preparation must not invent products.');
-  const product=await Product.create({name:'Test Shirt',slug:'test-shirt',category:'shirts',description:'Fixture pattern description',base_price:100,additional_size_price:10,physical_price:50,trial_price:200,available_sizes:['S','M'],size_prices:[{size:'M',price:70}],digital_file:'printable.pdf'});
+  const product=await Product.create({name:'Test Shirt',slug:'test-shirt',category:'shirts',description:'Fixture pattern description',base_price:100,additional_size_price:10,physical_price:50,trial_price:200,available_sizes:['S','M'],size_prices:[{size:'M',price:70}],digital_file:'printable.pdf',pattern_options:{printable:true,physical:true,trial:true}});
   await Product.create([{name:'Test Pants',slug:'test-pants',category:'pants'},{name:'Test Draft',slug:'test-draft',category:'shirts',status:'draft'},{name:'Test Upcoming',slug:'test-upcoming',category:'shirts',status:'coming_soon'}]);
   const files=await File.create([{product_id:product._id,file_name:'DXF',purpose:'dxf',file_type:'DXF',file_price:40,digital_file:'editable.dxf'}, {product_id:product._id,file_name:'Tech pack',purpose:'tech_pack',file_type:'PDF',file_price:30,digital_file:'support.pdf',watermark_pdf:true}, {product_id:product._id,file_name:'Measurements',purpose:'specs',file_type:'PDF',file_price:20,digital_file:'measurements.pdf',watermark_pdf:true}]);
   const {PDFDocument}=require('pdf-lib'),pdf=await PDFDocument.create();pdf.addPage([400,600]);const master=Buffer.from(await pdf.save());
@@ -31,21 +31,37 @@ async function run(){
   response=await request('/products?category=shirts');assert.equal(response.status,200);assert.match(response.text,/Test Shirt/);assert(!response.text.includes('Test Pants'));assert(!response.text.includes('Test Draft'));assert.match(response.text,/Test Upcoming/);
   assert.equal((await request('/product/test-draft')).status,404);assert.equal((await request('/products?category=%3Cbad%3E')).status,400);
   response=await request('/product/test-shirt');assert.equal(response.status,200);
-  for(const label of ['Printable Soft Copy','Editable DXF Pattern','Add Basic Tech Pack','Physical Pattern','Order Trial Sample','Measurement Chart / Basic Specifications','pattern-size','data-protected-content','preview-watermark'])assert(response.text.includes(label),label);
+  for(const label of ['SELECT YOUR FIT BLOCK','Soft Copy','Hard Copy','DXF','Tech pack','Order Trial Sample','Measurement Chart / Basic Specifications','pattern-size','data-protected-content','preview-watermark'])assert(response.text.includes(label),label);
+  assert.equal((response.text.match(/<legend>/g)||[]).length,9,'Nine Fit Block groups');
+  for(const label of ['1. Fit Category','2. Fit / Style','3. File Format','4. Digital Documents','5. Fabric Width','6. Sizes','7. Pattern Type','8. Additional Options','9. Delivery'])assert.ok(response.text.includes(label));
+  assert.match(response.text,/id="pdBuyNow"[^>]*>BUY NOW/);
+  assert.ok(!/id="pdBuyNow"[^>]*disabled/.test(response.text));
+  // Execute the real purchase script with mock DOM/fetch; this is not browser QA.
+  async function purchaseAction(buyNow,selectedSizes=['S','M']){
+    const handlers={},elements={},selected={'.pattern-size':selectedSizes.map(value=>({value,checked:true})),'.pattern-file':[{value:String(files[0]._id),checked:true,dataset:{price:'40',fileIndex:'0'}}],'.pattern-addon':[]};
+    const form={addEventListener:(event,fn)=>{handlers[event]=fn;},querySelectorAll:selector=>selector.split(', ').flatMap(part=>selected[part]||[]),querySelector:()=>null};
+    const config={id:String(product._id),base:100,extra:10,physical:50,trial:200,sizePrices:[{size:'M',price:70}]};
+    Object.assign(elements,{'pattern-config':{textContent:JSON.stringify(config)},'pattern-purchase':form,'printable-option':{checked:true},'physical-option':{checked:true},'trial-option':{checked:false},pdAddToCart:{disabled:false},pdBuyNow:{disabled:false,addEventListener:(event,fn)=>{handlers.buy=fn;}}});
+    let payload;const location={};
+    require('node:vm').runInNewContext(fs.readFileSync(path.resolve(__dirname,'../public/js/pattern-product.js'),'utf8'),{document:{getElementById:id=>id==='pattern-sizes'?null:elements[id] ||= {textContent:''}},location,fetch:async(url,options)=>{assert.equal(url,'/cart/add');payload=JSON.parse(options.body);return {ok:true,json:async()=>({ok:true})};}});
+    (buyNow?handlers.buy:handlers.submit)({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+    if(!selectedSizes.length){assert.equal(payload,undefined);assert.match(elements['pattern-error'].textContent,/sizes/);return;}
+    assert.equal(location.href,buyNow?'/checkout':'/cart');assert.equal(payload.printable_selected,true);assert.equal(payload.physical_quantity,2);assert.deepEqual(payload.selected_sizes,['S','M']);assert.equal(payload.quantity,1);
+    assert.equal(elements.pdTotal.textContent,'₹318.60');
+    for(const key of ['fit_category','fit_style','fabric_width'])assert.equal(Object.hasOwn(payload,key),false);
+  }
+  await purchaseAction(false);await purchaseAction(true);await purchaseAction(true,[]);
   for(const secret of ['printable.pdf','editable.dxf','support.pdf','measurements.pdf'])assert(!response.text.includes(secret),'Private filename leaked');
   assert.equal((await request('/private/patterns/printable.pdf')).status,404);
-  const fixtureDir=path.resolve(__dirname,'../private/owner-update-check');fs.mkdirSync(fixtureDir,{recursive:true});
-  // Saved HTML is synthetic data only, for browser layout/interaction verification.
-  for(const [name,url] of [['product','/product/test-shirt'],['home','/'],['books','/books'],['classes','/classes/enquiry']])fs.writeFileSync(path.join(fixtureDir,name+'.html'),(await request(url)).text);
   const pricing=require('../services/orderPricing'),options=require('../services/patternOptions');
   const cases=[ [{quantity:1,selected_sizes:['S','M']},[],110], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[0]],40], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[1]],30], [{quantity:0,printable_selected:false,physical_quantity:2,selected_sizes:['S','M']},[],120], [{quantity:0,printable_selected:false,trial_quantity:2,selected_sizes:['S','M']},[],400] ];
   for(const [item,selected,expected] of cases){assert.equal(options.validate(product,selected,item),'');assert.equal(pricing.itemPrice(product,selected,[],item).total,expected);assert.equal((await request('/cart/add',{product_id:String(product._id),...item,files:selected.map(f=>String(f._id))},'visitor',true)).status,200);}
-  assert.deepEqual(pricing.totals(150),{subtotal:150,tax:27,total:177,amount:17700});
+  assert.deepEqual(pricing.totals(150),{subtotal:150,courier:0,tax:27,total:177,amount:17700});
   assert.equal((await request('/cart/add',{product_id:String(product._id),selected_sizes:['BAD']},'visitor',true)).status,400);
   assert.equal((await request('/checkout')).location,'/account/login');
   await Product.updateOne({_id:product._id},{$set:{'pattern_options.physical':false}});
   assert.equal((await request('/cart/add',{product_id:String(product._id),quantity:0,physical_quantity:1,selected_sizes:['S']},'visitor',true)).status,400);
-  await Product.updateOne({_id:product._id},{$unset:{pattern_options:1}});
+  await Product.updateOne({_id:product._id},{$set:{pattern_options:{printable:true,physical:true,trial:true}}});
   response=await request('/books');assert.equal(response.status,200);assert.match(response.text,/COMING SOON/);assert(!response.text.includes('countdown'));
   for(const [url,body] of [['/books/notify',{email:'notify@example.test'}],['/pattern-updates',{name:'Test Subscriber',email:'updates@example.test',whatsapp:'9876543210'}]]){
    assert.equal((await request(url,{...body,consent:'on',_csrf:'bad'})).status,403);
@@ -58,7 +74,7 @@ async function run(){
   assert.equal((await request('/classes/enquiry',classBody)).status,400);
   classBody._csrf=token(await request('/classes/enquiry'));assert.equal((await request('/classes/enquiry',{...classBody,studying:'Fashion design'})).status,303);
   const lead=await Lead.findOne({email:classBody.email});assert.equal(lead.studying,'Fashion design');assert(lead.consent_at);assert.equal(lead.notification_jobs.length,1);
-  assert.equal((await request('/consulting')).status,404);assert.equal((await request('/classes')).location,'/classes/enquiry');
+  assert.equal((await request('/consulting')).status,200);assert.equal((await request('/classes')).location,'/classes/enquiry');
   // Exact paid option entitlements, unverified-payment refusal and immutable PDF masters.
   const customer=new mongoose.Types.ObjectId();
   const order=await Order.create({customer_id:customer,account_customer_id:customer,items:[{product_id:product._id,product_name:product.name,quantity:1,printable_selected:false,selected_files:[{id:String(files[1]._id),name:'Tech pack',price:30}]}],payment_status:'paid'});

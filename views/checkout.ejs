@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title><%= title || 'Checkout | Garment Pattern Store' %></title>
+  <title><%= title || ('Checkout | ' + (siteSettings?.store_name || 'Apparel Easy Patterns')) %></title>
 
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/customer-experience.css">
@@ -705,7 +705,8 @@
 
                     <%= item.selected_files.map(
                       function(f) {
-                        return f.file_name;
+                        const unit=Number(f.file_price||0),sizes=(item.selected_sizes||[]).length,quantity=Number(item.quantity||0);
+                        return f.file_name + (f.price_per_selected_size ? ` — ₹${unit.toLocaleString('en-IN')} per size × ${sizes} sizes × quantity ${quantity} = ₹${(unit*sizes*quantity).toLocaleString('en-IN')}` : ` — ₹${unit.toLocaleString('en-IN')}`);
                       }
                     ).join(', ') %>
 
@@ -764,7 +765,7 @@
           <div class="summary-row">
 
             <span>
-              Subtotal
+              Product subtotal
             </span>
 
             <strong id="product-total">
@@ -773,6 +774,11 @@
 
           </div>
 
+
+          <div class="summary-row delivery">
+            <span>Courier charge</span>
+            <strong id="courier-charge">₹0.00</strong>
+          </div>
 
           <!-- GST -->
 
@@ -800,7 +806,7 @@
           <div class="order-total">
 
             <span>
-              Online Payment Total
+              Final payable total
             </span>
 
             <strong id="grand-total">
@@ -810,7 +816,8 @@
           </div>
 
           <section id="courier-summary" class="hidden" style="border-top:1px solid #ddd;margin-top:24px;padding-top:18px">
-            <h3>Delivery</h3><p>Selected Delivery Partner: <span id="selected-courier-summary">Choose a delivery partner</span></p>
+            <h3>Delivery</h3><p>Courier company: <span id="selected-courier-summary">Choose a delivery partner</span></p>
+            <p>Courier charge: <span id="selected-courier-charge">Not configured</span></p>
             <p>Destination: <span id="destination-summary"></span></p><p>Zone: <span id="region-summary"></span></p><p>Dispatch From: <span id="dispatch-summary"></span></p>
 
 
@@ -913,15 +920,17 @@ document.addEventListener(
     function showCouriers(rows,selected='') {
       const placeholder=new Option('Choose a delivery partner','');placeholder.disabled=true;
       courierSelect.replaceChildren(placeholder);courierRows=rows;
-      rows.forEach(row=>courierSelect.add(new Option(row.name,row._id)));
-      courierSelect.disabled=!rows.length;courierSelect.required=deliveryRequired;
-      courierSelect.value=rows.some(row=>row._id===selected)?selected:'';
-      courierHelp.textContent=rows.length?'Choose one delivery partner for your dispatch hub.':'Delivery service is not currently configured for this state.';
+      rows.forEach(row=>{const approved=row.charge_approved===true&&Number.isFinite(Number(row.charge));const label=approved?`${row.name} — ${formatCurrency(row.charge)}`:`${row.name} — rate not approved`;const option=new Option(label,row._id);option.disabled=!approved;courierSelect.add(option);});
+      const approvedRows=rows.filter(row=>row.charge_approved===true&&Number.isFinite(Number(row.charge)));
+      courierSelect.disabled=!approvedRows.length;courierSelect.required=deliveryRequired;
+      courierSelect.value=approvedRows.some(row=>row._id===selected)?selected:'';
+      courierHelp.textContent=approvedRows.length?'Choose one delivery partner for your dispatch hub.':rows.length?'Courier charges are not confirmed. Please contact the studio before placing a physical order.':'Delivery service is not currently configured for this state.';
     }
     function renderCourierSummary(){
       const selected=courierRows.find(row=>row._id===courierSelect.value);
       document.getElementById('selected-courier-summary').textContent=selected?.name || 'Choose a delivery partner';
-
+      document.getElementById('selected-courier-charge').textContent=selected?.charge_approved===true&&Number.isFinite(Number(selected.charge))?formatCurrency(selected.charge):'Not configured';
+      updateCheckoutTotals();
     }
 
     const productTotalElement =
@@ -938,6 +947,7 @@ document.addEventListener(
       document.getElementById(
         "grand-total"
       );
+    const courierChargeElement=document.getElementById('courier-charge');
 
 
     /*
@@ -1078,18 +1088,25 @@ document.addEventListener(
         showDestination(data);
         showCouriers(Array.isArray(data.couriers)?data.couriers:[],selected);loadedCityKey=cityKey;
         if(!courierRows.length && data.region_id)courierHelp.textContent='No delivery partners have been enabled for the '+data.dispatch_location+' dispatch hub.';
-        deliveryStatus.textContent=courierRows.length?'Available Delivery Partners':courierHelp.textContent;
+        deliveryStatus.textContent=courierRows.some(row=>row.charge_approved===true)?'Available Delivery Partners':courierHelp.textContent;
         renderCourierSummary();return data;
       }catch(error){
         if(requestId!==deliveryRequestId)return {stale:true};
         resetCouriers();renderCourierSummary();deliveryStatus.textContent='Unable to load delivery partner services. Please try again.';return null;
       }
     }
-    async function updateSummary(){
+    function updateCheckoutTotals(){
       productTotalElement.textContent=formatCurrency(productTotal);
       const tax=Math.round(productTotal*100*gstRate/100)/100;
       gstTotalElement.textContent=formatCurrency(tax);
-      grandTotalElement.textContent=formatCurrency(productTotal+tax);
+      const selected=courierRows.find(row=>row._id===courierSelect.value);
+      const approved=selected?.charge_approved===true&&Number.isFinite(Number(selected.charge));
+      const courierCharge=deliveryRequired?(approved?Number(selected.charge):null):0;
+      courierChargeElement.textContent=courierCharge===null?'Rate not confirmed':formatCurrency(courierCharge);
+      grandTotalElement.textContent=courierCharge===null?'Select an approved courier':formatCurrency(productTotal+tax+courierCharge);
+    }
+    async function updateSummary(){
+      updateCheckoutTotals();
       if(deliveryRequired)await loadDeliveryRoute();
     }
 
@@ -1430,11 +1447,11 @@ document.addEventListener(
 
 
           if (
-            deliveryInfo === null || deliveryInfo.stale || !courierSelect.value || !courierRows.some(row=>row._id===courierSelect.value)
+            deliveryInfo === null || deliveryInfo.stale || !courierSelect.value || !courierRows.some(row=>row._id===courierSelect.value&&row.charge_approved===true)
           ) {
 
             alert(
-              "Choose an available delivery partner for your dispatch hub before continuing."
+              "Choose a courier with an approved charge. If none is available, contact the studio before continuing."
             );
 
             return;

@@ -17,6 +17,7 @@ function normalize(row = {}) {
   return Object.fromEntries(Object.keys(defaults).map(key => [key, row[key] !== false]));
 }
 const interestFeatures = {
+  'Fit Blocks':'patterns', Training:'courses', 'Custom Consulting':'consulting',
   'Online Classes':'online_classes',
   'Pattern Making Course': 'courses', 'Garment Technology Training': 'courses',
   'Corporate Training': 'courses', 'Digital Patterns': 'patterns', Consulting: 'consulting', Books: 'books',

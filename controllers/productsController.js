@@ -11,7 +11,8 @@ PRODUCT LIST
 
 async function listProducts(req, res, next) {
   try {
-    const seoTitle='Ready-to-Use Available Pattern Templates | Apparel Easy Patterns';
+    const settings=res.locals.siteSettings || {};
+    const seoTitle=settings.products_seo_title || 'Ready-to-Use Available Pattern Templates | Apparel Easy Patterns';
     const category=typeof req.query.category==='string'?req.query.category.trim().toLowerCase():'';
     if(category && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category))return res.status(400).send('Choose a valid category.');
     const categories=[...new Set(['shirts','pants','shorts',...await Product.distinct('category',require('../services/patternOptions').publicFilter)])].filter(Boolean);
@@ -23,7 +24,7 @@ async function listProducts(req, res, next) {
     res.render('products', {
       title:seoTitle,
       seoTitle,
-      description:'Browse ready-to-use apparel pattern templates. Choose printable files, optional DXF, tech packs, physical patterns and trial samples where available.',
+      description:settings.products_seo_description || 'Browse ready-to-use apparel pattern templates. Choose printable files, optional DXF, tech packs, physical patterns and trial samples where available.',
       products, category, categories,
     });
   } catch (err) {

@@ -94,22 +94,6 @@ router.post('/cart/add', async (req, res) => {
       Number(product.base_price || 0);
 
 
-    const filesTotal =
-      selectedFiles.reduce(
-        (sum, file) =>
-          sum + Number(file.file_price || 0),
-        0
-      );
-
-
-    const addonsTotal =
-      selectedAddons.reduce(
-        (sum, addon) =>
-          sum + Number(addon.price || 0),
-        0
-      );
-
-
     const qty =
       Math.max(
         0,
@@ -139,10 +123,7 @@ router.post('/cart/add', async (req, res) => {
       Number(product.trial_price || 0);
 
 
-    const itemUnitTotal =
-      unitPrice +
-      filesTotal +
-      addonsTotal;
+    const itemUnitTotal = pricing.itemPrice(product, selectedFiles, selectedAddons, req.body).unit;
 
 
     const itemTotal = pricing.itemPrice(product, selectedFiles, selectedAddons, req.body).total;
@@ -190,7 +171,8 @@ router.post('/cart/add', async (req, res) => {
           file_type: file.file_type,
 
           file_price:
-            Number(file.file_price || 0)
+            Number(file.file_price || 0),
+          price_per_selected_size: file.price_per_selected_size === true
         })),
 
       selected_addons:
@@ -334,36 +316,6 @@ router.post('/cart/update', async (req, res) => {
       );
 
 
-    const filesTotal =
-      (item.selected_files || [])
-        .reduce(
-          (sum, file) =>
-            sum +
-            Number(
-              file.file_price || 0
-            ),
-          0
-        );
-
-
-    const addonsTotal =
-      (item.selected_addons || [])
-        .reduce(
-          (sum, addon) =>
-            sum +
-            Number(
-              addon.price || 0
-            ),
-          0
-        );
-
-
-    item.itemUnitTotal =
-      Number(item.unit_price || 0) +
-      filesTotal +
-      addonsTotal;
-
-
     if(!validation.quantities(item)) return res.status(400).json({error:'Keep at least one digital, physical or trial item. Remove the row to remove all items.'});
     const currentProduct = await Product.findById(item.product_id).lean();
     if(!currentProduct || currentProduct.active===false) return res.status(400).json({error:'Product is unavailable.'});
@@ -372,6 +324,14 @@ router.post('/cart/update', async (req, res) => {
     if(currentFiles.length!==item.selected_files.length || currentAddons.length!==item.selected_addons.length) return res.status(400).json({error:'An option is unavailable. Remove and re-add this product.'});
     const optionError=require('../services/patternOptions').validate(currentProduct,currentFiles,item);
     if(optionError)return res.status(400).json({error:optionError});
+    item.selected_files = currentFiles.map(file => ({
+      id: file._id.toString(),
+      file_name: file.file_name,
+      file_type: file.file_type,
+      file_price: Number(file.file_price || 0),
+      price_per_selected_size: file.price_per_selected_size === true
+    }));
+    item.itemUnitTotal = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).unit;
     item.total = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).total;
 
     req.session.cart =

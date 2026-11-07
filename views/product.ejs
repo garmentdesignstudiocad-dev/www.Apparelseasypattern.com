@@ -941,6 +941,15 @@
         flex-direction: column;
       }
     }
+    .fit-selector fieldset{min-width:0;margin:0;border-color:var(--primary-color,#62392d)}
+    .fit-selector legend{font-weight:700;padding:0 8px}
+    .fit-selector .fit-option{display:block;padding:12px 0;overflow-wrap:anywhere}
+    .fit-unavailable{display:flex;flex-wrap:wrap;gap:10px}
+    .fit-unavailable>span{padding:8px 12px;border:1px dashed #aaa;border-radius:6px;flex:1 1 140px}
+    .fit-selector button{max-width:100%;white-space:normal}
+    .fit-selector :disabled{cursor:not-allowed;opacity:.65}
+    .fit-selector input:focus-visible,.fit-selector button:focus-visible{outline:3px solid var(--accent-color,#c58b62);outline-offset:3px}
+    @media(max-width:600px){.fit-selector fieldset{padding:12px}.fit-unavailable>span{flex-basis:100px}}
   </style>
 <%- include('partials/theme') %><link rel="stylesheet" href="/css/business.css"></head>
 
@@ -951,14 +960,61 @@
 <% if(product.video_url){ %><div class="preview-watermark" data-watermark="Apparel Easy Patterns - Preview"><video class="pattern-video" controls preload="metadata" aria-label="<%= product.name %> product video" src="<%= product.video_url %>"></video></div><% } %></div>
 <div><span class="pd-kicker">Ready-to-use apparel pattern</span><h1 class="pd-title"><%= product.name %></h1><p data-protected-content><%= product.description || 'Choose the pattern options available for your sampling and garment-development requirements.' %></p>
 <% if(product.status==='coming_soon'){ %><p class="pattern-notice">COMING SOON</p><a href="/pattern-updates">Get pattern updates</a><% }else{ %>
-<form id="pattern-purchase" class="pattern-options">
-<% if(optionAvailability.printable){ %><label><input id="printable-option" type="checkbox" checked> <strong>Printable Soft Copy</strong> &mdash; &#8377;<%= Number(product.base_price||0).toLocaleString('en-IN') %><small>Printable PDF / SVG-based file, according to the file formats made available for this product.</small><% if(product.printable_dimensions){ %><small><%= product.printable_dimensions %></small><% } %></label><% } %>
-<% files.forEach(file=>{const label={dxf:'Editable DXF Pattern',tech_pack:'Add Basic Tech Pack',specs:'Measurement Chart / Basic Specifications'}[file.purpose] || file.file_name; %><label><input class="pattern-file" type="checkbox" value="<%= file._id %>" data-price="<%= Number(file.file_price||0) %>"> <strong><%= label %></strong> &mdash; &#8377;<%= Number(file.file_price||0).toLocaleString('en-IN') %><small><%= file.file_name %> &middot; <%= file.file_type %> ? Secure delivery after verified payment, only when purchased.</small></label><% }) %>
-<% if(optionAvailability.physical){ %><label><input id="physical-option" type="checkbox"> <strong>Physical Pattern</strong> &mdash; from &#8377;<%= Number(product.physical_price||0).toLocaleString('en-IN') %> per size<small>Prepared and fulfilled manually. Choose an available delivery partner at checkout.</small></label><% } %>
-<% if(optionAvailability.trial){ %><label><input id="trial-option" type="checkbox"> <strong>Order Trial Sample Based on This Pattern</strong> &mdash; &#8377;<%= Number(product.trial_price||0).toLocaleString('en-IN') %> per size</label><% } %>
-<fieldset><legend>Select required sizes</legend><% if(product.available_sizes?.length){ %><div class="pattern-sizes"><% product.available_sizes.forEach(size=>{const override=product.size_prices?.find(row=>row.size===size); %><label><input type="checkbox" class="pattern-size" value="<%= size %>"> <%= size %><% if(override && optionAvailability.physical){ %> (physical &#8377;<%= override.price %>)<% } %></label><% }) %></div><% }else{ %><label>Required sizes<input id="pattern-sizes" maxlength="500" placeholder="Enter sizes, separated by commas" required></label><% } %><% if(optionAvailability.printable){ %><small>One printable size is included. Each additional printable size: &#8377;<%= Number(product.additional_size_price||0).toLocaleString('en-IN') %>.</small><% } %></fieldset>
-<% addons.forEach(addon=>{ %><label><input class="pattern-addon" type="checkbox" value="<%= addon._id %>" data-price="<%= Number(addon.price||0) %>"> <%= addon.name %> &mdash; &#8377;<%= Number(addon.price||0).toLocaleString('en-IN') %><small><%= addon.description||'' %></small></label><% }) %>
-<div class="pattern-summary"><p>Subtotal: <strong id="pattern-subtotal"></strong></p><p>GST (18%): <span id="pattern-tax"></span></p><p>Total: <strong id="pdTotal" aria-live="polite"></strong></p></div><button class="fashion-button" id="pdAddToCart" type="submit">Add to Cart</button><p id="pattern-error" role="alert"></p><small>Sign in before checkout. Digital files are available in My Orders after verified payment. Physical items follow the existing manual fulfilment process.</small></form>
+<%
+const positivePrice=value=>value!==null && value!==undefined && String(value).trim()!=='' && Number.isFinite(Number(value)) && Number(value)>0;
+const configuredSizes=(product.available_sizes || []).filter(size=>typeof size==='string' && /^[a-zA-Z0-9 ._-]{1,40}$/.test(size));
+const customWork=row=>/custom|modification/i.test(String(row.name || row.file_name || ''));
+const purchasableFile=file=>file.active===true && /^[a-f0-9]{24}$/i.test(String(file._id)) && positivePrice(file.file_price) && !customWork(file);
+const formatName=file=>file.purpose==='dxf'?'DXF':/^(hpgl|plt)$/i.test(file.file_type || '')?'HPGL Printable':/^pdf$/i.test(file.file_type || '')?'PDF':null;
+const documentFile=file=>['specs','tech_pack'].includes(file.purpose);
+const fileGroup=file=>documentFile(file)?'documents':formatName(file)?'formats':'additional';
+const fileMatchesLabel=(file,label,group)=>{
+  if(group==='formats')return formatName(file)===label;
+  if(group==='documents'){
+    const name=String(file.file_name||'').trim().toLowerCase();
+    const target=label.toLowerCase();
+    if(target==='measurement chart')return name==='measurement chart' || (file.purpose==='specs' && /(?:measurement|measure)/i.test(name));
+    if(target==='basic spec sheet / pom')return name==='basic spec sheet / pom' || name==='basic spec sheet' || name==='spec sheet' || name==='pom' || (file.purpose==='tech_pack' && /(?:spec|pom)/i.test(name));
+    return name===target;
+  }
+  return false;
+};
+const baseReady=optionAvailability.printable && product.pattern_options?.printable===true && positivePrice(product.base_price);
+const physicalReady=optionAvailability.physical && product.pattern_options?.physical===true && positivePrice(product.physical_price) && (product.size_prices || []).every(row=>positivePrice(row.price));
+const trialReady=optionAvailability.trial && product.pattern_options?.trial===true && positivePrice(product.trial_price);
+%>
+<form id="pattern-purchase" class="pattern-options fit-selector" aria-labelledby="fit-selector-title">
+<h2 id="fit-selector-title">SELECT YOUR FIT BLOCK</h2>
+<p>Choose from the configured options for this product. Unavailable choices cannot be purchased. Category, style and fabric width are not included in your order.</p>
+<fieldset><legend>1. Fit Category</legend><div class="fit-unavailable"><% ['Men','Women','Kids','Innerwear'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div></fieldset>
+<fieldset><legend>2. Fit / Style</legend><div class="fit-unavailable"><% ['Regular','Slim','Relaxed','Oversized','Custom'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div></fieldset>
+<% for(const group of ['formats','documents']){ %>
+<fieldset><legend><%= group==='formats'?'3. File Format':'4. Digital Documents' %></legend>
+<div class="fit-unavailable"><% (group==='formats'?['DXF','HPGL Printable','PDF']:['Measurement Chart','Basic Spec Sheet / POM','Construction Details','SPI Details','Fabric Guide']).forEach(label=>{const mapped=files.some(file=>fileGroup(file)===group && fileMatchesLabel(file,label,group) && purchasableFile(file)); %><% if(!mapped){ %><span><%= label %> <small>Enquire for availability</small></span><% } %><% }) %></div>
+<% files.forEach((file,index)=>{if(fileGroup(file)!==group)return;const ready=purchasableFile(file); %>
+<label class="fit-option"><input class="pattern-file" data-file-index="<%= index %>" type="checkbox" value="<%= file._id %>" data-price="<%= ready?Number(file.file_price):'' %>" data-per-selected-size="<%= file.price_per_selected_size?'1':'0' %>" <%= ready?'':'disabled' %>> <strong><%= group==='formats'?formatName(file):file.file_name %></strong><% if(ready){ %> &mdash; &#8377;<%= Number(file.file_price).toLocaleString('en-IN') %><%= file.price_per_selected_size?' per selected size':'' %><% }else{ %> &mdash; Not available yet<% } %><small class="pattern-file-price-detail" data-file-index="<%= index %>"><%= ready?(file.price_per_selected_size?'Select sizes to calculate this file option.':'Flat option price.'):'Enquire for availability and pricing.' %></small><small><%= file.file_name %> &middot; <%= file.file_type %></small></label>
+<% }) %>
+<small><%= group==='formats'?'Optional files are charged separately from the base printable option below.':'Only the named configured documents are offered; separate document contents are not implied.' %></small>
+</fieldset><% } %>
+<fieldset><legend>5. Fabric Width (inches)</legend><div class="fit-unavailable"><% [58,60,62,64,68,72].forEach(width=>{ %><span><%= width %> inches <small>Enquire for availability</small></span><% }) %></div><small>No width-specific file or fabric compatibility is confirmed by this list.</small></fieldset>
+<fieldset><legend>6. Sizes</legend><% if(configuredSizes.length){ %><div class="pattern-sizes"><% configuredSizes.forEach(size=>{ %><label><input type="checkbox" class="pattern-size" value="<%= size %>"> <%= size %></label><% }) %></div><% }else{ %><p>No sizes are configured for purchase. Enquire for availability.</p><% } %>
+<div class="fit-unavailable"><% ['XS','S','M','L','XL','XXL','3XL','4XL'].filter(size=>!configuredSizes.includes(size)).forEach(size=>{ %><span><%= size %> <small>Not available yet</small></span><% }) %></div><small>Size identifiers are shown as configured. Selected sizes do not imply separate size-specific files.</small>
+<% if(baseReady){ %><small>One size is included with the base printable option.<% if(positivePrice(product.additional_size_price)){ %> Each additional printable size: &#8377;<%= Number(product.additional_size_price).toLocaleString('en-IN') %>.<% }else{ %> Additional printable sizes require a confirmed price; select one size for this option.<% } %></small><% } %></fieldset>
+<fieldset><legend>7. Pattern Type</legend>
+<label class="fit-option"><input id="printable-option" type="checkbox" <%= baseReady?'checked':'disabled' %>> <strong>Soft Copy &ndash; Download (base printable file)</strong><% if(baseReady){ %> &mdash; &#8377;<%= Number(product.base_price).toLocaleString('en-IN') %><% }else{ %> &mdash; Not available yet<% } %><small>Select optional digital files above independently. The base file is charged only once when checked; its format is as listed for this product.</small></label>
+<label class="fit-option"><input id="physical-option" type="checkbox" <%= physicalReady?'':'disabled' %>> <strong>Hard Copy &ndash; Printed Pattern</strong><% if(physicalReady){ %> &mdash; from &#8377;<%= Number(product.physical_price).toLocaleString('en-IN') %> per size<% }else{ %> &mdash; Not available yet<% } %><small>Soft Copy and Hard Copy may be purchased together. Configured size-specific physical prices apply.</small><% if(physicalReady){ (product.size_prices || []).forEach(row=>{ %><small><%= row.size %>: &#8377;<%= Number(row.price).toLocaleString('en-IN') %> per printed pattern</small><% }); } %></label>
+<% if(product.printable_dimensions){ %><p><%= product.printable_dimensions %></p><% } %>
+</fieldset>
+<fieldset><legend>8. Additional Options</legend><div class="fit-unavailable"><% ['Grading File','Marker File','Detailed Construction Guide'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div>
+<% files.forEach((file,index)=>{if(fileGroup(file)!=='additional')return;const ready=purchasableFile(file); %><label class="fit-option"><input class="pattern-file" data-file-index="<%= index %>" type="checkbox" value="<%= file._id %>" data-price="<%= ready?Number(file.file_price):'' %>" data-per-selected-size="<%= file.price_per_selected_size?'1':'0' %>" <%= ready?'':'disabled' %>> <%= file.file_name %><% if(ready){ %> &mdash; &#8377;<%= Number(file.file_price).toLocaleString('en-IN') %><%= file.price_per_selected_size?' per selected size':'' %><% }else{ %> &mdash; Not available yet<% } %><small class="pattern-file-price-detail" data-file-index="<%= index %>"><%= ready?'Configured optional file.':'Enquire for availability and pricing.' %></small><small><%= file.file_type %></small></label><% }) %>
+<% addons.forEach(addon=>{if(customWork(addon))return;const ready=addon.active===true && /^[a-f0-9]{24}$/i.test(String(addon._id)) && positivePrice(addon.price); %><label class="fit-option"><input class="pattern-addon" type="checkbox" value="<%= addon._id %>" data-price="<%= ready?Number(addon.price):'' %>" <%= ready?'':'disabled' %>> <%= addon.name %><% if(ready){ %> &mdash; &#8377;<%= Number(addon.price).toLocaleString('en-IN') %><% }else{ %> &mdash; Not available yet<% } %><small><%= addon.description || '' %></small></label><% }) %>
+<p><strong>Custom Modification</strong> &mdash; enquiry / quotation only. Not included in your cart or total.</p><% if(canVisit('/contact')){ %><a href="/contact">Enquire About Custom Modification</a><% }else{ %><p>Contact the studio using the details below to request a quotation.</p><% } %>
+<label class="fit-option"><input id="trial-option" type="checkbox" <%= trialReady?'':'disabled' %>> <strong>Order Trial Sample Based on This Pattern</strong><% if(trialReady){ %> &mdash; &#8377;<%= Number(product.trial_price).toLocaleString('en-IN') %> per size<% }else{ %> &mdash; Not available yet<% } %></label>
+</fieldset>
+<fieldset><legend>9. Delivery</legend><p>For Hard Copy or trial samples, delivery address, city, state and a six-digit PIN will be collected at checkout. Choose a configured delivery partner there; courier charges are calculated at checkout.</p><small>Digital-only orders do not require a delivery address.</small></fieldset>
+<div class="pattern-summary"><p>Subtotal: <strong id="pattern-subtotal"></strong></p><p>GST (18%): <span id="pattern-tax"></span></p><p>Total: <strong id="pdTotal" aria-live="polite"></strong></p></div>
+<button class="fashion-button" id="pdAddToCart" type="submit" <%= configuredSizes.length?'':'disabled' %>>ADD TO CART</button><button class="fashion-button" id="pdBuyNow" type="button" <%= configuredSizes.length?'':'disabled' %>>BUY NOW</button><p id="pattern-error" role="alert"></p><small>Sign in before checkout. Purchased digital files become accessible after verified payment and file preparation.</small>
+</form>
 <script id="pattern-config" type="application/json"><%- JSON.stringify({id:String(product._id),base:Number(product.base_price||0),extra:Number(product.additional_size_price||0),physical:Number(product.physical_price||0),trial:Number(product.trial_price||0),sizePrices:product.size_prices||[]}).replace(/</g,'\\u003c') %></script><script src="/js/pattern-product.js" defer></script><% } %>
 </div></section>
 <section class="pd-details" data-protected-content><h2>Measurement Chart / Basic Specifications</h2><p><%= product.size_information || 'Owner-provided measurement information will be added when available. Contact us for details before ordering.' %></p><% if(product.file_formats){ %><p>Available formats: <%= product.file_formats %></p><% } %><% if(product.download_information){ %><p><%= product.download_information %></p><% } %><% if(product.delivery_information){ %><p><%= product.delivery_information %></p><% } %><p>The pattern is intended for practical sampling and garment-development use. Stitch and evaluate your sample before production, and verify construction allowances, sewing requirements and production parameters for your own manufacturing process.</p></section>

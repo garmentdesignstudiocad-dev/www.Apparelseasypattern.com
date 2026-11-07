@@ -491,7 +491,7 @@
 
       const groupedSections = [
         {
-          title: '01 - Homepage Settings',
+          title: '01 - Homepage Content',
           description: 'Hero section, images, buttons, trust labels and homepage content.',
           groups: [
             {
@@ -556,7 +556,7 @@
               ]
             },
             {
-              name: 'Books & Classes',
+              name: 'Books & Classes on Home',
               fields: [
                 'home_books_status',
                 'home_books_heading',
@@ -569,23 +569,44 @@
           ]
         },
         {
-          title: '02 - Products Page',
-          description: 'Headings and introductory content for your product collection.',
+          title: '02 - About Us Page',
+          description: 'Story hero narrative, call-to-action and three feature columns.',
           groups: [
             {
-              name: 'Products Page Text',
+              name: 'About Story & CTA',
               fields: [
-                'products_heading',
-                'products_description',
-                'view_products_label'
+                'about_eyebrow',
+                'about_heading',
+                'about_intro',
+                'about_cta_text',
+                'about_cta_link'
+              ]
+            },
+            {
+              name: 'Three Feature Columns',
+              fields: [
+                'about_tile_1_title',
+                'about_tile_1_text',
+                'about_tile_2_title',
+                'about_tile_2_text',
+                'about_tile_3_title',
+                'about_tile_3_text'
               ]
             }
           ]
         },
         {
-          title: '03 - Cart & Checkout',
-          description: 'Shopping cart and checkout page wording.',
+          title: '03 - Products & Fit Blocks',
+          description: 'Headings, collection description, and cart & checkout page titles.',
           groups: [
+            {
+              name: 'Products Catalog Text',
+              fields: [
+                'products_heading',
+                'products_description',
+                'view_products_label'
+              ]
+            },
             {
               name: 'Cart & Checkout Titles',
               fields: [
@@ -596,8 +617,72 @@
           ]
         },
         {
-          title: '04 - Header, Footer & Branding',
-          description: 'Logo, store identity, contact details and footer text.',
+          title: '04 - Services & Garment Technology',
+          description: 'Technical services heading, overview and call-to-action button.',
+          groups: [
+            {
+              name: 'Services Overview',
+              fields: [
+                'services_heading',
+                'services_description',
+                'services_cta_text',
+                'services_cta_link'
+              ]
+            }
+          ]
+        },
+        {
+          title: '05 - Online Classes & Training',
+          description: 'Course enquiry headings, curriculum overview and enquiry CTA.',
+          groups: [
+            {
+              name: 'Class Enquiries & Content',
+              fields: [
+                'classes_eyebrow',
+                'classes_heading',
+                'classes_description',
+                'classes_cta_text',
+                'classes_cta_link'
+              ]
+            }
+          ]
+        },
+        {
+          title: '06 - Technical Consulting',
+          description: 'Consultation booking headings, description and booking CTA.',
+          groups: [
+            {
+              name: 'Consulting Narrative & CTA',
+              fields: [
+                'consulting_heading',
+                'consulting_subheading',
+                'consulting_description',
+                'consulting_cta_text'
+              ]
+            }
+          ]
+        },
+        {
+          title: '07 - Contact & Studio Details',
+          description: 'Public contact email, WhatsApp, phone number, address and prompt.',
+          groups: [
+            {
+              name: 'Contact Page & Business Details',
+              fields: [
+                'contact_heading',
+                'contact_description',
+                'contact_email',
+                'contact_phone',
+                'whatsapp_number',
+                'support_cta',
+                'address'
+              ]
+            }
+          ]
+        },
+        {
+          title: '08 - Header, Footer & Branding',
+          description: 'Logo, store identity, navigation labels, footer text and security notice.',
           groups: [
             {
               name: 'Brand Identity',
@@ -609,25 +694,15 @@
               ]
             },
             {
-              name: 'Contact Information',
-              fields: [
-                'contact_email',
-                'contact_phone',
-                'whatsapp_number',
-                'support_cta',
-                'address'
-              ]
-            },
-            {
-              name: 'Header Labels',
+              name: 'Header Navigation Labels',
               fields: Object.keys(appearance.headerFooter).filter(key => key.startsWith('header_'))
             },
             {
-              name: 'Footer Labels',
+              name: 'Footer Navigation Labels',
               fields: Object.keys(appearance.headerFooter).filter(key => key.startsWith('footer_'))
             },
             {
-              name: 'Footer Content',
+              name: 'Footer Content & Credit',
               fields: [
                 'footer_text',
                 'back_website_label'
@@ -636,8 +711,25 @@
           ]
         },
         {
-          title: '05 - Website Colors & Design',
-          description: 'Website colors, typography, button shapes and layout.',
+          title: '09 - SEO & Social Sharing',
+          description: 'Social preview image, Twitter handle and page-by-page SEO meta tags.',
+          groups: [
+            {
+              name: 'Social Sharing Cards',
+              fields: [
+                'og_image_url',
+                'twitter_handle'
+              ]
+            },
+            {
+              name: 'Search Engine Page SEO',
+              fields: Object.keys(appearance.content).filter(key => key.includes('_seo_'))
+            }
+          ]
+        },
+        {
+          title: '10 - Website Colors & Design',
+          description: 'Brand color palette, typography fonts, button shapes and layout density.',
           groups: [
             {
               name: 'Brand Colors',
@@ -659,17 +751,6 @@
                 'card_style',
                 'layout_density'
               ]
-            }
-          ]
-        },
-        {
-          title: '06 - SEO Settings',
-          description: 'Search engine page titles and descriptions.',
-          groups: [
-            {
-              name: 'Page SEO Fields',
-              fields: Object.keys(appearance.content)
-                .filter(key => key.includes('_seo_'))
             }
           ]
         }

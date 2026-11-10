@@ -1,29 +1,1269 @@
 <style>
+/* ==========================================================================
+   PREMIUM MINIMAL HEADER & WESTSIDE-STYLE EXPERIENCE
+   Colors: Executive Navy #0B192C | Slate #1E3E62 | Warm Gold #D97706 | White #FFF
+   ========================================================================== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 2px 10px rgba(11, 25, 44, 0.04);
+}
 
-.site-header .nav-container{display:flex;flex-wrap:nowrap;align-items:center;gap:18px;min-height:74px}.site-header .fashion-logo{min-width:0;flex-shrink:0}.site-header .fashion-logo__copy strong{max-width:220px}.site-header .main-nav{display:block;position:static;flex:1;overflow:visible;max-height:none}.site-header .main-nav>ul{display:flex;flex-wrap:nowrap;align-items:center;gap:18px;margin:0;padding:0;list-style:none}.site-header .main-nav a,.site-header summary{font-size:12px;white-space:nowrap}.site-header summary{cursor:pointer;font-weight:700;color:inherit}.site-header .nav-group{position:relative}.site-header .nav-group>ul{position:absolute;top:100%;left:0;z-index:60;min-width:180px;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:10px;background:var(--header-background,#fffdfa);border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 20px #0002}.site-header .nav-group>ul li{list-style:none}.site-header .nav-group>ul a{display:block;padding:10px}.site-header .nav-auth{margin-left:auto;display:flex;gap:8px;align-items:center}.site-header .nav-auth>a{padding:9px 11px;border:1px solid currentColor;border-radius:6px}.site-header .nav-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}.site-header .basket-link{position:relative;display:flex;align-items:center;padding:8px;color:inherit;text-decoration:none}.site-header .basket-link svg{width:24px;height:24px}.site-header #cart-count{position:absolute;top:0;right:-3px;min-width:17px;padding:1px 4px;text-align:center;border-radius:20px;background:#62392d;color:white;font-size:10px}.site-header .nav-toggle{display:none;margin:0;flex-direction:column;justify-content:center}.site-header .nav-toggle span{width:100%;flex-shrink:0;margin:3px 0}.site-header .nav-logout{border:0;background:transparent;color:inherit;cursor:pointer}
+.site-header .header-main-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 72px;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
 
-@media(max-width:1050px){.site-header .nav-container{gap:12px}.site-header .main-nav>ul{gap:11px}.site-header .fashion-logo__copy strong{max-width:170px;font-size:10px}.site-header .nav-auth>a{padding:8px}}
+/* Logo (Left) */
+.site-header .fashion-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+.site-header .fashion-logo:hover {
+  opacity: 0.92;
+}
+.site-header .fashion-logo__mark {
+  width: 42px;
+  height: 38px;
+  border-radius: 8px;
+  background: #0B192C;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border: 1px solid #D97706;
+  box-shadow: 0 2px 6px rgba(11, 25, 44, 0.12);
+  flex-shrink: 0;
+}
+.site-header .fashion-logo__copy strong {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0B192C;
+  text-transform: uppercase;
+  line-height: 1.2;
+  display: block;
+}
+.site-header .fashion-logo__copy small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #D97706;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
 
-@media(max-width:900px){.site-header .nav-container{flex-wrap:wrap;justify-content:space-between;position:relative;width:calc(100% - 28px)}.site-header .fashion-logo{max-width:calc(100% - 94px)}.site-header .fashion-logo__copy strong{white-space:normal;overflow-wrap:anywhere}.site-header .nav-actions{margin-left:auto}.site-header .nav-toggle{display:flex}.site-header .main-nav{display:none;order:3;flex-basis:100%;width:100%;max-height:70vh;overflow-y:auto}.site-header .main-nav.open{display:block}.site-header .main-nav>ul{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:12px 0 20px}.site-header .nav-group>ul{position:static;box-shadow:none;min-width:0;width:auto;margin-top:8px}.site-header .nav-auth{margin:0;display:flex;flex-wrap:nowrap;gap:10px}.site-header .nav-auth>a{flex:1;text-align:center;padding:12px 6px}.site-header .nav-auth a{white-space:normal}.site-header .main-nav a::after{display:none}}
+/* Center Category Navigation (Desktop) */
+.site-header .nav-category-menu {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.site-header .category-menu-item {
+  position: relative;
+}
+.site-header .category-menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 24px 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0B192C;
+  text-decoration: none;
+  transition: color 0.18s ease;
+  position: relative;
+}
+.site-header .category-menu-link:hover,
+.site-header .category-menu-item:hover .category-menu-link {
+  color: #D97706;
+}
+.site-header .category-menu-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: #D97706;
+  transition: width 0.22s ease;
+  border-radius: 3px 3px 0 0;
+}
+.site-header .category-menu-link.active,
+.site-header .category-menu-link:hover,
+.site-header .category-menu-item:hover .category-menu-link::after {
+  width: 100%;
+}
+.site-header .menu-arrow-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  color: #64748B;
+}
+.site-header .category-menu-item:hover .menu-arrow-icon {
+  transform: rotate(180deg);
+  color: #D97706;
+}
 
+/* Visual Mega Menu Panels */
+.site-header .mega-menu-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  width: 680px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 18px 40px rgba(11, 25, 44, 0.12);
+  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  z-index: 1050;
+}
+.site-header .category-menu-item:hover .mega-menu-panel,
+.site-header .category-menu-item:focus-within .mega-menu-panel {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 28px;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.site-header .mega-col-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  margin-bottom: 12px;
+}
+.site-header .mega-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.site-header .mega-link {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1E293B;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.site-header .mega-link:hover {
+  color: #D97706;
+  transform: translateX(3px);
+}
+.site-header .mega-card-preview {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease;
+}
+.site-header .mega-card-preview:hover {
+  border-color: #D97706;
+}
+.site-header .mega-card-img {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  background: #F8FAFC;
+  padding: 6px;
+}
+.site-header .mega-card-content {
+  padding: 12px 14px;
+}
+.site-header .mega-card-content strong {
+  display: block;
+  font-size: 13px;
+  color: #0B192C;
+}
+.site-header .mega-card-content span {
+  font-size: 11px;
+  color: #D97706;
+  font-weight: 700;
+}
+
+/* Header Right Actions (Icons Only) */
+.site-header .header-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.site-header .action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #0B192C;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  transition: all 0.18s ease;
+}
+.site-header .action-icon-btn:hover {
+  background: #F1F5F9;
+  color: #D97706;
+  border-color: #E2E8F0;
+}
+.site-header .cart-badge-pill {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 4px;
+  text-align: center;
+  border-radius: 999px;
+  background: #D97706;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* Announcement Bar beneath Header */
+.announcement-bar {
+  background: #0B192C;
+  color: #F8FAFC;
+  text-align: center;
+  padding: 9px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 2px solid #D97706;
+}
+.announcement-pulse {
+  color: #D97706;
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   WESTSIDE-STYLE CENTERED SEARCH POPUP
+   ========================================================================== */
+body.search-modal-open {
+  overflow: hidden !important;
+}
+
+.search-dialog-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 25, 44, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99990;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.search-dialog-backdrop.is-visible {
+  display: block;
+  opacity: 1;
+}
+
+.search-dialog-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(0.97);
+  width: min(92vw, 860px);
+  max-height: 85vh;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(11, 25, 44, 0.25);
+  border: 1px solid #CBD5E1;
+  z-index: 99995;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s ease;
+}
+.search-dialog-modal.is-visible {
+  display: flex;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Search Modal Top Bar */
+.search-dialog-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #E2E8F0;
+  background: #FFFFFF;
+}
+.search-dialog-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F8FAFC;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+.search-dialog-input-wrap:focus-within {
+  background: #FFFFFF;
+  border-color: #D97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+.search-dialog-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 14.5px;
+  font-family: inherit;
+  color: #0F172A;
+}
+.search-dialog-input::placeholder {
+  color: #94A3B8;
+}
+.search-dialog-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  transition: all 0.15s ease;
+}
+.search-dialog-close-btn:hover {
+  background: #F1F5F9;
+  color: #0B192C;
+}
+
+/* Search Modal Body (2 Columns matching Westside reference) */
+.search-dialog-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  overflow: hidden;
+  height: 520px;
+  max-height: 60vh;
+}
+.search-col-suggestions {
+  background: #F8FAFC;
+  border-right: 1px solid #E2E8F0;
+  padding: 20px;
+  overflow-y: auto;
+}
+.search-col-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 14px;
+}
+.suggestion-pills-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.suggestion-pill-btn {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E293B;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.suggestion-pill-btn:hover {
+  border-color: #D97706;
+  color: #D97706;
+  background: #FFFBEB;
+}
+
+/* Search Results Column */
+.search-col-results {
+  padding: 20px;
+  overflow-y: auto;
+}
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.search-result-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.18s ease;
+}
+.search-result-card:hover {
+  border-color: #D97706;
+  box-shadow: 0 4px 14px rgba(11, 25, 44, 0.06);
+  transform: translateY(-1px);
+}
+.search-result-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #0B192C;
+  flex-shrink: 0;
+}
+.search-result-meta {
+  flex: 1;
+  min-width: 0;
+}
+.search-result-dept {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #D97706;
+  display: block;
+}
+.search-result-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0B192C;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 2px 0;
+}
+.search-result-style {
+  font-size: 11.5px;
+  color: #64748B;
+}
+.search-result-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0B192C;
+  white-space: nowrap;
+}
+
+.search-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748B;
+}
+.search-empty-state svg {
+  margin-bottom: 12px;
+  color: #94A3B8;
+}
+.search-empty-state p {
+  font-size: 14px;
+  margin: 0 0 14px;
+}
+
+/* ==========================================================================
+   MENU DRAWER (Sliding Navigation Drawer)
+   ========================================================================== */
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 25, 44, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 99980;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.drawer-backdrop.is-visible {
+  display: block;
+  opacity: 1;
+}
+
+.main-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(88vw, 380px);
+  background: #FFFFFF;
+  box-shadow: -8px 0 30px rgba(11, 25, 44, 0.18);
+  z-index: 99985;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.main-nav-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #E2E8F0;
+}
+.drawer-header-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0B192C;
+}
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.drawer-close-btn:hover {
+  background: #F1F5F9;
+  color: #0B192C;
+}
+
+.drawer-body {
+  padding: 18px 22px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.drawer-nav-group-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  margin-bottom: 6px;
+}
+.drawer-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.drawer-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0B192C;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.drawer-link:hover {
+  background: #FFFBEB;
+  color: #D97706;
+}
+.drawer-sublinks {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 8px;
+}
+.drawer-sublink {
+  font-size: 13px;
+  color: #475569;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.drawer-sublink:hover {
+  color: #D97706;
+  background: #F8FAFC;
+}
+
+.drawer-footer {
+  padding: 18px 22px;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+.drawer-auth-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 11px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  background: #0B192C;
+  color: #FFFFFF;
+  transition: background 0.2s ease;
+}
+.drawer-auth-btn:hover {
+  background: #1E3E62;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 900px) {
+  .site-header .nav-category-menu {
+    display: none;
+  }
+  .search-dialog-body {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: 70vh;
+  }
+  .search-col-suggestions {
+    border-right: none;
+    border-bottom: 1px solid #E2E8F0;
+    max-height: 180px;
+  }
+}
+@media (max-width: 600px) {
+  .site-header .header-main-bar {
+    padding: 0 16px;
+    height: 64px;
+    gap: 10px;
+  }
+  .site-header .nav-auth-icon-link {
+    display: none !important;
+  }
+  .site-header .fashion-logo__copy strong {
+    font-size: 13px;
+  }
+  .site-header .fashion-logo__copy small {
+    display: none;
+  }
+  .site-header .fashion-logo__mark {
+    width: 36px;
+    height: 34px;
+    font-size: 11.5px;
+  }
+  .search-dialog-modal {
+    width: 96vw;
+    border-radius: 12px;
+  }
+}
 </style>
 
-<div class="announcement-bar"><%= siteSettings?.header_announcement || "Ready-to-Use Apparel Patterns" %></div>
+<%
+  const isHomePage = (typeof currentPath !== 'undefined' && currentPath === '/') ||
+                     (typeof canonicalUrl !== 'undefined' && (canonicalUrl.endsWith('/') && !canonicalUrl.includes('/products')));
+%>
+<header class="site-header">
+  <div class="header-main-bar">
+    <!-- LEFT: Official AEP Logo -->
+    <% if (canVisit('/')) { %>
+      <a class="fashion-logo" href="/" aria-label="Apparel Easy Patterns Home">
+        <% if (siteSettings?.logo_url) { %>
+          <img src="<%= siteSettings.logo_url %>" alt="" width="40" height="40" style="border-radius:8px;object-fit:contain;background:#fff;border:1px solid #E2E8F0">
+        <% } else { %>
+          <span class="fashion-logo__mark">AEP</span>
+        <% } %>
+        <span class="fashion-logo__copy">
+          <strong><%= siteSettings?.store_name || 'Apparel Easy Patterns' %>&reg;</strong>
+          <small><%= siteSettings?.header_tagline || "BY GARMENT DESIGN STUDIO" %></small>
+        </span>
+      </a>
+    <% } %>
 
-<header class="site-header"><div class="container nav-container">
+    <!-- CENTER: Clean Category Navigation with Visual Mega Menus -->
+    <nav aria-label="<%= siteSettings?.header_navigation_label || 'Main Category Navigation' %>">
+      <ul class="nav-category-menu">
+        <!-- 0. Home -->
+        <% if (siteSettings?.header_home_enabled !== 'disabled' && canVisit('/')) { %>
+          <li class="category-menu-item">
+            <a href="/" class="category-menu-link <%= isHomePage ? 'active' : '' %>">
+              <%= siteSettings?.header_home_label || 'Home' %>
+            </a>
+          </li>
+        <% } %>
 
-<% if(canVisit('/')){ %><a class="fashion-logo" href="/"><% if(siteSettings?.logo_url){ %><img src="<%= siteSettings.logo_url %>" alt="" width="42" height="42" style="border-radius:50%;object-fit:contain;background:#fff;border:1px solid #e5dcd2"><% }else{ %><span class="fashion-logo__mark">GP</span><% } %><span class="fashion-logo__copy"><strong><%= siteSettings?.store_name || 'GARMENT PATTERN STORE' %></strong><small><%= siteSettings?.header_tagline || "READY-TO-USE PATTERN LIBRARY" %></small></span></a><% } %>
+        <% if (canVisit('/products')) { %>
+        <!-- 1. All Patterns -->
+        <li class="category-menu-item">
+          <a href="/products" class="category-menu-link">
+            <%= siteSettings?.header_patterns_label || 'All Patterns' %>
+          </a>
+        </li>
 
-<nav class="main-nav" id="main-nav"><ul>
+        <!-- 2. Men -->
+        <li class="category-menu-item">
+          <a href="/products?category=men" class="category-menu-link">
+            Men <span class="menu-arrow-icon" aria-hidden="true">&#9662;</span>
+          </a>
+          <!-- Men Mega Menu -->
+          <div class="mega-menu-panel" role="region" aria-label="Men Collection Menu">
+            <div>
+              <div class="mega-col-title">Men's Pattern Blocks</div>
+              <ul class="mega-links-list">
+                <li><a href="/products?category=men&type=shirts" class="mega-link">Formal &amp; Casual Shirts</a></li>
+                <li><a href="/products?category=men&type=t-shirts" class="mega-link">T-Shirts &amp; Polos</a></li>
+                <li><a href="/products?category=men&type=trousers" class="mega-link">Trousers &amp; Pants</a></li>
+                <li><a href="/products?category=men&type=shorts" class="mega-link">Shorts &amp; Loungewear</a></li>
+                <li><a href="/products?category=men&fit=slim-fit" class="mega-link">Slim Fit Shirts</a></li>
+              </ul>
+            </div>
+            <div>
+              <a href="/products?category=men" class="mega-card-preview" style="text-decoration:none">
+                <img src="/images/collections/men-collection.jpg" alt="Men collection" class="mega-card-img" onerror="this.src='/images/collections/men-collection.jpg'">
+                <div class="mega-card-content">
+                  <strong>Men's Production Blocks</strong>
+                  <span>Browse Collection &rarr;</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </li>
 
-<% visibleLinks([[siteSettings?.header_home_label || "Home",'/'],[siteSettings?.header_patterns_label || "Available Patterns",'/products'],[siteSettings?.header_contact_label || "Contact",'/contact']]).forEach(([label,url])=>{ %><li><a href="<%= url %>" class="<%= url==='/products'?'available-patterns-link':'' %>"><%= label %></a></li><% }) %>
+        <!-- 3. Women -->
+        <li class="category-menu-item">
+          <a href="/products?category=women" class="category-menu-link">
+            Women <span class="menu-arrow-icon" aria-hidden="true">&#9662;</span>
+          </a>
+          <!-- Women Mega Menu -->
+          <div class="mega-menu-panel" role="region" aria-label="Women Collection Menu">
+            <div>
+              <div class="mega-col-title">Women's Pattern Blocks</div>
+              <ul class="mega-links-list">
+                <li><a href="/products?category=women&type=dresses" class="mega-link">Dresses &amp; Gowns</a></li>
+                <li><a href="/products?category=women&type=tops" class="mega-link">Tops &amp; Blouses</a></li>
+                <li><a href="/products?category=women&type=kurtas" class="mega-link">Kurtas &amp; Tunics</a></li>
+                <li><a href="/products?category=women&type=trousers" class="mega-link">Bottoms &amp; Skirts</a></li>
+              </ul>
+            </div>
+            <div>
+              <a href="/products?category=women" class="mega-card-preview" style="text-decoration:none">
+                <img src="/images/collections/women-collection.jpg" alt="Women collection" class="mega-card-img" onerror="this.src='/images/collections/women-collection.jpg'">
+                <div class="mega-card-content">
+                  <strong>Women's Production Blocks</strong>
+                  <span>Browse Collection &rarr;</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </li>
 
-<% const groups=[[siteSettings?.header_explore_label || "Explore",[[siteSettings?.header_books_label || "Books - Coming Soon",'/books'],[siteSettings?.header_classes_label || "Online Pattern Making Classes",'/classes/enquiry']]]];groups.forEach(([label,links])=>{const enabledLinks=visibleLinks(links);if(enabledLinks.length){ %><li><details class="nav-group"><summary><%= label %></summary><ul><% enabledLinks.forEach(([name,url])=>{ %><li><a href="<%= url %>"><%= name %></a></li><% }) %></ul></details></li><% }}); %>
+        <!-- 4. Kids (Boys & Girls) -->
+        <li class="category-menu-item">
+          <a href="/products?category=kids" class="category-menu-link">
+            Kids <span class="menu-arrow-icon" aria-hidden="true">&#9662;</span>
+          </a>
+          <!-- Kids Mega Menu -->
+          <div class="mega-menu-panel" role="region" aria-label="Kids Collection Menu">
+            <div>
+              <div class="mega-col-title">Kids Wardrobe Categories</div>
+              <ul class="mega-links-list">
+                <li><a href="/products?category=kids&subcat=boys" class="mega-link">👦 Boys Patterns (Shirts, Sets)</a></li>
+                <li><a href="/products?category=kids&subcat=girls" class="mega-link">👧 Girls Patterns (Dresses, Tops)</a></li>
+                <li><a href="/products?category=kids" class="mega-link">All Age-Graded Childrenswear</a></li>
+              </ul>
+            </div>
+            <div>
+              <a href="/products?category=kids" class="mega-card-preview" style="text-decoration:none">
+                <img src="/images/collections/kids-collection.jpg" alt="Kids collection" class="mega-card-img" onerror="this.src='/images/collections/kids-collection.jpg'">
+                <div class="mega-card-content">
+                  <strong>Age-Graded Patterns</strong>
+                  <span>Browse Collection &rarr;</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </li>
+        <% } %>
+      </ul>
+    </nav>
 
-<% if(canVisit('/login')){ %><li class="nav-auth"><% if(typeof customerSignedIn!=='undefined' && customerSignedIn){ %><details class="nav-group"><summary><%= siteSettings?.header_account_label || "Account" %></summary><ul><li><a href="/account"><%= siteSettings?.header_my_account_label || "My Account" %></a></li><li><a href="/account/orders"><%= siteSettings?.header_orders_label || "My Orders" %></a></li><li><form method="post" action="/account/logout"><input type="hidden" name="_csrf" value="<%= customerCsrf %>"><button class="nav-logout" type="submit"><%= siteSettings?.header_logout_label || "Logout" %></button></form></li></ul></details><% }else{ %><a href="/login"><%= siteSettings?.header_sign_in_label || "Sign In" %></a><a href="/account/register"><%= siteSettings?.header_register_label || "Create Account" %></a><% } %></li><% } %>
+    <!-- RIGHT: Search Icon, Account, Cart, Menu Drawer -->
+    <div class="header-actions-right">
+      <!-- 1. Search Icon Popup Button -->
+      <% if (canVisit('/products')) { %>
+      <button
+        type="button"
+        id="btn-open-search-modal"
+        class="action-icon-btn"
+        aria-label="Search patterns"
+        title="Search pattern library"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+      <% } %>
 
-</ul></nav>
+      <!-- 2. Sign In / Account -->
+      <% if (typeof customerSignedIn !== 'undefined' && customerSignedIn) { %>
+        <a href="/account" class="action-icon-btn nav-auth-icon-link" aria-label="<%= siteSettings?.header_account_label || 'Customer Account' %>" title="<%= siteSettings?.header_my_account_label || 'My Account' %>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+      <% } else if (canVisit('/login')) { %>
+        <a href="/login" class="action-icon-btn nav-auth-icon-link" aria-label="Sign In" title="Sign In">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+      <% } %>
 
-<div class="nav-actions"><% if(canVisit('/cart')){ %><a href="/cart" class="basket-link" aria-label="<%= siteSettings?.header_cart_label || "Shopping cart" %>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 7h14l1 14H4L5 7Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg><span id="cart-count">0</span></a><% } %><button id="nav-toggle" class="nav-toggle" type="button" aria-label="<%= siteSettings?.header_navigation_label || "Open navigation" %>" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span></button></div>
+      <!-- 3. Cart with Badge -->
+      <% if (canVisit('/cart')) { %>
+        <a href="/cart" class="action-icon-btn" aria-label="<%= siteSettings?.header_cart_label || 'Shopping cart' %>" title="Shopping Cart">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span id="cart-count" class="cart-badge-pill">0</span>
+        </a>
+      <% } %>
 
-</div></header>
+      <!-- 4. Menu Drawer Toggle -->
+      <button
+        type="button"
+        id="nav-toggle"
+        class="action-icon-btn"
+        aria-label="Open Navigation Menu"
+        aria-expanded="false"
+        aria-controls="main-nav"
+        title="Menu"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- MENU DRAWER (Mobile & Secondary Links) -->
+  <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+  <nav class="main-nav-drawer" id="main-nav" aria-label="Site Navigation Drawer">
+    <div class="drawer-header">
+      <span class="drawer-header-title">Navigation</span>
+      <button type="button" id="btn-close-drawer" class="drawer-close-btn" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <% if (canVisit('/products')) { %>
+      <div>
+        <div class="drawer-nav-group-title">Pattern Collections</div>
+        <ul class="drawer-links-list">
+          <!-- 0. Home Drawer Link -->
+          <% if (siteSettings?.header_home_enabled !== 'disabled' && canVisit('/')) { %>
+            <li><a href="/" class="drawer-link <%= isHomePage ? 'active' : '' %>"><%= siteSettings?.header_home_label || 'Home' %></a></li>
+          <% } %>
+          <li><a href="/products" class="drawer-link"><%= siteSettings?.header_patterns_label || 'All Patterns' %> &rarr;</a></li>
+          <li><a href="/products?category=men" class="drawer-link">Men</a></li>
+          <li><a href="/products?category=women" class="drawer-link">Women</a></li>
+          <li>
+            <a href="/products?category=kids" class="drawer-link">Kids</a>
+            <div class="drawer-sublinks">
+              <a href="/products?category=kids&subcat=boys" class="drawer-sublink">👦 Boys Patterns</a>
+              <a href="/products?category=kids&subcat=girls" class="drawer-sublink">👧 Girls Patterns</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <% } %>
+
+      <div>
+        <div class="drawer-nav-group-title"><%= siteSettings?.header_explore_label || 'Explore' %></div>
+        <ul class="drawer-links-list">
+          <% if (canVisit('/classes')) { %>
+          <li><a href="/classes/enquiry" class="drawer-link"><%= siteSettings?.header_classes_label || 'Online Pattern Making Classes' %></a></li>
+          <% } %>
+          <% if (canVisit('/books')) { %>
+          <li>
+            <a href="/books" class="drawer-link">
+              <%= siteSettings?.header_books_label || 'Books - Coming Soon' %>
+              <span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-weight:700">Coming Soon</span>
+            </a>
+          </li>
+          <% } %>
+          <% if (canVisit('/about')) { %>
+          <li><a href="/about" class="drawer-link">About</a></li>
+          <% } %>
+          <% if (canVisit('/contact')) { %>
+          <li><a href="/contact" class="drawer-link"><%= siteSettings?.header_contact_label || 'Contact' %></a></li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <% if (typeof customerSignedIn !== 'undefined' && customerSignedIn) { %>
+        <a href="/account" class="drawer-auth-btn" style="margin-bottom:8px"><%= siteSettings?.header_my_account_label || 'My Account' %></a>
+        <a href="/account/orders" class="drawer-link" style="margin-bottom:8px"><%= siteSettings?.header_orders_label || 'My Orders' %></a>
+        <form method="post" action="/account/logout">
+          <input type="hidden" name="_csrf" value="<%= customerCsrf %>">
+          <button type="submit" style="width:100%;padding:10px;border-radius:8px;background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;font-weight:700;font-size:13px;cursor:pointer"><%= siteSettings?.header_logout_label || 'Logout' %></button>
+        </form>
+      <% } else { %>
+        <a href="/login" class="drawer-auth-btn" style="margin-bottom:8px"><%= siteSettings?.header_sign_in_label || "Sign In" %></a>
+        <a href="/account/register" style="display:block;text-align:center;font-size:13px;font-weight:600;color:#0B192C;text-decoration:none;padding:6px"><%= siteSettings?.header_register_label || 'Create Account' %></a>
+      <% } %>
+    </div>
+  </nav>
+</header>
+
+<!-- Navy Announcement Strip -->
+<div class="announcement-bar">
+  <span class="announcement-pulse" aria-hidden="true">&#12320;</span>
+  <span><%= siteSettings?.header_announcement || "PRODUCTION-FRIENDLY BLOCKS FOR MEN · WOMEN · KIDS" %></span>
+</div>
+
+<% if (canVisit('/products')) { %>
+<!-- ==========================================================================
+     WESTSIDE-STYLE SEARCH DIALOG POPUP
+     ========================================================================== -->
+<div id="search-dialog-backdrop" class="search-dialog-backdrop" aria-hidden="true"></div>
+
+<div
+  id="search-dialog-modal"
+  class="search-dialog-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="search-dialog-title"
+>
+  <!-- TOP: Search Input + Close Button -->
+  <div class="search-dialog-top">
+    <div class="search-dialog-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="search"
+        id="search-dialog-input"
+        class="search-dialog-input"
+        placeholder="Search patterns, styles, fits..."
+        aria-label="Search patterns, styles, fits"
+        autocomplete="off"
+      >
+      <button type="button" id="search-dialog-clear" style="display:none;background:none;border:none;cursor:pointer;color:#94A3B8;padding:2px" aria-label="Clear search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <button type="button" id="search-dialog-close" class="search-dialog-close-btn" aria-label="Close search dialog">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- BODY: Left Suggestions + Right Published Results -->
+  <div class="search-dialog-body">
+    <!-- LEFT: Popular / Suggested Searches -->
+    <div class="search-col-suggestions">
+      <div class="search-col-title" id="search-dialog-title">Popular Searches</div>
+      <div class="suggestion-pills-wrap" id="suggestion-pills-container">
+        <button type="button" class="suggestion-pill-btn" data-query="Formal Shirt">
+          <span>Formal Shirt</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Slim Fit">
+          <span>Slim Fit</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Men">
+          <span>Men's Patterns</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Women">
+          <span>Women's Collection</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Boys">
+          <span>Boys Patterns</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Girls">
+          <span>Girls Patterns</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+        <button type="button" class="suggestion-pill-btn" data-query="Trousers">
+          <span>Trousers &amp; Pants</span>
+          <span style="color:#94A3B8;font-size:12px">&rarr;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Available Published Pattern Results -->
+    <div class="search-col-results">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="search-col-title" style="margin-bottom:0">Available Pattern Blocks</div>
+        <span id="search-results-counter" style="font-size:12px;font-weight:700;color:#D97706">Loading patterns...</span>
+      </div>
+
+      <div class="search-results-list" id="search-results-container">
+        <!-- Injected via JavaScript from real /api/products/search data -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 1. Search Dialog Logic
+  const openSearchBtn = document.getElementById('btn-open-search-modal');
+  const closeSearchBtn = document.getElementById('search-dialog-close');
+  const searchBackdrop = document.getElementById('search-dialog-backdrop');
+  const searchModal = document.getElementById('search-dialog-modal');
+  const searchInput = document.getElementById('search-dialog-input');
+  const clearSearchBtn = document.getElementById('search-dialog-clear');
+  const resultsContainer = document.getElementById('search-results-container');
+  const resultsCounter = document.getElementById('search-results-counter');
+  const suggestionPills = document.querySelectorAll('.suggestion-pill-btn');
+
+  let cachedProducts = null;
+  let debounceTimeout = null;
+
+  function openSearchDialog() {
+    searchBackdrop.classList.add('is-visible');
+    searchModal.classList.add('is-visible');
+    document.body.classList.add('search-modal-open');
+    if (!cachedProducts) {
+      fetchProducts('');
+    }
+    setTimeout(() => {
+      searchInput?.focus();
+    }, 100);
+  }
+
+  function closeSearchDialog() {
+    searchBackdrop.classList.remove('is-visible');
+    searchModal.classList.remove('is-visible');
+    document.body.classList.remove('search-modal-open');
+    if (searchInput) searchInput.value = '';
+    if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+  }
+
+  openSearchBtn?.addEventListener('click', openSearchDialog);
+  closeSearchBtn?.addEventListener('click', closeSearchDialog);
+  searchBackdrop?.addEventListener('click', closeSearchDialog);
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (searchModal && searchModal.classList.contains('is-visible')) {
+        closeSearchDialog();
+      }
+      if (drawer && drawer.classList.contains('open')) {
+        closeDrawer();
+      }
+    }
+  });
+
+  // Fetch real published products
+  async function fetchProducts(query) {
+    if (resultsCounter) resultsCounter.textContent = 'Searching...';
+    try {
+      const res = await fetch('/api/products/search?q=' + encodeURIComponent(query));
+      const data = await res.json();
+      if (data && data.success) {
+        if (!cachedProducts && !query) {
+          cachedProducts = data.results;
+        }
+        if (data.suggestions && data.suggestions.length) {
+          const pillsContainer = document.getElementById('suggestion-pills-container');
+          if (pillsContainer) {
+            pillsContainer.innerHTML = data.suggestions.map(s => {
+              return '<button type="button" class="suggestion-pill-btn" data-query="' + escapeHtml(s) + '">' +
+                '<span>' + escapeHtml(s) + '</span>' +
+                '<span style="color:#94A3B8;font-size:12px">&rarr;</span>' +
+              '</button>';
+            }).join('');
+            pillsContainer.querySelectorAll('.suggestion-pill-btn').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const q = btn.dataset.query || '';
+                if (searchInput) {
+                  searchInput.value = q;
+                  if (clearSearchBtn) clearSearchBtn.style.display = 'block';
+                  fetchProducts(q);
+                }
+              });
+            });
+          }
+        }
+        renderResults(data.results, query);
+      } else {
+        renderResults([], query);
+      }
+    } catch (err) {
+      if (resultsContainer) {
+        resultsContainer.innerHTML = '<div class="search-empty-state"><p>Unable to load pattern search right now.</p></div>';
+      }
+      if (resultsCounter) resultsCounter.textContent = '0 patterns';
+    }
+  }
+
+  function renderResults(products, query) {
+    if (resultsCounter) {
+      resultsCounter.textContent = products.length + (products.length === 1 ? ' pattern' : ' patterns');
+    }
+    if (!products.length) {
+      resultsContainer.innerHTML = `
+        <div class="search-empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <p>No pattern blocks found ${query ? 'for "' + escapeHtml(query) + '"' : ''}.</p>
+          <% if (canVisit('/products')) { %><a href="/products" class="filter-reset-link" style="display:inline-block;padding:8px 16px;background:#FFFBEB;color:#D97706;border-radius:8px;font-weight:700;text-decoration:none">View All Patterns &rarr;</a><% } %>
+        </div>
+      `;
+      return;
+    }
+
+    resultsContainer.innerHTML = products.map(p => {
+      const priceFmt = p.base_price > 0 ? '₹' + Number(p.base_price).toLocaleString('en-IN') : 'Price on enquiry';
+      const deptFmt = p.department ? p.department.toUpperCase() : 'PATTERN';
+      const styleFit = [p.product_type, p.style, p.fit].filter(Boolean).join(' · ');
+      return `
+        <a href="/product/${p.slug}" class="search-result-card">
+          <img src="${p.image || '/images/reference/blue-shirt-main.jpg'}" alt="${escapeHtml(p.name)}" class="search-result-thumb" onerror="this.src='/images/reference/blue-shirt-main.jpg'">
+          <div class="search-result-meta">
+            <span class="search-result-dept">${deptFmt}</span>
+            <div class="search-result-title">${escapeHtml(p.name)}</div>
+            <div class="search-result-style">${escapeHtml(styleFit || 'Production Block')}</div>
+          </div>
+          <strong class="search-result-price">${priceFmt}</strong>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+  }
+
+  // Debounced live typing
+  searchInput?.addEventListener('input', () => {
+    const val = searchInput.value.trim();
+    if (clearSearchBtn) clearSearchBtn.style.display = val ? 'block' : 'none';
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      fetchProducts(val);
+    }, 200);
+  });
+
+  clearSearchBtn?.addEventListener('click', () => {
+    if (searchInput) {
+      searchInput.value = '';
+      clearSearchBtn.style.display = 'none';
+      searchInput.focus();
+      fetchProducts('');
+    }
+  });
+
+  // Suggestion buttons click
+  suggestionPills.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const q = btn.dataset.query || '';
+      if (searchInput) {
+        searchInput.value = q;
+        if (clearSearchBtn) clearSearchBtn.style.display = 'block';
+        fetchProducts(q);
+      }
+    });
+  });
+  <% } %>
+
+  // 2. Menu Drawer Logic
+  const navToggle = document.getElementById('nav-toggle');
+  const drawer = document.getElementById('main-nav');
+  const drawerBackdrop = document.getElementById('drawer-backdrop');
+  const closeDrawerBtn = document.getElementById('btn-close-drawer');
+
+  function openDrawer() {
+    drawer?.classList.add('open');
+    drawerBackdrop?.classList.add('is-visible');
+    navToggle?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('search-modal-open');
+  }
+
+  function closeDrawer() {
+    drawer?.classList.remove('open');
+    drawerBackdrop?.classList.remove('is-visible');
+    navToggle?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('search-modal-open');
+  }
+
+  navToggle?.addEventListener('click', openDrawer);
+  closeDrawerBtn?.addEventListener('click', closeDrawer);
+  drawerBackdrop?.addEventListener('click', closeDrawer);
+})();
+</script>

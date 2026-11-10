@@ -1,4 +1,5 @@
-﻿// Disposable loopback MongoDB + real HTTP routes; no .env, provider calls or delivery.
+process.env.TEST_PATTERN_STOREFRONT = 'false';
+// Disposable loopback MongoDB + real HTTP routes; no .env, provider calls or delivery.
 require('./isolatedTestGuard');
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');

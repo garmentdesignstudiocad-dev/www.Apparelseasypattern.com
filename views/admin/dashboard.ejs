@@ -1,1 +1,232 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= title %></title><link rel="stylesheet" href="/css/styles.css"></head><body><%- include('../partials/admin_header') %><main class="container admin-dashboard-main"><section class="admin-hero"><div><p class="eyebrow">Business overview</p><h1>Owner Control Center</h1><p class="muted">Manage your business from one place. Choose a control below.</p></div><a class="btn primary" href="/admin/products/new">Add Product</a></section><nav class="admin-control-center" aria-label="All owner controls"><% Object.entries(adminNavigation).forEach(([heading,links])=>{ %><section class="admin-control-section"><h2><%= heading %></h2><div class="admin-control-grid"><% links.forEach(([url,label])=>{ %><a class="admin-control-card" href="<%= url %>"><span><%= label %></span><span aria-hidden="true">&rarr;</span></a><% }) %></div></section><% }) %><p><a class="btn" href="/admin/logout">Logout</a></p></nav><h2>Business Overview</h2><section class="grid admin-stats-grid"><% [{l:'Total Products',v:counts.products},{l:'Total Orders',v:counts.orders},{l:'Paid Orders',v:orderStats.paid},{l:'Pending Orders',v:orderStats.pending},{l:'Processing Orders',v:orderStats.processing},{l:'Total Customers',v:counts.customers},{l:'Total Revenue',v:typeof totalRevenue==='number'?formatCurrency(totalRevenue):'—'},{l:'Today Revenue',v:formatCurrency(todayRevenue)}].forEach(x=>{ %><article class="card admin-card"><div class="card-body"><h3><%= x.l %></h3><p class="huge"><%= x.v %></p></div></article><% }) %></section><section class="grid admin-stats-grid"><% (typeof paidAccessStats!=='undefined'?paidAccessStats:[]).forEach(stat=>{ %><article class="card admin-card"><div class="card-body"><h3><%= stat.label %></h3><p class="huge"><%= stat.value %></p><a href="/admin/access-records">View registrations & payments</a></div></article><% }) %></section><section class="grid"><div class="card"><div class="card-body"><h2>Recent Orders</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr></thead><tbody><% if(recentOrders.length){recentOrders.forEach(o=>{ %><tr><td>#<%= o.id %></td><td><%= o.customer_name %></td><td><%= formatCurrency(o.grand_total) %></td><td><span class="status-badge <%= o.payment_status %>"><%= o.payment_status %></span></td><td><span class="status-badge <%= o.order_status %>"><%= o.order_status %></span></td><td><a href="/admin/orders/<%= o.id %>">View</a></td></tr><% })}else{ %><tr><td colspan="6">No recent orders.</td></tr><% } %></tbody></table></div></div></div><div class="card"><div class="card-body"><h2>Recent Payments</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Payment</th><th>Order</th><th>Amount</th><th>Status</th></tr></thead><tbody><% if(recentPayments.length){recentPayments.forEach(p=>{ %><tr><td>#<%= p.id %></td><td><%= p.order_id||'—' %></td><td><%= formatCurrency(p.amount) %></td><td><span class="status-badge <%= p.payment_status %>"><%= p.payment_status %></span></td></tr><% })}else{ %><tr><td colspan="4">No recent payments.</td></tr><% } %></tbody></table></div></div></div></section><section class="card"><div class="card-body"><h2>Inactive Products</h2><% if(inactiveProducts.length){ %><ul><% inactiveProducts.forEach(p=>{ %><li><a href="/admin/products/<%= p._id %>/edit"><%= p.name %></a></li><% }) %></ul><% }else{ %><p class="muted">No inactive products.</p><% } %></div></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-dashboard-page">
+  <%- include('../partials/admin_header') %>
+
+  <main class="container admin-dashboard-main">
+    <header class="admin-hero">
+      <div>
+        <p class="eyebrow">Studio Management</p>
+        <h1>Owner Control Center</h1>
+        <p class="muted">Real-time pattern catalog, customer orders, and verified revenue oversight.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn primary" href="/admin/products/new">+ Add Product</a>
+        <a class="btn ghost" href="/admin/orders">View Orders</a>
+      </div>
+    </header>
+
+    <!-- Quick Navigation Hub -->
+    <nav class="admin-control-center" aria-label="Studio control quick navigation">
+      <% Object.entries(adminNavigation).forEach(([heading, links]) => { %>
+        <section class="admin-control-section">
+          <h2><%= heading %></h2>
+          <div class="admin-control-grid">
+            <% links.forEach(([url, label]) => { %>
+              <a class="admin-control-card" href="<%= url %>">
+                <span><%= label %></span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            <% }) %>
+          </div>
+        </section>
+      <% }) %>
+    </nav>
+
+    <!-- Real Data SaaS Metrics Grid -->
+    <section class="admin-control-section" aria-label="Business metrics">
+      <h2>Studio Performance &amp; Operations</h2>
+      <div class="admin-stats-grid">
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Total Products</h3>
+            <p class="huge"><%= counts.products %></p>
+            <a href="/admin/products">Manage catalog &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Total Orders</h3>
+            <p class="huge"><%= counts.orders %></p>
+            <a href="/admin/orders">View all orders &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Paid Orders</h3>
+            <p class="huge" style="color:#059669"><%= orderStats.paid %></p>
+            <a href="/admin/orders?payment=paid">Verified paid orders &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Pending Fulfilment</h3>
+            <p class="huge" style="color:#D97706"><%= orderStats.pending %></p>
+            <a href="/admin/orders?status=pending">Courier dispatch &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Processing Orders</h3>
+            <p class="huge"><%= orderStats.processing %></p>
+            <a href="/admin/orders?status=processing">In production &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Total Customers</h3>
+            <p class="huge"><%= counts.customers %></p>
+            <a href="/admin/orders">Customer records &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Total Verified Revenue</h3>
+            <p class="huge" style="font-size:24px"><%= typeof totalRevenue === 'number' ? formatCurrency(totalRevenue) : (totalRevenue || '—') %></p>
+            <a href="/admin/payments">Payment reconciliation &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card admin-card">
+          <div class="card-body">
+            <h3>Today's Revenue</h3>
+            <p class="huge" style="font-size:24px;color:#D97706"><%= formatCurrency(todayRevenue) %></p>
+            <small style="color:#64748B;font-size:12px;margin-top:6px;display:block">Real-time daily total</small>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <% if (typeof paidAccessStats !== 'undefined' && paidAccessStats && paidAccessStats.length) { %>
+      <section class="admin-control-section" aria-label="Paid access stats">
+        <h2>Special Access Programs</h2>
+        <div class="admin-stats-grid">
+          <% paidAccessStats.forEach(stat => { %>
+            <article class="card admin-card">
+              <div class="card-body">
+                <h3><%= stat.label %></h3>
+                <p class="huge"><%= stat.value %></p>
+                <a href="/admin/access-records">View registrations &amp; payments &rarr;</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Recent Orders & Recent Payments Tables -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:24px;margin-bottom:28px">
+      <!-- Recent Orders Table -->
+      <section class="card" style="margin-bottom:0">
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <h2 style="margin:0">Recent Orders</h2>
+            <a class="btn small ghost" href="/admin/orders">View All</a>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Total</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (recentOrders && recentOrders.length) { %>
+                  <% recentOrders.forEach(o => { %>
+                    <tr>
+                      <td><strong style="color:#0B192C">#<%= String(o.id).slice(-8) %></strong></td>
+                      <td><%= o.customer_name %></td>
+                      <td><strong><%= formatCurrency(o.grand_total) %></strong></td>
+                      <td><span class="status-badge <%= o.payment_status %>"><%= o.payment_status %></span></td>
+                      <td><span class="status-badge <%= o.order_status %>"><%= o.order_status %></span></td>
+                      <td><a class="btn small ghost" href="/admin/orders/<%= o.id %>">View</a></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="6" style="text-align:center;padding:24px;color:#64748B">No recent orders yet.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Payments Table -->
+      <section class="card" style="margin-bottom:0">
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <h2 style="margin:0">Recent Payments</h2>
+            <a class="btn small ghost" href="/admin/payments">View All</a>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Payment ID</th>
+                  <th>Order</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (recentPayments && recentPayments.length) { %>
+                  <% recentPayments.forEach(p => { %>
+                    <tr>
+                      <td><strong style="color:#0B192C"><%= String(p.id).slice(-10) %></strong></td>
+                      <td><%= p.order_id ? '#' + String(p.order_id).slice(-8) : '—' %></td>
+                      <td><strong><%= formatCurrency(p.amount) %></strong></td>
+                      <td><span class="status-badge <%= p.payment_status %>"><%= p.payment_status %></span></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" style="text-align:center;padding:24px;color:#64748B">No recent payments recorded.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Inactive / Draft Products Overview -->
+    <% if (inactiveProducts && inactiveProducts.length) { %>
+      <section class="card">
+        <div class="card-body">
+          <h2>Inactive / Draft Products (<%= inactiveProducts.length %>)</h2>
+          <p style="color:#64748B;font-size:13.5px;margin-top:0">These products are not currently visible or purchasable by customers. Click to edit and publish.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+            <% inactiveProducts.forEach(p => { %>
+              <a class="btn small ghost" href="/admin/products/<%= p._id %>/edit" style="display:inline-flex;align-items:center;gap:6px">
+                <span><%= p.name %></span>
+                <span style="color:#D97706">&rarr;</span>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+    <% } %>
+  </main>
+</body>
+</html>

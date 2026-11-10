@@ -26,7 +26,7 @@ router.post('/settings/couriers',async(req,res)=>{
     const chargeText=text(req.body,'charge',32),chargeApproved=req.body.charge_approved==='on'||req.body.charge_approved===true;
     let charge=null;
     if(chargeText){if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(chargeText) || !Number.isFinite(Number(chargeText)) || Number(chargeText)>1000000)return res.status(400).send('Enter a courier charge from ₹0.00 to ₹1,000,000.00 with up to two decimal places.');charge=Number(chargeText);}
-    if(chargeApproved && charge===null)return res.status(400).send('Enter a courier charge before approving it for customer checkout.');
+    if(chargeApproved && charge===null)return res.status(400).send('Enter a legacy reference rate before marking it reviewed.');
     const priority=Number(req.body.priority);
     const hubIds=[...new Set((Array.isArray(req.body.hub_ids)?req.body.hub_ids:[req.body.hub_ids]).filter(Boolean))];
     if(hubIds.some(id=>!['south','north'].includes(id)))return res.status(400).send('Choose Bengaluru or Mumbai.');
@@ -50,7 +50,7 @@ router.post('/orders/:id/fulfilment',async(req,res)=>{
     if(!tracking_url && courier?.tracking_url)tracking_url=courier.tracking_url.replaceAll('{awb}',encodeURIComponent(tracking_number));
     if(!['Confirmed','Preparing','Ready to Dispatch','Shipped','Delivered','Cancelled','Pending','Packed','In Transit','Returned'].includes(status) || !couriers.safeUrl(tracking_url) || (dispatch && (!/^\d{4}-\d{2}-\d{2}$/.test(dispatch) || !Number.isFinite(Date.parse(dispatch)) || new Date(dispatch).toISOString().slice(0,10)!==dispatch)))return res.status(400).send('Check status, dispatch date and HTTPS tracking URL.');
     if(['Shipped','In Transit','Delivered'].includes(status) && (!courier || !tracking_number || !dispatch || row.payment_status!=='paid' || !row.payment_verified_at))return res.status(409).send('Verify payment and enter courier, tracking number and dispatch date before shipping.');
-    const update={$set:{courier_id,courier_name:row.customer_selected_courier?row.courier_name:(courier?.name||''),tracking_number,tracking_url,dispatch_date:dispatch?new Date(dispatch):null,shipping_status:status,order_status:status==='Cancelled'?'cancelled':status==='Delivered'?'delivered':['Shipped','In Transit'].includes(status)?'shipped':row.order_status},$inc:{shipping_version:1}};
+    const update={$set:{courier_id,courier_name:row.customer_selected_courier?row.courier_name:(courier?.name||''),tracking_number,tracking_url,dispatch_date:dispatch?new Date(dispatch):null,shipping_status:status,order_status:status==='Cancelled'?'cancelled':status==='Delivered'?'delivered':['Shipped','In Transit'].includes(status)?'shipped':row.order_status,...(row.delivery_flow_version===3 && ['Shipped','In Transit','Delivered'].includes(status)?{courier_booking_status:'booked'}:{})},$inc:{shipping_version:1}};
     if(status==='Shipped'){
       const key='shipped-'+crypto.createHash('sha256').update([courier_id,tracking_number,dispatch,tracking_url].join('|')).digest('hex');
       if(!row.shipping_notification_keys?.includes(key))update.$addToSet={shipping_notification_keys:key,notification_jobs:{key,event:'shipped',status:'Shipped',detail:`Order ${row._id}; Courier: ${courier.name}; Tracking number: ${tracking_number}; Tracking link: ${tracking_url || 'Contact the studio for tracking.'}`}};
@@ -69,8 +69,8 @@ router.get('/products/:id/digital-files',async(req,res)=>{
 router.post('/products/:id/digital-files/:fileId?',async(req,res)=>{
   if(!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send('Upload a file.');
   const ext=path.extname(decodeURIComponent(req.get('x-file-name')||'')).toLowerCase();
-  if(!['.svg','.aama','.astm','.pdf','.zip','.dxf','.dwg','.ai','.eps','.plt'].includes(ext))return res.status(400).send('Use SVG, DXF, AAMA, ASTM, PDF, ZIP, DWG, AI, EPS or PLT.');
-  if(!req.params.fileId && !['.pdf','.svg'].includes(ext))return res.status(400).send('Printable soft copy must be PDF or SVG. Add editable DXF and other files as separate paid Product Files.');
+  if(!['.svg','.aama','.astm','.pdf','.zip','.dxf','.dwg','.ai','.eps','.plt','.hpgl'].includes(ext))return res.status(400).send('Use SVG, DXF, HPGL, AAMA, ASTM, PDF, ZIP, DWG, AI, EPS or PLT.');
+  if(!req.params.fileId && !['.pdf','.svg','.aama','.astm','.dxf','.plt','.hpgl','.zip'].includes(ext))return res.status(400).send('Use valid pattern file format.');
   if(req.params.fileId && !/^[a-f0-9]{24}$/i.test(req.params.fileId))return res.sendStatus(404);
   const Model=req.params.fileId?require('../models/mongo/ProductFile'):Product,filter=req.params.fileId?{_id:req.params.fileId,product_id:req.params.id}:{_id:req.params.id};
   if(!await Model.exists(filter))return res.sendStatus(404);

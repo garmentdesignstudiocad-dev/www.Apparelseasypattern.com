@@ -41,7 +41,7 @@ function isValidEmail(email){
   return typeof email==='string' && /^[^\r\n\s@]+@[^\r\n\s@]+\.[^\r\n\s@]+$/.test(email.trim());
 }
 
-function buildLeadHtml(fields,customerEmail,subject='New Lead Enquiry - Apparel Easy Patterns'){
+function buildLeadHtml(fields,customerEmail,subject='New Customer Enquiry - Apparel Easy Patterns'){
   const cleanEmail=isValidEmail(customerEmail)?customerEmail.trim():null;
   const cleanSubject=subject.replace(/[\r\n]+/g,' ').trim();
   const rows=Object.entries(fields)
@@ -96,7 +96,7 @@ function enrichEnquiryLog(log,customerEmail){
   delete log.replyTo;
   if(arguments.length>1)fields['Email Address']=cleanEmail || '';
   if(cleanEmail)log.reply_to=cleanEmail;
-  log.html=buildLeadHtml(fields,cleanEmail,log.subject || 'New Lead Enquiry - Apparel Easy Patterns');
+  log.html=buildLeadHtml(fields,cleanEmail,log.subject || 'New Customer Enquiry - Apparel Easy Patterns');
   return log;
 }
 
@@ -138,7 +138,7 @@ async function enqueue(row,type='course_enquiry') {
   };
   const destination=ownerDestination(await require('./siteSettingsService').getSiteSettings(),true);
   const cleanEmail=isValidEmail(row.email)?row.email.trim():null;
-  const subject='New Lead Enquiry - Apparel Easy Patterns';
+  const subject='New Customer Enquiry - Apparel Easy Patterns';
   const html=buildLeadHtml(fields,cleanEmail,subject);
   const payload={dedupe_key,channel:'email',event,category:event,reference_type:type,reference_id:row._id,
     customer:row.name || row.full_name || '',destination,status:'queued',

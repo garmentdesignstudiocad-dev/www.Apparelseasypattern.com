@@ -7,6 +7,7 @@ function availability(product) {
 function printable(item) { return item.printable_selected !== false; }
 function validate(product, files, item) {
   const available=availability(product), selected=item.selected_sizes || [];
+  const physicalSelected = (Array.isArray(item.physical_sizes) && item.physical_sizes.length) ? item.physical_sizes : null;
   if(files.some(file=>file.price_per_selected_size)) {
     if(!Array.isArray(item.selected_sizes) || !selected.length)return 'Select at least one size for per-size digital files.';
     if(selected.some(size=>typeof size!=='string' || !/^[a-zA-Z0-9 ._-]{1,40}$/.test(size.trim())) || new Set(selected.map(size=>size.trim().toLowerCase())).size!==selected.length)return 'Choose each size only once for per-size digital files.';
@@ -16,8 +17,10 @@ function validate(product, files, item) {
   if(Number(item.quantity ?? 1)>0 && !printable(item) && !files.length)return 'Select a digital option.';
   if(Number(item.physical_quantity)>0 && !available.physical)return 'Physical pattern is unavailable.';
   if(Number(item.trial_quantity)>0 && !available.trial)return 'Trial sample is unavailable.';
-  if(product.available_sizes?.length && (!selected.length || selected.some(size=>!product.available_sizes.includes(size))))return 'Select the configured sizes for this pattern.';
-  if(product.available_sizes?.length && [item.physical_quantity,item.trial_quantity].some(q=>Number(q)>0 && Number(q)%selected.length!==0))return 'Physical and trial quantities must include each selected size.';
+  if(Number(item.quantity ?? 1)>0 && product.available_sizes?.length && (!selected.length || selected.some(size=>!product.available_sizes.includes(size))))return 'Select the configured sizes for this pattern.';
+  if(Number(item.physical_quantity)>0 && product.available_sizes?.length && !physicalSelected && !selected.length)return 'Select at least one size for physical patterns.';
+  if(physicalSelected && product.available_sizes?.length && physicalSelected.some(size=>!product.available_sizes.includes(size)))return 'Select configured sizes for physical patterns.';
+  if(!physicalSelected && product.available_sizes?.length && [item.physical_quantity,item.trial_quantity].some(q=>Number(q)>0 && selected.length>0 && Number(q)%selected.length!==0))return 'Physical and trial quantities must include each selected size.';
   return '';
 }
 function physicalUnit(product, selected=[]) {

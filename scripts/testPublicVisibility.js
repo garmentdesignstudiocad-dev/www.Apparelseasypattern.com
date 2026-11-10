@@ -15,7 +15,7 @@ async function render(file, settings, extra = {}) {
 function mobileMenu(html) {
   // Execute the real mobile menu handler against the server-rendered navigation.
   // Desktop and mobile use this same DOM; opening the menu must not add links.
-  const navHtml = html.match(/<nav class="main-nav"[\s\S]*?<\/nav>/)[0];
+  const navHtml = (html.match(/<nav[^>]*id="main-nav"[\s\S]*?<\/nav>/i) || html.match(/<nav[^>]*class="[^"]*main-nav[^"]*"[\s\S]*?<\/nav>/i))[0];
   const links = [...navHtml.matchAll(/href="([^"]+)"/g)].map(match => ({ href:match[1], addEventListener(){} }));
   const classes = new Set();
   const handlers = {}, attributes = {};

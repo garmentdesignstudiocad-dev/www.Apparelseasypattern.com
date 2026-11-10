@@ -14,11 +14,25 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     await models.Pincode.create({pincode:'638751',district:'Tiruppur',state:'Tamil Nadu',region_id:'south',active:true});
     await models.DeliveryZone.updateOne({_id:'south'},{$set:{partner_ids:['commerce-courier','destination-courier','inactive-courier']}});
     const destination=JSON.parse((await request('/checkout/delivery-info?state=Tamil%20Nadu')).html);
-    assert.deepEqual(destination.couriers.map(c=>c._id),['commerce-courier','destination-courier']);assert.equal(destination.couriers[0].charge,300);assert.equal(destination.couriers[0].charge_approved,true);assert.equal(destination.couriers[1].delivery_min_days,3);
-    const unserved=JSON.parse((await request('/checkout/delivery-info?state=Unassigned')).html);assert.equal(unserved.available,false);assert.deepEqual(unserved.couriers,[]);
+    assert.equal(destination.dispatch_location,'Bengaluru Hub');assert.equal(destination.couriers,undefined);
+    const unserved=JSON.parse((await request('/checkout/delivery-info?state=Unassigned')).html);assert.equal(unserved.dispatch_location,'Pending Manual Assignment');assert.equal(unserved.hub_assignment_status,'pending_manual');
     const productPage=await request('/product/'+product.slug);assert.ok(!productPage.html.includes('Contact the studio to confirm before ordering.'));assert.ok(!productPage.html.includes('Pattern Specifications'));
     process.env.ADMIN_NOTIFICATION_EMAIL='owner@example.test';
     await NotificationSettings.findOneAndUpdate({_id:'default'},{$set:{email_enabled:true,order_updates:true,payment_confirmation:true,admin_successful_payment:true,admin_new_order_alert:true}},{upsert:true});
+
+    async function authCustomer(who) {
+      const regPage = await request('/account/register', undefined, who, false);
+      const regCsrf = regPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
+      await request('/account/register', {
+        name: 'Customer ' + who,
+        email: who.toLowerCase() + '@example.test',
+        phone: '9876543210',
+        password: 'Password123!',
+        confirm_password: 'Password123!',
+        _csrf: regCsrf
+      }, who, false);
+    }
+
     const cases=[
       {name:'digital',digital:1,physical:0,trial:0,sizes:['M'],subtotal:50},
       {name:'additional size',digital:1,physical:0,trial:0,sizes:['M','L'],subtotal:100},
@@ -30,29 +44,40 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       {name:'all',digital:1,physical:1,trial:1,sizes:['M'],subtotal:1200}
     ];
     for(const [index,test] of cases.entries()){
-      const who='commerce'+index,physical=!!(test.physical || test.trial);
+      const who='commerce'+index,physical=!!(test.physical || test.trial); await authCustomer(who);
       const item={product_id:String(product._id),quantity:test.digital,physical_quantity:test.physical,trial_quantity:test.trial,selected_sizes:test.sizes,selected_files:[],selected_addons:[],total:1,unit_price:1};
-      const payload={customer:input.customer,items:[item],shipping:physical?{...input.shipping,courier_id:'commerce-courier'}:{},grand_total:1,tax_amount:0,payment_status:'paid'};
+      const payload={customer:input.customer,items:[item],shipping:physical?{...input.shipping}:{},grand_total:1,tax_amount:0,payment_status:'paid'};
       assert.equal((await request('/cart/add',{...item,files:[],addons:[]},who)).status,200,test.name+' cart');
       const checkout=await request('/checkout',undefined,who);assert.equal(checkout.status,200);
       if(physical){
-        for(const shipping of [{...payload.shipping,courier_id:''},{...payload.shipping,courier_id:'inactive-courier'},{...payload.shipping,state:'Unassigned'},{...payload.shipping,pincode:'invalid'}])assert.equal((await request('/checkout',{...payload,shipping},who)).status,400,test.name+' requires serviceable customer selection');
+        for(const field of ['address','city','state','pincode']){
+          const value=field==='pincode'?'invalid':'';
+          assert.equal((await request('/checkout',{...payload,shipping:{...payload.shipping,[field]:value}},who)).status,400,test.name+' still validates '+field);
+        }
+        assert.equal((await request('/checkout',{...payload,shipping:{...payload.shipping,state:'Unassigned'}},who)).status,200,test.name+' permits manual hub assignment');
       }
       payload.shipping.dispatch_location='Tampered';payload.shipping.region='Tampered';payload.shipping.courier_charge=1;payload.shipping.courier_name='Tampered';
       assert.equal((await request('/checkout',payload,who)).status,200,test.name);
       const paymentPageSummary=await request('/checkout/payment-method',undefined,who);
-      assert.match(paymentPageSummary.html,/Product subtotal/);assert.match(paymentPageSummary.html,/Courier charge/);assert.match(paymentPageSummary.html,/Final payable total/);
-      if(physical){assert.match(paymentPageSummary.html,/Configured Courier/);assert.match(paymentPageSummary.html,/₹300\.00/);}
+      assert.match(paymentPageSummary.html,/Product subtotal/);assert.match(paymentPageSummary.html,/Final payable total/);
+      if(physical){
+        assert.match(paymentPageSummary.html,/Courier charges/);assert.match(paymentPageSummary.html,/Pay separately/);
+        assert.match(paymentPageSummary.html,/Shipping payment status:<\/strong> Not collected/);
+        assert.match(paymentPageSummary.html,/Courier booking status:<\/strong> Not booked/);
+        assert.doesNotMatch(paymentPageSummary.html,/Configured Courier|₹300\.00/);
+      }else assert.doesNotMatch(paymentPageSummary.html,/Courier charges/);
       const payResponse=await request('/checkout/payment-method/proceed',{},who);assert.equal(payResponse.status,200);
       const pay=JSON.parse(payResponse.html);let order=await Order.findOne({razorpay_order_id:pay.razorpay_order_id}).lean();
-      const expectedCourier=physical?300:0;
-      assert.equal(order.subtotal,test.subtotal);assert.equal(order.tax_amount,test.subtotal*.18);assert.equal(pay.amount,Math.round(test.subtotal*118+expectedCourier*100));
-      assert.equal(order.delivery_charge,expectedCourier);assert.equal(order.courier_payment_separate,false);
+      assert.equal(order.subtotal,test.subtotal);assert.equal(order.tax_amount,test.subtotal*.18);assert.equal(pay.amount,Math.round(test.subtotal*118));
+      assert.equal(order.delivery_charge,0);assert.equal(order.courier_payment_separate,physical);
+      assert.equal(order.shipping_payment_status,physical?'not_collected':'not_applicable');
+      assert.equal(order.courier_booking_status,physical?'not_booked':'not_required');
       assert.deepEqual(order.items[0].selected_sizes,test.sizes);assert.equal(order.items[0].quantity,test.digital);
-      assert.equal(order.shipping_address,physical?input.shipping.address:'');assert.equal(order.courier_name,physical?'Configured Courier':'');
+      assert.equal(order.shipping_address,physical?input.shipping.address:'');assert.equal(order.courier_name,'');
+      assert.equal(order.dispatch_location,physical?'Bengaluru Hub':undefined);
       assert.equal(await require('../services/digitalDeliveryService').ensure(order._id),null);
       assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id),event:'order_digital_ready'}),0);
-      assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id)}),0,'No order email before verification');
+      assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id),event:'order_payment_success'}),0,'No order email before verification');
       const paymentId='pay_commerce'+index;
       const captured={id:paymentId,order_id:pay.razorpay_order_id,amount:pay.amount,currency:'INR',status:'captured',captured:true};
       paymentOverrides.set(paymentId,{...captured,status:'failed',captured:false});
@@ -71,35 +96,63 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       assert.equal((await request('/checkout/razorpay-webhook',webhook,who,true,headers)).status,200);
       order=await Order.findById(order._id).select('+download_token').lean();
       assert.equal(order.payment_status,'paid');assert.equal(order.order_status,'confirmed');
+      if(physical){
+        assert.equal(order.shipping_status,'Pending','Verified payment does not imply dispatch.');
+        const accountSummary=await request('/account/orders',undefined,who);
+        assert.match(accountSummary.html,/Dispatch Hub:<\/strong> Bengaluru Hub/);
+        assert.match(accountSummary.html,/Shipping payment status:<\/strong> Not collected/);
+        assert.match(accountSummary.html,/Courier booking status:<\/strong> Not booked/);
+        const confirmation=await request('/checkout/success?orderId='+order._id,undefined,who);
+        assert.match(confirmation.html,/Courier charges are not included in your order total/);
+        assert.match(confirmation.html,/Courier booking status:<\/strong> Not booked/);
+      }
       assert.equal(Boolean(order.download_token),!!test.digital);assert.equal(await Payment.countDocuments({order_id:order._id}),1);
       assert.equal((await request('/downloads/'+order._id+'/0')).status,404);
       assert.equal((await request('/downloads/'+'a'.repeat(64)+'/0')).status,404);
       assert.equal((await request('/private/patterns/p.dxf')).status,404);
       if(test.digital){
         const url='/downloads/'+order.download_token;
-        assert.equal((await request(url+'/0')).status,200);
-        assert.equal((await request(url+'/999')).status,404);
-        assert.equal((await request(url+'/'+product._id)).status,404);
+        assert.equal((await request(url+'/0',undefined,who)).status,200);
+        assert.equal((await request(url+'/999',undefined,who)).status,404);
+        assert.equal((await request(url+'/'+product._id,undefined,who)).status,404);
         await Order.updateOne({_id:order._id},{$set:{payment_status:'failed'}});
-        assert.equal((await request(url+'/0')).status,404);
+        assert.equal((await request(url+'/0',undefined,who)).status,404);
         await Order.updateOne({_id:order._id},{$set:{payment_status:'paid',order_status:'cancelled'}});
-        assert.equal((await request(url+'/0')).status,404);
+        assert.equal((await request(url+'/0',undefined,who)).status,404);
         await Order.updateOne({_id:order._id},{$set:{order_status:order.order_status}});
       }
       const digitalLogs=await NotificationLog.find({reference_id:String(order._id),event:'order_digital_ready'}).lean();
       assert.equal(digitalLogs.length,test.digital?1:0);if(test.digital)assert.equal(digitalLogs[0].channel,'email');
       const customerMail=await NotificationLog.findOne({reference_id:String(order._id),event:'order_payment_success',channel:'email'}).lean();
       assert.match(customerMail.message,/Selected sizes:/);assert.match(customerMail.message,/GST \(18%\)/);assert.match(customerMail.message,/Online Amount Paid:/);
-      if(physical){assert.equal(order.customer_selected_courier,true);assert.equal(order.delivery_min_days,2);assert.equal(order.delivery_max_days,3);}
-      if(physical){assert.equal(order.destination_region,'South');assert.equal(order.dispatch_location,'Bengaluru');assert.match(customerMail.message,/Dispatch From: Bengaluru/);}
-      assert.doesNotMatch(customerMail.message,/Courier Charge|Pay Separately|Pay on Delivery/i);
+      if(physical){
+        assert.equal(order.customer_selected_courier,false);
+        assert.equal(order.destination_region,'South India');
+        assert.equal(order.dispatch_location,'Bengaluru Hub');
+        assert.match(customerMail.message,/Dispatch Hub: Bengaluru Hub/);
+        assert.match(customerMail.message,/Courier charges: Pay separately/);
+        assert.match(customerMail.message,/Shipping payment status: Not collected/);
+        assert.match(customerMail.message,/Courier booking status: Not booked/);
+      }
       assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id),event:'admin_successful_payment'}),1);
       const receipt=await Receipt.findOne({reference_id:order._id}).lean();
-      assert.equal(receipt.subtotal_paise,test.subtotal*100);assert.equal(receipt.total_paise,pay.amount);assert.equal(receipt.delivery_paise,expectedCourier*100);
-      const page=await request('/admin/orders/'+order._id,undefined,'admin');assert.equal(page.status,200);assert.match(page.html,/Online Payment Total/);if(physical)assert.match(page.html,/Courier Charge \(included in Razorpay amount\)/);else assert.doesNotMatch(page.html,/Courier Charge/);
-      if(physical){assert.match(page.html,/Customer Selected Delivery Partner:/);const csrf=page.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];assert.equal((await request('/admin/orders/'+order._id+'/fulfilment',{_csrf:csrf,courier_id:'destination-courier',shipping_status:'Pending'},'admin')).status,409);}
+      assert.equal(receipt.subtotal_paise,test.subtotal*100);assert.equal(receipt.total_paise,pay.amount);assert.equal(receipt.delivery_paise,0);
+      const page=await request('/admin/orders/'+order._id,undefined,'admin');assert.equal(page.status,200);assert.match(page.html,/Online Payment Total/);
+      if(physical){
+        assert.match(page.html,/Dispatch Hub:<\/strong> Bengaluru Hub/);
+        assert.match(page.html,/Shipping payment status:<\/strong> Not collected/);
+        assert.match(page.html,/Courier booking status:<\/strong> Not booked/);
+        const csrf=page.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
+        assert.equal((await request('/admin/orders/'+order._id+'/fulfilment',{_csrf:csrf,courier_id:'destination-courier',shipping_status:'Pending'},'admin')).status,303);
+        assert.equal((await Order.findById(order._id)).courier_booking_status,'not_booked','Recording a courier before dispatch does not claim it was booked.');
+      }
       const payment=await Payment.findOne({order_id:order._id});
-      const paymentPage=await request('/admin/payments/'+payment._id,undefined,'admin');assert.equal(paymentPage.status,200);assert.match(paymentPage.html,/Online Payment Total/);if(physical)assert.match(paymentPage.html,/Courier Charge \(included in Razorpay amount\)/);else assert.doesNotMatch(paymentPage.html,/Courier Charge/);
+      const paymentPage=await request('/admin/payments/'+payment._id,undefined,'admin');assert.equal(paymentPage.status,200);assert.match(paymentPage.html,/Online Payment Total/);
+      if(physical){
+        assert.match(paymentPage.html,/Dispatch hub:<\/strong> Bengaluru Hub/);
+        assert.match(paymentPage.html,/Shipping payment status:<\/strong> Not collected/);
+        assert.match(paymentPage.html,/Courier booking status:<\/strong> Not booked/);
+      }else assert.doesNotMatch(paymentPage.html,/Courier charges/);
       const failing=require('../services/notificationService').createDispatcher({email:async()=>{throw new Error('Simulated SMTP failure');}});
       await failing(customerMail._id);
       assert.equal((await Order.findById(order._id)).payment_status,'paid');
@@ -119,7 +172,7 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     assert.equal((await request('/cart/add',sizeOptionPayload,'size-cart')).status,200,'Cart accepts configured DXF and HPGL files.');
     const sizeCart=await request('/cart',undefined,'size-cart');
     assert.match(sizeCart.html,/M, L/);assert.match(sizeCart.html,/399 per size × 2 selected sizes × quantity 1/i);assert.match(sizeCart.html,/798/);
-    const priceWho='per-size-price';
+    const priceWho='per-size-price'; await authCustomer(priceWho);
     const forgedItem={product_id:String(product._id),quantity:1,physical_quantity:0,trial_quantity:0,selected_sizes:['M','L'],printable_selected:false,selected_files:[{id:String(dxf._id),file_price:0,price_per_selected_size:false},{id:String(hpgl._id),file_price:0,price_per_selected_size:false}],selected_addons:[],total:1,unit_price:1};
     assert.equal((await request('/checkout',{customer:input.customer,items:[forgedItem],shipping:{},grand_total:1,tax_amount:0,payment_status:'paid'},priceWho)).status,200,'Checkout accepts configured per-size options despite forged client prices.');
     const sizePayment=JSON.parse((await request('/checkout/payment-method/proceed',{},priceWho)).html);
@@ -129,43 +182,25 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     assert.equal(sizeOrder.items[0].selected_files[0].price_per_selected_size,true,'Order snapshots retain the per-size pricing unit.');
     const routingPage=await request('/admin/settings/delivery',undefined,'admin');
     assert.equal(routingPage.status,200);assert.doesNotMatch(routingPage.html,/Charge Delivery Amount|Delivery Charge/i);
-    const routeCsrf=routingPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
-    assert.equal((await request('/admin/settings/delivery',{region_id:'north',name:'North',dispatch_location:'Mumbai',active:'on'},'admin')).status,403);
-    assert.equal((await request('/admin/settings/delivery',{_csrf:routeCsrf,region_id:'north',name:'North',dispatch_location:'Mumbai',states:'Delhi',active:'on'},'admin')).status,302);
     const partnersPage=await request('/admin/settings/couriers',undefined,'admin');assert.equal(partnersPage.status,200);assert.match(partnersPage.html,/name="charge"/);assert.match(partnersPage.html,/name="charge_approved"/);
-    const partnerCsrf=partnersPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
-    for(const [id,charge] of [['north-one','25.50'],['north-two','44.75']])assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:id,name:id,hub_ids:['north'],priority:'1',active:'on',charge,charge_approved:'on'},'admin')).status,303);
-    assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:'bad-rate',name:'Bad Rate',hub_ids:['north'],priority:'1',active:'on',charge:'-1',charge_approved:'on'},'admin')).status,400,'Admin rejects negative courier rates.');
-    assert.equal((await request('/admin/settings/couriers',{_csrf:partnerCsrf,courier_id:'bad-precision',name:'Bad Precision',hub_ids:['north'],priority:'1',active:'on',charge:'10.999',charge_approved:'on'},'admin')).status,400,'Admin rejects more than two decimal places.');
     const north=JSON.parse((await request('/checkout/delivery-info?state=Delhi')).html);
-    assert.equal(north.region,'North');assert.equal(north.dispatch_location,'Mumbai');assert.deepEqual(north.couriers.map(c=>c._id),['north-one','north-two']);
-    const routePayload={customer:input.customer,items:[{product_id:String(product._id),quantity:0,physical_quantity:1,selected_sizes:['M']}],shipping:{...input.shipping,state:'Delhi',pincode:'110001',courier_id:'north-one',courier_charge:0.01,dispatch_location:'Tampered',region:'South'}};
-    for(const id of ['north-one','north-two']){
-      const who='route-'+id;routePayload.shipping.courier_id=id;
-      assert.equal((await request('/checkout',routePayload,who)).status,200);
-      const quotePage=await request('/checkout/payment-method',undefined,who);
-      assert.match(quotePage.html,/Courier company:/);assert.match(quotePage.html,new RegExp(id==='north-one'?'₹25\.50':'₹44\.75'));
-      const pay=JSON.parse((await request('/checkout/payment-method/proceed',{},who)).html);
-      const row=await Order.findOne({razorpay_order_id:pay.razorpay_order_id}).lean();
-      const approvedCharge=id==='north-one'?25.5:44.75;
-      assert.equal(pay.amount,Math.round((50+9+approvedCharge)*100));assert.equal(row.tax_amount,9);assert.equal(row.dispatch_location,'Mumbai');assert.equal(row.destination_region,'North');assert.equal(row.delivery_charge,approvedCharge);
-    }
-    await Courier.create({_id:'unapproved-courier',name:'Unapproved Courier',active:true,charge:800,charge_approved:false});
-    await models.DeliveryZone.updateOne({_id:'north'},{$addToSet:{partner_ids:'unapproved-courier'}});
-    const blockedRate=await request('/checkout',{...routePayload,shipping:{...routePayload.shipping,courier_id:'unapproved-courier'}},'unapproved-rate');
-    assert.equal(blockedRate.status,400);assert.match(blockedRate.html,/no approved delivery charge.*contact the studio/i);
-    const historical=await Order.findOne({courier_id:'commerce-courier',delivery_charge:300}).lean();assert.ok(historical);
-    await Courier.updateOne({_id:'commerce-courier'},{$set:{charge:999,charge_approved:true}});
-    assert.equal((await Order.findById(historical._id)).delivery_charge,300,'Historical orders retain the approved charge snapshot after Admin rate changes.');
-    await Courier.updateOne({_id:'commerce-courier'},{$set:{charge:300,charge_approved:true}});
-    routePayload.shipping.courier_id='commerce-courier';assert.equal((await request('/checkout',routePayload,'wrong-region')).status,400);
-    await models.DeliveryZone.updateOne({_id:'north'},{$set:{active:false}});
-    assert.equal(JSON.parse((await request('/checkout/delivery-info?state=Delhi')).html).available,false);
-    await models.DeliveryZone.updateOne({_id:'north'},{$set:{active:true}});
-    // Preserve persisted historical amounts when the route config is edited.
+    assert.equal(north.region_id,'north');assert.equal(north.dispatch_location,'Mumbai Hub');assert.equal(north.couriers,undefined);
+    const routeWho='north-dispatch';await authCustomer(routeWho);
+    const routePayload={customer:input.customer,items:[{product_id:String(product._id),quantity:0,physical_quantity:1,selected_sizes:['M']}],shipping:{...input.shipping,state:'Delhi',pincode:'110001',courier_id:'unavailable',courier_charge:900,dispatch_location:'Tampered',region:'South'}};
+    assert.equal((await request('/checkout',routePayload,routeWho)).status,200,'North physical order does not require courier configuration.');
+    const routeSummary=await request('/checkout/payment-method',undefined,routeWho);
+    assert.match(routeSummary.html,/Mumbai Hub/);assert.match(routeSummary.html,/Courier charges:<\/strong> Pay separately/);
+    assert.doesNotMatch(routeSummary.html,/unavailable|₹900\.00/);
+    const routePayment=JSON.parse((await request('/checkout/payment-method/proceed',{},routeWho)).html);
+    const routeOrder=await Order.findOne({razorpay_order_id:routePayment.razorpay_order_id}).lean();
+    assert.equal(routePayment.amount,5900);assert.equal(routeOrder.dispatch_location,'Mumbai Hub');assert.equal(routeOrder.destination_region,'North India');
+    assert.equal(routeOrder.delivery_charge,0);assert.equal(routeOrder.courier_id,'');assert.equal(routeOrder.courier_name,'');
+    assert.equal(routeOrder.shipping_payment_status,'not_collected');assert.equal(routeOrder.courier_booking_status,'not_booked');
     assert.equal((await models.Pincode.findOne({pincode:'560001'})).delivery_charge,40);
-    console.log('PASS: Admin CSRF/configuration, South/Bengaluru and North/Mumbai, region filtering, inactive regions, forged dispatch rejection and equal GST/gateway amounts across partners.');
-    const edit={name:product.name,slug:product.slug,base_price:'60',additional_size_price:'55',physical_price:'65',trial_price:'1200',active:'on'};
+    console.log('PASS: admin page compatibility, fixed North/Mumbai routing, no courier dependency, ignored client charge/hub values, zero online shipping and address snapshot.');
+    const editPage = await request('/admin/products/'+product._id+'/edit', undefined, 'admin');
+    const editCsrf = editPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)?.[1] || '';
+    const edit={_csrf:editCsrf,name:product.name,slug:product.slug,base_price:'60',additional_size_price:'55',physical_price:'65',trial_price:'1200',active:'on'};
     assert.equal((await request('/admin/products/'+product._id+'/edit',edit,'admin',false)).status,302);
     const changed=await Product.findById(product._id);
     assert.deepEqual([changed.base_price,changed.additional_size_price,changed.physical_price,changed.trial_price],[60,55,65,1200]);

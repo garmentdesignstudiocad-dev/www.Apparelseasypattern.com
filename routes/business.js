@@ -43,11 +43,21 @@ for (const [route, Model, filter, mode] of [['books', Book, () => ({ active: tru
   }));
 }
 router.post('/enquiries', asyncRoute(async (req, res, next) => {
-  if (req.body._csrf !== req.session.leadToken) return res.status(403).send('Form expired. Reload the page and try again.');
+  const wantsJson = Boolean(req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest' || (req.headers.accept && req.headers.accept.includes('application/json')));
+  if (req.body._csrf !== req.session.leadToken) {
+    if (wantsJson) return res.status(403).json({ success: false, error: 'Form expired. Reload the page and try again.' });
+    return res.status(403).send('Form expired. Reload the page and try again.');
+  }
   let data;
   try { data = validation.lead(req.body); if(!res.locals.visibleInterest(data.interest)) throw new Error('This service is currently unavailable. Please choose another interest.'); }
-  catch (error) { return res.status(400).render('business/page', { title: 'Review Your Enquiry', description: 'Submit your requirement', mode: 'contact', items: [], values: req.body, errors: [error.message], corporate: req.body.interest === 'Corporate Training', interest: req.body.interest, source: typeof req.body.source === 'string' ? req.body.source : '' }); }
-  if (req.session.lastLeadAt && Date.now() - req.session.lastLeadAt < 30000) return res.status(429).send('Please wait 30 seconds before sending another enquiry.');
+  catch (error) {
+    if (wantsJson) return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).render('business/page', { title: 'Review Your Enquiry', description: 'Submit your requirement', mode: 'contact', items: [], values: req.body, errors: [error.message], corporate: req.body.interest === 'Corporate Training', interest: req.body.interest, source: typeof req.body.source === 'string' ? req.body.source : '' });
+  }
+  if (req.session.lastLeadAt && Date.now() - req.session.lastLeadAt < 30000) {
+    if (wantsJson) return res.status(429).json({ success: false, error: 'Please wait 30 seconds before sending another enquiry.' });
+    return res.status(429).send('Please wait 30 seconds before sending another enquiry.');
+  }
   try {
     const signup_key = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
     const notification_jobs = data.interest === 'Online Classes' ? [{key:'created',event:'created',status:'Enquiry received'}] : [];
@@ -69,9 +79,15 @@ router.post('/enquiries', asyncRoute(async (req, res, next) => {
         require('../services/safeLog').logError('General enquiry notification queue failed:',notificationError);
       }
     }
-  } catch (error) { return next(error); }
+  } catch (error) {
+    if (wantsJson) return res.status(500).json({ success: false, error: 'Internal server error while saving enquiry.' });
+    return next(error);
+  }
   req.session.lastLeadAt = Date.now();
   req.session.leadSent = true;
+  if (wantsJson) {
+    return res.json({ success: true, message: 'Custom marker specifications saved to studio enquiries. Our technical pattern team will review your repeat measurements.' });
+  }
   res.redirect(303, '/enquiries/thank-you');
 }));
 router.get('/enquiries/thank-you', (req, res) => {

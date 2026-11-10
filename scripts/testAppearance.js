@@ -663,6 +663,7 @@ async function run() {
           .find(text => text.includes('new Razorpay'));
 
         const context = {
+          AbortController, setTimeout, clearTimeout,
           document,
 
           fetch: async (url, options) => {

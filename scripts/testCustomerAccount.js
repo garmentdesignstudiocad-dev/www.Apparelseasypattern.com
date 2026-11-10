@@ -60,6 +60,22 @@ async function run(){
    let sent=0;await require('../services/notificationService').createDispatcher({email:async()=>{sent++;return 'mock-email';}})(log._id);assert.equal(sent,1);
    assert.equal((await request('/downloads/'+order.download_token+'/0',null,who)).status,200);
   }
+
+  // Exercise the real download HTTP route, not a copied access predicate.
+  const first=orders[0],download='/downloads/'+first.download_token+'/0';
+  assert.equal((await request(download)).status,200);
+  assert.equal((await request(download)).status,200);
+  assert.equal(+first.download_expires_at-+first.digital_delivery_issued_at,86400000);
+  await Order.updateOne({_id:first._id},{$set:{download_expires_at:new Date(Date.now()-1)}});
+  assert.equal((await request(download)).status,404);
+  const reissued=await require('../services/digitalDeliveryService').reissue(first._id);
+  assert(reissued);assert.notEqual(reissued.download_token,first.download_token);
+  assert.equal(+reissued.download_expires_at-+reissued.digital_delivery_issued_at,86400000);
+  assert.equal((await request(download)).status,404);
+  assert.equal((await request('/downloads/'+reissued.download_token+'/0')).status,200);
+  assert.equal((await request('/downloads/'+reissued.download_token+'/0',null,'b')).status,404);
+  assert.equal(await require('../services/digitalDeliveryService').manualGrant(first._id,[{name:'Unpurchased',file:'other.pdf'}]),null);
+  orders[0]=reissued;
   const own=await request('/account/orders');assert.ok(own.text.includes(String(orders[0]._id)));assert.ok(!own.text.includes(String(orders[1]._id)));assert.ok(!own.text.includes(account.password_hash));
   assert.ok(own.text.includes('Secure Downloads'));assert.ok(own.text.includes('Bengaluru'));
   assert.ok(!(await request('/account/orders',null,'b')).text.includes(String(orders[0]._id)));

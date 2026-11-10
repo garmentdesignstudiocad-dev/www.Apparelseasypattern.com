@@ -44,18 +44,23 @@ async function enqueue(type,id,job){
     const money=value=>'INR '+Number(value || 0).toFixed(2);
     const detail=row.items.map(item=>[
       item.product_name || 'Pattern',
-      'Selected sizes: '+((item.selected_sizes || []).join(', ') || 'As ordered'),
+      'Digital sizes: '+((item.selected_sizes || []).join(', ') || 'As ordered'),
       'Digital quantity: '+Number(item.quantity ?? 1),
-      'Digital formats: '+((item.selected_files || []).map(f=>f.file_type || f.file_name).join(', ') || (Number(item.quantity ?? 1)>0?'Base pattern':'None')),
+      'Digital formats: '+([...(item.selected_formats || []).map(f=>f.toUpperCase()),...(item.selected_files || []).map(f=>f.file_type || f.file_name)].join(', ') || (Number(item.quantity ?? 1)>0?'Base pattern':'None')),
+      'Physical sizes: '+((item.physical_sizes || []).join(', ') || 'As ordered'),
       'Physical Pattern quantity: '+Number(item.physical_quantity || 0),
       'Trial Sample quantity: '+Number(item.trial_quantity || 0),
       'Add-ons: '+((item.selected_addons || []).map(a=>a.name+' ('+money(a.price)+')').join(', ') || 'None'),
       'Item total: '+money(item.total_price)
     ].join('\n')).join('\n\n');
     const physical=require('./digitalDeliveryService').physical(row);
-    message=`Hello ${customer.name || 'Customer'},\n\nOrder ID: ${id}\nOrder Date: ${new Date(row.createdAt).toISOString()}\nCustomer: ${customer.name || ''}\nEmail: ${customer.email || ''}\nPhone: ${customer.phone || ''}\n\n${detail}\n\nSubtotal: ${money((row.delivery_flow_version===2 || row.courier_payment_separate)?row.subtotal:Number(row.subtotal || 0)+Number(row.physical_total || 0)+Number(row.trial_total || 0))}\nGST (${row.tax_rate}%): ${money(row.tax_amount)}\nOnline Amount Paid: ${money(row.payment_verified_at && row.payment_status==='paid'?row.grand_total:0)}\nOnline Payment Total: ${money(row.grand_total)}\nPayment Status: ${row.payment_status}\nPhysical delivery required: ${physical?'Yes':'No'}\n`;
+    const courierPaymentDetails=physical && row.delivery_flow_version===3
+      ? '\nCourier charges: Pay separately and directly to the courier service; not included in website total.\nShipping payment status: Not collected\nCourier booking status: Not booked'
+      : physical?`\nCourier charge: ${money(row.delivery_charge)}`:'';
+    message=`Hello ${customer.name || 'Customer'},\n\nOrder ID: ${id}\nOrder Date: ${new Date(row.createdAt).toISOString()}\nCustomer: ${customer.name || ''}\nEmail: ${customer.email || ''}\nPhone: ${customer.phone || ''}\n\n${detail}\n\nSubtotal: ${money((row.delivery_flow_version===2 || row.courier_payment_separate)?row.subtotal:Number(row.subtotal || 0)+Number(row.physical_total || 0)+Number(row.trial_total || 0))}\nGST (${row.tax_rate}%): ${money(row.tax_amount)}\nOnline Amount Paid: ${money(row.payment_verified_at && row.payment_status==='paid'?row.grand_total:0)}${courierPaymentDetails}\nOnline Payment Total: ${money(row.grand_total)}\nPayment Status: ${row.payment_status}\nPayment verification: ${row.payment_verified_at && row.payment_status==='paid'?'VERIFIED / PAID':'Not verified'}\nFulfilment status: ${row.shipping_status || row.order_status}\nPhysical delivery required: ${physical?'Yes':'No'}\n`;
+    if(physical && row.delivery_flow_version===3)message+=`Delivery Address: ${[row.shipping_address,row.shipping_city,row.shipping_state,row.delivery_pincode].filter(Boolean).join(', ')}\nDispatch Hub: ${row.dispatch_location || 'Pending Manual Assignment'}\n`;
     if(physical && row.delivery_flow_version===2)message+=`Destination: ${[row.shipping_address,row.shipping_city,row.shipping_state,row.delivery_pincode].filter(Boolean).join(', ')}\nRegion: ${row.destination_region}\nDispatch From: ${row.dispatch_location}\nCustomer Selected Delivery Partner: ${row.courier_name}\n`;
-    if(physical && row.delivery_flow_version!==2)message+=`Delivery Address: ${[row.shipping_address,row.shipping_city,row.shipping_state].filter(Boolean).join(', ')}\nPincode: ${row.delivery_pincode}\nSelected Courier: ${row.courier_name || 'Not recorded'}\nCourier selection is a request, not a confirmed booking.\n`;
+    if(physical && row.delivery_flow_version!==2 && row.delivery_flow_version!==3)message+=`Delivery Address: ${[row.shipping_address,row.shipping_city,row.shipping_state].filter(Boolean).join(', ')}\nPincode: ${row.delivery_pincode}\nSelected Courier: ${row.courier_name || 'Not recorded'}\nCourier selection is a request, not a confirmed booking.\n`;
     message+=`\n${next}\n${receiptLink?'Receipt: '+receiptLink:''}\n${site.store_name}`;
   }
   let ownerMessage=message;
@@ -63,14 +68,46 @@ async function enqueue(type,id,job){
     ownerMessage=`NEW ORDER RECEIVED — NOT A PAYMENT CONFIRMATION\nOrder status: ${row.order_status}\n${message}`;
   }
   if(type==='product_order' && job.event==='payment_success'){
-    subject=`Order Confirmed - Garment Pattern Store - ${id}`;
+    subject='Your Order is Confirmed - Apparel Easy Patterns';
     const physical=require('./digitalDeliveryService').physical(row);
-    ownerMessage=`NEW PAID ORDER\n\nCUSTOMER\nName: ${customer.name || ''}\nPhone: ${customer.phone || ''}\nEmail: ${customer.email || ''}\n\nORDER\nRazorpay Payment ID: ${row.payment_reference}\n${message}`;
-    if(physical)ownerMessage+=`\nDELIVERY\nAddress: ${row.shipping_address || ''}\nCity: ${row.shipping_city || ''}\nState: ${row.shipping_state || row.delivery_state || ''}\nPincode: ${row.delivery_pincode || ''}\nZone: ${row.destination_region || row.delivery_zone || ''}\nDispatch Hub: ${row.dispatch_location || ''}\nSelected Courier: ${row.courier_name || ''}\n`;
+    ownerMessage=`NEW PAID ORDER\n\nCUSTOMER\nName: ${customer.name || ''}\nPhone: ${customer.phone || ''}\nEmail: ${customer.email || ''}\n\nORDER\nRazorpay Payment ID: ${row.payment_reference}\nGateway Order Reference: ${row.razorpay_order_id || 'Not recorded'}\n${message}`;
+    if(physical && row.delivery_flow_version===3)ownerMessage+=`\nDELIVERY\nAddress: ${row.shipping_address || ''}\nCity: ${row.shipping_city || ''}\nState: ${row.shipping_state || row.delivery_state || ''}\nPincode: ${row.delivery_pincode || ''}\nDispatch Hub: ${row.dispatch_location || 'Pending Manual Assignment'}\nCourier charges: Pay separately; not collected by website\nShipping payment status: Not collected\nCourier booking status: Not booked\n`;
+    else if(physical)ownerMessage+=`\nDELIVERY\nAddress: ${row.shipping_address || ''}\nCity: ${row.shipping_city || ''}\nState: ${row.shipping_state || row.delivery_state || ''}\nPincode: ${row.delivery_pincode || ''}\nZone: ${row.destination_region || row.delivery_zone || ''}\nDispatch Hub: ${row.dispatch_location || ''}\nSelected Courier: ${row.courier_name || ''}\n`;
     const hasDigital = row.items.some(item => (Number(item.quantity ?? 1) > 0 && item.printable_selected !== false) || (Array.isArray(item.selected_files) && item.selected_files.length > 0));
     if(hasDigital){
       const grant=await require('./digitalDeliveryService').ensure(id);
-      message+=grant?.download_token && origin?`\nSecure digital download: ${origin}/downloads/${grant.download_token}\nValid until: ${grant.download_expires_at.toISOString()}\n`:'\nYour secure digital download information will be sent when your files are ready.\n';
+      const deliveryNote=grant?.download_token && grant.download_expires_at>new Date() && origin?`\nSecure digital download: ${origin}/downloads/${grant.download_token}\nValid until: ${grant.download_expires_at.toISOString()}\n`:'\nDigital fulfilment: PENDING AVAILABILITY. Secure links will be sent after the purchased files are ready.\n';
+      message+=deliveryNote;
+      ownerMessage+=deliveryNote;
+    }
+  }
+  if(type==='product_order' && job.event==='digital_ready'){
+    subject='Your Apparel Easy Patterns Files Are Ready';
+    const grant=await require('./digitalDeliveryService').ensure(id);
+    if(grant?.download_token && origin){
+      const expiryStr = grant.download_expires_at ? new Date(grant.download_expires_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'medium' }) + ' IST' : '24 hours from issuance';
+      const downloadUrl = `${origin}/downloads/${grant.download_token}`;
+      const itemsSummary = (row.items || []).filter(item => Number(item.quantity ?? 1) > 0 || (item.selected_files && item.selected_files.length > 0)).map(item => {
+        const sizes = (item.selected_sizes && item.selected_sizes.length) ? item.selected_sizes.join(', ') : 'Standard';
+        const formats = item.selected_formats?.length ? item.selected_formats.map(f=>f.toUpperCase()).join(', ') : (item.selected_files && item.selected_files.length)
+          ? item.selected_files.map(f => (f.file_type || f.file_name || '').toUpperCase()).join(', ')
+          : 'PDF Pattern';
+        return `Purchased Product: ${item.product_name || 'Garment Pattern'}\nPurchased Size(s): ${sizes}\nPurchased File Format(s): ${formats}`;
+      }).join('\n\n');
+
+      message = `Hello ${customer.name || 'Customer'},\n\n` +
+        `Your pattern files for Order #${id} are now ready for download.\n\n` +
+        `ORDER DETAILS:\n` +
+        `Customer Name: ${customer.name || 'Customer'}\n` +
+        `Order Number: ${id}\n\n` +
+        `${itemsSummary}\n\n` +
+        `SECURE DOWNLOAD LINK:\n${downloadUrl}\n\n` +
+        `EXACT EXPIRY DATE & TIME:\n${expiryStr} (${grant.download_expires_at ? grant.download_expires_at.toISOString() : ''})\n\n` +
+        `NOTICE OF 24-HOUR VALIDITY:\n` +
+        `Please note that this secure download link remains valid for 24 hours only from the time of issuance. ` +
+        `Please download and save all purchased pattern files to your local device before the link expires.\n\n` +
+        `Thank you for choosing Apparel Easy Patterns.\n` +
+        `${site.store_name}`;
     }
   }
   const category=job.event==='payment_success' ?'payment_confirmation':categories[type];
@@ -101,7 +138,7 @@ async function enqueue(type,id,job){
     const key=crypto.createHash('sha256').update(`${type}|${id}|${job.key}|${target.channel}|${target.admin?'admin':'customer'}`).digest('hex');
     const cat=target.admin?ownerEvent:category;
     const allowed=enabled(settings,{channel:target.channel,category:cat,event:target.admin?ownerEvent:event});
-    const payload={dedupe_key:key,channel:target.channel,event:target.admin?ownerEvent:event,category:cat,reference_type:type,reference_id:id,customer:customer.name || 'Customer',destination:target.channel==='whatsapp'?(require('./phoneNumber').normalizeE164(target.destination,process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '91') || target.destination || ''):target.destination || '',status:allowed?'queued':'skipped',error_message:allowed?'':'Disabled in Notification Settings.',subject:target.admin?(type==='product_order' && job.event==='payment_success'?`New Paid Order - ${id}`:`${site.store_name}: ${ownerEvent.replaceAll('_',' ')} ${id}`):subject,message:target.admin?ownerMessage:message,parameters:[customer.name || 'Customer',String(id),amountText,status,next,receiptLink || 'Available in your confirmation page after verified payment.']};
+    const payload={dedupe_key:key,channel:target.channel,event:target.admin?ownerEvent:event,category:cat,reference_type:type,reference_id:id,customer:customer.name || 'Customer',destination:target.channel==='whatsapp'?(require('./phoneNumber').normalizeE164(target.destination,process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '91') || target.destination || ''):target.destination || '',status:allowed?'queued':'skipped',error_message:allowed?'':'Disabled in Notification Settings.',subject:target.admin?(type==='product_order' && job.event==='payment_success'?'New Paid Order Received - Apparel Easy Patterns':`${site.store_name}: ${ownerEvent.replaceAll('_',' ')} ${id}`):subject,message:target.admin?ownerMessage:message,parameters:[customer.name || 'Customer',String(id),amountText,status,next,receiptLink || 'Available in your confirmation page after verified payment.']};
     if(job.schedule_at)payload.schedule_at=job.schedule_at;
     try{await Log.updateOne({dedupe_key:key},{$setOnInsert:payload},{upsert:true,runValidators:true});}catch(error){if(error.code!==11000)throw error;}
   }
@@ -137,8 +174,8 @@ function createDispatcher(providers=createProviders()){
     const candidate=await Log.findById(id).lean();if(!candidate || !['queued','pending'].includes(candidate.status))return false;
     if(!enabled(settings,candidate)){await Log.updateOne({_id:id,status:{$in:['queued','pending']}},{$set:{status:'skipped',error_message:'Disabled in Notification Settings.'}});return false;}
     if(candidate.event==='order_digital_ready'){
-      const order=await require('../models/mongo/Order').findById(candidate.reference_id).lean();
-      if(!order?.payment_verified_at || order.payment_status!=='paid' || order.order_status==='cancelled' || !(order.download_expires_at>new Date())){await Log.updateOne({_id:id,status:{$in:['queued','pending']}},{$set:{status:'skipped',error_message:'Download access is no longer available.'}});return false;}
+      const order=await require('../models/mongo/Order').findById(candidate.reference_id).select('+download_token').lean();
+      if(!order?.payment_verified_at || order.payment_status!=='paid' || order.order_status==='cancelled' || !(order.download_expires_at>new Date()) || !order.download_token || !candidate.message.includes('/downloads/'+order.download_token)){await Log.updateOne({_id:id,status:{$in:['queued','pending']}},{$set:{status:'skipped',error_message:'Download access is no longer available.'}});return false;}
     }
     if(candidate.event==='webinar_reminder'){
       const registration=await require('../models/mongo/WebinarRegistration').findById(candidate.reference_id).lean();

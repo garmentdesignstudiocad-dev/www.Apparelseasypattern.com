@@ -1,12 +1,10 @@
 # Dispatch routing and secure digital delivery
 
-Current requirement (2026-10-01): delivery partners have no price in checkout. Product/services subtotal + GST 18% is the online total. New orders do not store a delivery charge. Historical order amounts and receipts remain available.
+Current physical-checkout policy: the website collects INR 0 for shipping. Courier charges are not included in the order total and customers pay them separately and directly to the courier service. The website does not require courier availability, select a courier, calculate courier rates, or book courier service. Historical order amounts and receipts remain available.
 
-Open Admin > Delivery Settings to initialize/edit South ? Bengaluru and North ? Mumbai, then map actual pincodes or prefixes to regions. An exact mapping takes precedence over the longest prefix; an inactive exact mapping blocks fallback. Defaults never overwrite Admin changes.
+Dispatch routing is based on the delivery state. Tamil Nadu, Karnataka, Kerala, Andhra Pradesh, Telangana and Puducherry route to Bengaluru Hub. Delhi, Chandigarh, Haryana, Himachal Pradesh, Jammu and Kashmir, Ladakh, Punjab, Rajasthan, Uttar Pradesh and Uttarakhand route to Mumbai Hub. Other states and regions are accepted with dispatch hub marked Pending Manual Assignment; checkout does not guess a hub.
 
-Open Admin > Courier Settings to select each partner's service regions, active status, optional pincode restrictions and optional estimated delivery days. Empty pincode restrictions cover its selected regions only. No partner is offered without an active configured region and route. Existing partners require region assignment before they can be offered. Availability represents Admin configuration, not live carrier booking. No real serviceability is invented.
-
-Physical/trial checkout derives destination, region and dispatch from the database and requires an explicit available partner. Pincode changes clear the selection and refresh the route; stale responses are discarded. Unconfigured destinations cannot proceed. Orders snapshot address, pincode, region, dispatch location and the selected partner. Admin fulfilment preserves that choice.
+Physical/trial checkout still requires the customer's full name, phone number, delivery address, city, state and six-digit pincode. New physical orders save the address, assigned hub (or pending assignment), INR 0 website shipping charge, courier charges payable separately, shipping payment status Not collected and courier booking status Not booked. Admin fulfilment may record courier and tracking information only after they have been arranged separately and the shipment has actually been dispatched.
 
 Digital-only purchases require no address or courier. Physical patterns and trial samples require address, city, state and pincode. Admin fulfilment records courier, tracking number, dispatch date and shipment status. Marking a verified paid shipment Shipped queues the existing shipment notifications.
 
@@ -33,11 +31,11 @@ The Razorpay Dashboard webhook URL is **the value of APP_BASE_URL, without a tra
 
 Production links require `APP_BASE_URL` and HTTPS; there is no localhost fallback. Development may explicitly set `APP_BASE_URL=http://localhost:3000` for local-only testing. Legacy `PUBLIC_BASE_URL`/`SITE_URL` fallbacks are accepted only outside production.
 
-Enable Email, Order Updates, Payment Confirmation, Digital Pattern Download Ready and desired owner events in Admin Notification Settings. Upload actual files, enter final sizes/formats, confirm prices and courier rules, then activate the existing Basic Shirt product. No production files were invented.
+Enable Email, Order Updates, Payment Confirmation, Digital Pattern Download Ready and desired owner events in Admin Notification Settings. Upload actual files, enter final sizes/formats, confirm product prices and activate the existing Basic Shirt product. Courier partner/rate settings do not affect checkout totals or hub assignment. No production files were invented.
 
 ## Tests
 
-- `npm run test:courier-ui`: destination changes, stale-response rejection, explicit selection and immediate summary updates using the actual checkout JavaScript.
+- `npm run test:courier-ui`: state-based dispatch hub display, pending manual assignment and no courier-selection or courier-charge dependency.
 - `npm run test:commerce-security`: URL configuration, private storage, traversal/junction rejection and paise rounding; no database required.
 - `npm run test:notification-providers`: mocked Gmail/generic SMTP and Meta providers; no messages sent.
 - `npm run test:commerce`: temporary collections in configured MongoDB; seven purchase combinations and shipping/security/admin assertions; gateway and SMTP mocked.

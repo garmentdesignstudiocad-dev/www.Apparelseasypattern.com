@@ -1,3 +1,5 @@
+require('./isolatedTestGuard');
+process.env.MONGOMS_RUNTIME_DOWNLOAD = 'false';
 // Full suite in isolated MongoDB. Explicit blanks prevent dotenv loading live providers.
 const {MongoMemoryServer}=require('mongodb-memory-server');
 const {spawn}=require('node:child_process'),fs=require('node:fs'),path=require('node:path');
@@ -7,8 +9,11 @@ async function run(){
  try{
   const files=fs.readdirSync(__dirname).filter(name=>/^test.*\.js$/.test(name)&&!['testAll.js','testProductionStartup.js'].includes(name));
   for(const file of files){
-   const env={...process.env,NODE_OPTIONS:'--require '+JSON.stringify(path.join(__dirname,'isolatedTestGuard.js')),NODE_ENV:'development',MONGODB_URI:mongo.getUri(),NOTIFICATIONS_WORKER_ENABLED:'false',SESSION_SECRET:'isolated-suite-session-secret',DB_HOST:'127.0.0.1',DB_PORT:'1',SMTP_HOST:'',SMTP_PORT:'',SMTP_SECURE:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:'',LEAD_NOTIFICATION_TO:'',RAZORPAY_KEY_ID:'',RAZORPAY_KEY_SECRET:'',RAZORPAY_WEBHOOK_SECRET:'',GMAIL_USER:'',GMAIL_APP_PASSWORD:'',EMAIL_HOST:'',EMAIL_USER:'',EMAIL_PASSWORD:'',EMAIL_FROM:'',WHATSAPP_ACCESS_TOKEN:'',RESEND_API_KEY:''};
-   const result=await new Promise(resolve=>{let output='';const child=spawn(process.execPath,[path.join(__dirname,file)],{env,stdio:['ignore','pipe','pipe']});child.stdout.on('data',b=>output+=b);child.stderr.on('data',b=>output+=b);const timer=setTimeout(()=>child.kill(),180000);child.on('exit',code=>{clearTimeout(timer);resolve({file,code,output});});});
+   const testDir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'aep-suite-'));
+   const env={...process.env,NODE_OPTIONS:'--require '+JSON.stringify(path.join(__dirname,'isolatedTestGuard.js')),NODE_ENV:'development',MONGODB_URI:mongo.getUri('suite_'+file.replace(/\W/g,'_')),PATTERN_FILES_DIR:testDir,ADMIN_NOTIFICATION_EMAIL:'',PUBLIC_BASE_URL:'https://test.appareleasypatterns.local',APP_BASE_URL:'https://test.appareleasypatterns.local',SITE_URL:'https://test.appareleasypatterns.local',NOTIFICATIONS_WORKER_ENABLED:'false',SESSION_SECRET:'isolated-suite-session-secret',DB_HOST:'127.0.0.1',DB_PORT:'1',SMTP_HOST:'',SMTP_PORT:'',SMTP_SECURE:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:'',LEAD_NOTIFICATION_TO:'',RAZORPAY_KEY_ID:'',RAZORPAY_KEY_SECRET:'',RAZORPAY_WEBHOOK_SECRET:'',GMAIL_USER:'',GMAIL_APP_PASSWORD:'',EMAIL_HOST:'',EMAIL_USER:'',EMAIL_PASSWORD:'',EMAIL_FROM:'',WHATSAPP_ACCESS_TOKEN:'',RESEND_API_KEY:''};
+   const result=await new Promise(resolve=>{let output='';const child=spawn(process.execPath,[path.join(__dirname,file)],{env,stdio:['ignore','pipe','pipe'],windowsHide:true});child.stdout.on('data',b=>output+=b);child.stderr.on('data',b=>output+=b);const timer=setTimeout(()=>child.kill(),180000);child.on('exit',code=>{clearTimeout(timer);resolve({file,code,output});});});
+   if(!testDir.startsWith(path.join(require('node:os').tmpdir(),'aep-suite-')))throw new Error('Unsafe test cleanup path');
+   fs.rmSync(testDir,{recursive:true,force:true});
    results.push(result);console.log((result.code===0?'PASS ':'FAIL ')+file);if(result.code!==0)console.log(result.output.slice(-2200));
   }
  }finally{await mongo.stop();fs.mkdirSync('private/verification',{recursive:true});fs.writeFileSync('private/verification/full-tests.json',JSON.stringify(results,null,2));}

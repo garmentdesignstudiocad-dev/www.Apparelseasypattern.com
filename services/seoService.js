@@ -24,9 +24,12 @@ function productData(product){
   return {'@context':'https://schema.org','@type':'Product',name:product.name,...(product.description?{description:product.description}:{}),image:images,url,offers:{'@type':'Offer',url,priceCurrency:'INR',price:Number(product.base_price).toFixed(2)}};
 }
 function productMetadata(product){
+  if (!product) return {};
+  const name = String(product.name || 'Garment Pattern');
+  const desc = String(product.seo_description?.trim() || product.description || name);
   return {
-    seoTitle:product.seo_title?.trim()||`${product.name} | Garment Pattern | Apparel Easy Patterns`,
-    description:product.seo_description?.trim()||(product.description||product.name).replace(/\s+/g,' ').trim().slice(0,160),
+    seoTitle:product.seo_title?.trim()||`${name} | Garment Pattern | Apparel Easy Patterns`,
+    description:desc.replace(/\s+/g,' ').trim().slice(0,160),
     ogImage:publicImageUrl(product.images?.[0]),
     productStructuredData:productData(product),
   };

@@ -1,3 +1,4 @@
+process.env.TEST_PATTERN_STOREFRONT = 'false';
 // HTTP + MongoDB integration tests. Temporary collections and a mocked gateway only.
 require('dotenv').config();
 const assert=require('node:assert/strict');
@@ -92,7 +93,7 @@ async function run(){
   const disabled={...update,courses_enabled:'',webinars_active:''};await request('/admin/settings/paid-access',disabled,'admin');assert.match((await request('/courses/access-course')).html,/Free/);assert.equal((await request('/webinars')).status,404);assert.equal((await request('/webinars/access-webinar')).status,404);
   console.log('PASS: A–H paid course/webinar/book/consulting, free webinar/book, Amazon bypass, admin ₹299 updates, overrides, disabled/inactive, CSRF/session ownership, captured amount verification, bad signatures, duplicate callbacks, cancellation privacy and immutable snapshots. No real charges.');
 }
-run().catch(error=>{console.error('Paid access tests failed:',error.name,error instanceof assert.AssertionError?error.message:'Database or test setup failed; credentials are not printed.');process.exitCode=1;}).finally(async()=>{
+run().catch(error=>{console.error('Paid access tests failed:',error.name,error.stack);process.exitCode=1;}).finally(async()=>{
   if(server)await new Promise(resolve=>server.close(resolve));
   if(mongoose.connection.readyState===1)for(const Model of Object.values(models)){assert.ok(Model.collection.name.startsWith(prefix));await Model.collection.drop().catch(error=>{if(error.code!==26)throw error;});}
   await mongoose.disconnect();if(require.cache[require.resolve('../config/db')])await require('../config/db').db.destroy();

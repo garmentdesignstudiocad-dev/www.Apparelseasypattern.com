@@ -4,151 +4,146 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Payment Cancelled - Garment Pattern Store</title>
+  <title>Payment Cancelled — <%= siteSettings?.store_name || 'Apparel Easy Patterns' %></title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/customer-experience.css">
+  <link rel="stylesheet" href="/css/storefront-theme.css">
+  <%- include('partials/theme') %>
 
   <style>
+    :root {
+      --navy-900: #0B192C;
+      --navy-800: #132742;
+      --gold-600: #B45309;
+      --gold-500: #D97706;
+      --gold-400: #F59E0B;
+      --slate-900: #0F172A;
+      --slate-600: #475569;
+      --slate-500: #64748B;
+      --slate-200: #E2E8F0;
+      --slate-50: #F8FAFC;
+      --white: #FFFFFF;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+      --shadow-md: 0 8px 30px -4px rgba(11, 25, 44, 0.1);
+    }
+
+    body {
+      margin: 0;
+      background: var(--slate-50);
+      color: var(--slate-900);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
     .cancel-page {
-      min-height: 70vh;
+      min-height: 75vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 50px 20px;
+      padding: 50px 20px 80px;
     }
 
     .cancel-card {
       width: 100%;
-      max-width: 650px;
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 45px 30px;
+      max-width: 600px;
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 44px 36px;
       text-align: center;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
     }
 
-    .cancel-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 25px;
+    .cancel-icon-badge {
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background: #fff3cd;
-      color: #b58105;
+      background: #FEF3C7;
+      color: var(--gold-600);
+      border: 2px solid #FDE68A;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 40px;
-      font-weight: bold;
+      font-size: 26px;
+      margin: 0 auto 18px;
     }
 
     .cancel-card h1 {
-      margin: 0 0 15px;
-      font-size: 32px;
-      color: #173f67;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--navy-900);
+      margin: 0 0 12px;
     }
 
-    .cancel-card p {
-      margin: 10px 0;
-      color: #666;
+    .cancel-msg {
+      font-size: 14.5px;
+      color: var(--slate-600);
       line-height: 1.6;
-      font-size: 16px;
-    }
-
-    .order-id {
-      display: inline-block;
-      margin: 20px 0;
-      padding: 12px 18px;
-      background: #f4f7fa;
-      border-radius: 8px;
-      color: #173f67;
-      font-size: 14px;
-      word-break: break-all;
+      margin: 0 0 24px;
     }
 
     .cancel-actions {
-      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
     }
 
-    .cancel-actions a {
-      display: inline-block;
-      padding: 13px 24px;
-      margin: 5px;
-      border-radius: 8px;
+    .btn-cart-return {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 24px;
+      background: var(--navy-900);
+      color: var(--white);
+      border-radius: var(--radius-sm);
       text-decoration: none;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
     }
 
-    .primary-btn {
-      background: #173f67;
-      color: #ffffff;
-    }
-
-    .secondary-btn {
-      background: #eef2f6;
-      color: #173f67;
-    }
-
-    .primary-btn:hover,
-    .secondary-btn:hover {
-      opacity: 0.9;
+    .btn-cart-return:hover {
+      background: var(--gold-500);
+      transform: translateY(-1px);
     }
   </style>
-<link rel="stylesheet" href="/css/customer-experience.css"><%- include('partials/theme') %></head>
+</head>
 
-<body><%- include('partials/header') %>
+<body>
+  <%- include('partials/header') %>
 
   <main class="cancel-page">
-
-    <div class="cancel-card">
-
-      <div class="cancel-icon">
-        !
-      </div>
-
-      <h1>
-        Payment Cancelled
-      </h1>
-
-      <p>
-        Your payment was cancelled.
-        No payment has been completed.
+    <section class="cancel-card">
+      <div class="cancel-icon-badge">!</div>
+      <h1>Payment Cancelled</h1>
+      <p class="cancel-msg">
+        The payment process was cancelled or interrupted before confirmation. If an amount was debited from your account by your payment provider, it will be automatically reconciled or refunded. Your selected pattern blocks remain saved in your cart.
       </p>
-
       <% if (orderId) { %>
-
-        <div class="order-id">
-          <strong>Order ID:</strong>
-          <%= orderId %>
-        </div>
-
+        <p style="font-size:12.5px;color:var(--slate-500);margin-bottom:20px;">
+          Reference ID: <strong><%= orderId %></strong>
+        </p>
       <% } %>
-
-      <p>
-        Your cart is still available.
-        You can return to your cart and try the payment again.
-      </p>
-
       <div class="cancel-actions">
-
-        <% if(canVisit('/cart')){ %><a
-          href="/cart"
-          class="primary-btn"
-        >
-          Return to Cart
-        </a><% } %>
-
-        <% if(canVisit('/products')){ %><a
-          href="/products"
-          class="secondary-btn"
-        >
-          Continue Shopping
-        </a><% } %>
-
+        <a href="/cart" class="btn-cart-return">Return to Cart &rarr;</a>
+        <% if (canVisit('/products')) { %>
+          <a href="/products" style="display:inline-flex;align-items:center;padding:14px 20px;border:1px solid var(--slate-200);border-radius:8px;color:var(--navy-900);text-decoration:none;font-size:12.5px;font-weight:700;">Continue Shopping</a>
+        <% } %>
       </div>
-
-    </div>
-
+    </section>
   </main>
 
-<%- include('partials/footer') %><script src="/js/main.js"></script></body>
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
 </html>

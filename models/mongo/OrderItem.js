@@ -3,7 +3,9 @@ const { Schema, model } = require('mongoose');
 const OrderItemSchema = new Schema({
   printable_selected: {type:Boolean,default:true},
   product_name: String,
+  selected_formats: {type:[String],default:[]},
   selected_sizes: {type:[String],default:[]},
+  physical_sizes: {type:[String],default:[]},
   additional_size_price:Number,
   product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   selected_files: { type: [Schema.Types.Mixed], default: [] },

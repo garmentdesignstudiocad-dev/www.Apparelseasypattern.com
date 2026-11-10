@@ -419,6 +419,8 @@
           .replace(/\bSeo\b/g, 'SEO');
 
             const descriptions = {
+        header_home_enabled: 'Show or hide the Home navigation link in the header.',
+        header_home_label: 'Display text for the Home navigation link.',
         store_name: 'Store name shown on the website.',
         logo_url: 'Full HTTPS URL to your business logo.',
         favicon_url: 'Browser tab icon URL.',
@@ -432,7 +434,12 @@
         homepage_heading: 'Main heading displayed on the homepage.',
         homepage_subheading: 'Text directly below the homepage heading.',
         home_eyebrow: 'Small label above the main title.',
-        home_image_path: 'Image path such as /images/basic-shirt-pattern.svg or an HTTPS URL.',
+                home_image_path: 'Homepage hero fallback image (JPG, PNG, WebP up to 10 MB).',
+        home_video_path: 'Homepage hero background video (MP4, WebM up to 50 MB).',
+        home_showcase_image_path: 'Basic Shirt Block 3D showcase image or safe PDF reference.',
+        home_men_image_path: 'Men category department finished garment photo.',
+        home_women_image_path: 'Women category department finished garment photo.',
+        home_kids_image_path: 'Kids category department finished garment photo.',
         home_image_alt: 'Accessible description of the hero image.',
         home_primary_button: 'Text of the primary homepage button.',
         home_secondary_button: 'Text of the secondary homepage button.',
@@ -494,6 +501,17 @@
           title: '01 - Homepage Content',
           description: 'Hero section, images, buttons, trust labels and homepage content.',
           groups: [
+            {
+              name: 'Homepage Media Management (Direct File Uploads)',
+              fields: [
+                'home_image_path',
+                'home_video_path',
+                'home_showcase_image_path',
+                'home_men_image_path',
+                'home_women_image_path',
+                'home_kids_image_path'
+              ]
+            },
             {
               name: 'Hero Section',
               fields: [
@@ -804,6 +822,7 @@
       method="post"
       action="/admin/settings/appearance"
       id="appearance-form"
+      enctype="multipart/form-data"
     >
 
       <input type="hidden" name="_csrf" value="<%= csrf %>">
@@ -932,6 +951,77 @@
                         <%= descriptions[key] ||
                           'Update this setting and save to apply the change.' %>
                       </small>
+                      <% if (['home_image_path', 'home_video_path', 'home_showcase_image_path', 'home_men_image_path', 'home_women_image_path', 'home_kids_image_path'].includes(key)) { %>
+                        <div class="cms-direct-media-card" style="margin-top:10px;padding:14px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-size:11.5px;font-weight:700;color:#0B192C;text-transform:uppercase;letter-spacing:0.06em;">
+                              Direct File Upload:
+                            </span>
+                            <span id="badge_<%= key %>" style="font-size:10.5px;padding:3px 8px;border-radius:999px;background:#E2E8F0;color:#475569;font-weight:600;">
+                              <%= key.includes('video') ? 'MP4 / WebM < 50MB' : 'JPG / PNG / WebP < 10MB' %>
+                            </span>
+                          </div>
+
+                          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                            <input
+                              type="file"
+                              name="upload_<%= key %>"
+                              id="file_<%= key %>"
+                              accept="<%= key.includes('video') ? 'video/mp4,video/webm' : (key === 'home_showcase_image_path' ? 'image/jpeg,image/png,image/webp,image/svg+xml,application/pdf' : 'image/jpeg,image/png,image/webp,image/svg+xml') %>"
+                              style="display:none;"
+                            >
+                            <button
+                              type="button"
+                              class="fashion-button"
+                              style="padding:7px 14px;font-size:12px;background:#0B192C;color:#FFFFFF;border:1px solid #0B192C;border-radius:6px;cursor:pointer;"
+                              onclick="document.getElementById('file_<%= key %>').click()"
+                            >
+                              Choose File from Computer
+                            </button>
+                            <button
+                              type="button"
+                              style="padding:7px 12px;font-size:12px;background:#FFFFFF;color:#DC2626;border:1px solid #CBD5E1;border-radius:6px;cursor:pointer;"
+                              onclick="clearMediaField('<%= key %>', 'preview_<%= key %>', '<%= key === 'home_image_path' || key === 'home_showcase_image_path' ? '/images/basic-shirt-pattern.svg' : '' %>')"
+                            >
+                              Reset
+                            </button>
+                          </div>
+
+                          <!-- Live Instant Preview Frame -->
+                          <div id="preview_box_<%= key %>" style="padding:10px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;text-align:center;">
+                            <% if (key.includes('video')) { %>
+                              <video
+                                id="preview_<%= key %>"
+                                src="<%= settings[key] || '' %>"
+                                controls
+                                muted
+                                playsinline
+                                style="max-width:100%;max-height:160px;border-radius:6px;<%= settings[key] ? 'display:block;' : 'display:none;' %>margin:0 auto;"
+                              ></video>
+                              <span id="preview_placeholder_<%= key %>" style="font-size:12px;color:#94A3B8;<%= settings[key] ? 'display:none;' : 'display:block;' %>padding:16px 0;">
+                                No video selected. Choose an MP4 or WebM file.
+                              </span>
+                            <% } else { %>
+                              <img
+                                id="preview_<%= key %>"
+                                src="<%= settings[key] || (key === 'home_image_path' || key === 'home_showcase_image_path' ? '/images/basic-shirt-pattern.svg' : '') %>"
+                                alt="Preview"
+                                style="max-width:100%;max-height:140px;object-fit:contain;border-radius:6px;<%= (settings[key] || key === 'home_image_path' || key === 'home_showcase_image_path') ? 'display:block;' : 'display:none;' %>margin:0 auto;"
+                                onerror="this.style.display='none'"
+                              >
+                              <span id="preview_placeholder_<%= key %>" style="font-size:12px;color:#94A3B8;<%= (settings[key] || key === 'home_image_path' || key === 'home_showcase_image_path') ? 'display:none;' : 'display:block;' %>padding:16px 0;">
+                                No image selected. Choose a photo from computer.
+                              </span>
+                            <% } %>
+                          </div>
+
+                          <script>
+                            (function(){
+                              setupDirectMediaUploader('<%= key %>', 'preview_<%= key %>', <%= key.includes('video') %>);
+                            })();
+                          </script>
+                        </div>
+                      <% } %>
 
                     </div>
 
@@ -1112,6 +1202,58 @@
       }
     }
   </script>
+
+
+<!-- DIRECT COMPUTER MEDIA UPLOADER SCRIPT -->
+<script>
+function setupDirectMediaUploader(fieldId, previewImgId, isVideo) {
+  var fileInput = document.getElementById('file_' + fieldId);
+  var pathInput = document.getElementById(fieldId);
+  var previewEl = document.getElementById(previewImgId);
+  if (!fileInput || !pathInput || !previewEl) return;
+
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var maxBytes = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      alert('Selected file is too large! Maximum size allowed is ' + (isVideo ? '50 MB' : '10 MB') + '.');
+      fileInput.value = '';
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      if (isVideo) {
+        previewEl.src = evt.target.result;
+        previewEl.style.display = 'block';
+      } else {
+        previewEl.src = evt.target.result;
+        previewEl.style.display = 'block';
+      }
+      pathInput.value = '/uploads/' + file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function clearMediaField(fieldId, previewImgId, defaultSrc) {
+  var fileInput = document.getElementById('file_' + fieldId);
+  var pathInput = document.getElementById(fieldId);
+  var previewEl = document.getElementById(previewImgId);
+  if (fileInput) fileInput.value = '';
+  if (pathInput) pathInput.value = defaultSrc || '';
+  if (previewEl) {
+    if (defaultSrc) {
+      previewEl.src = defaultSrc;
+      previewEl.style.display = 'block';
+    } else {
+      previewEl.style.display = 'none';
+    }
+  }
+}
+</script>
 
 </body>
 </html>

@@ -27,3 +27,31 @@ test('existing legacy Payment ID is preserved and unrelated payment purposes are
 test('ambiguous historical duplicates fail safely without deleting or overwriting them',async()=>{const {o,id}=await fixture();await Payment.create([{order_id:o._id,payment_id:'legacy1'},{order_id:o._id,payment_id:'legacy2'}]);assert.equal((await call(controller.postRazorpayCallback,callback(o,id))).code,409);assert.equal(await Payment.countDocuments({order_id:o._id}),2);assert.equal(await Payment.countDocuments({order_id:o._id,payment_status:'paid'}),0)});
 test('customer ownership and registering-session success-page access stay protected',async()=>{const {o,id}=await fixture();const stranger={customerId:String(new mongoose.Types.ObjectId()),cart:['keep'],save:cb=>cb()};await call(controller.postRazorpayCallback,callback(o,id,stranger));assert.equal(stranger.completedOrderIds,undefined);assert.deepEqual(stranger.cart,['keep']);assert.equal((await call(controller.getSuccess,{query:{orderId:String(o._id)},session:stranger})).locals.order,null);const owner={customerId:String(customer._id),cart:['clear'],save:cb=>cb()};await call(controller.postRazorpayCallback,callback(o,id,owner));assert.deepEqual(owner.cart,[]);assert.ok((await call(controller.getSuccess,{query:{orderId:String(o._id)},session:owner})).locals.order);assert.equal((await call(controller.getSuccess,{query:{orderId:String(o._id)},session:{}})).locals.order,null)});
 test('real notification outbox deduplicates concurrent callback/webhook retries',async()=>{await require('../models/mongo/NotificationSettings').create({_id:'default',email_enabled:false,whatsapp_enabled:false});notifications.safeFlush=realFlush;try{const {o,id}=await fixture();await Promise.all(Array.from({length:8},(_,i)=>i%2?call(controller.postRazorpayCallback,callback(o,id)):call(controller.postRazorpayWebhook,webhook(o,id))));const Log=require('../models/mongo/NotificationLog');const rows=await Log.find({reference_id:String(o._id)}).lean();assert.ok(rows.length>0);assert.equal(new Set(rows.map(r=>r.dedupe_key)).size,rows.length);assert.equal(rows.filter(r=>r.event==='order_payment_success'&&r.channel==='email').length,1);assert.equal(rows.filter(r=>r.event==='admin_successful_payment'&&r.channel==='email').length,1);assert.equal((await Order.findById(o._id)).notification_jobs.length,0)}finally{notifications.safeFlush=async()=>{}}});
+
+
+test('session reload failure, identity change and expired drafts fail closed',async()=>{
+  for(const mode of ['reload-error','identity-change','expired','other-customer']){
+    const session={customerId:String(customer._id),paymentDraft:{customer_id:String(customer._id),created_at:Date.now(),summary:{grand_total:100}}};
+    session.reload=cb=>{if(mode==='identity-change')session.customerId='other';cb(mode==='reload-error'?new Error('failed to load session'):null)};
+    if(mode==='expired')session.paymentDraft.created_at=Date.now()-31*60000;
+    if(mode==='other-customer')session.paymentDraft.customer_id='other';
+    const result=await call(controller.postPaymentMethodProceed,{sessionID:'security-'+mode,session});
+    assert.equal(result.code,['reload-error','identity-change'].includes(mode)?401:400,mode);
+  }
+});
+test('webhook requires its dedicated secret, even when the API secret exists',async()=>{
+  const {o,id}=await fixture(),req=webhook(o,id),secret=process.env.RAZORPAY_WEBHOOK_SECRET;
+  delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  try{assert.equal((await call(controller.postRazorpayWebhook,req)).code,503);assert.equal((await Order.findById(o._id)).payment_status,'unpaid');}finally{process.env.RAZORPAY_WEBHOOK_SECRET=secret;}
+});
+test('mismatched provider payment ID is rejected on callback and webhook',async()=>{
+  const {o,id}=await fixture();payments.get(id).id='pay_other';
+  assert.equal((await call(controller.postRazorpayCallback,callback(o,id))).code,400);
+  assert.equal((await call(controller.postRazorpayWebhook,webhook(o,id))).code,409);
+});
+test('configured tax and disabled tax are honored without changing saved settings',async()=>{
+  const Tax=require('../models/mongo/TaxSettings'),pricing=require('../services/orderPricing');
+  await Tax.create({key:'default',enabled:true,percentage:5});
+  assert.equal(await pricing.taxRate(),5);assert.equal(pricing.totals(100,10,await pricing.taxRate()).amount,11500);
+  await Tax.updateOne({key:'default'},{$set:{enabled:false}});assert.equal(await pricing.taxRate(),0);assert.equal(pricing.totals(100,10,await pricing.taxRate()).amount,11000);
+});

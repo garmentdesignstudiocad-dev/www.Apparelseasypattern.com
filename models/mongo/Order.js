@@ -6,6 +6,8 @@ const OrderSchema = new Schema(
   {
     ...require('./communicationFields'),
     courier_payment_separate: {type:Boolean,default:false},
+    shipping_payment_status: {type:String,enum:['not_applicable','not_collected','paid_separately'],default:'not_applicable'},
+    courier_booking_status: {type:String,enum:['not_required','not_booked','booked'],default:'not_required'},
     customer_snapshot: {name:String,email:String,phone:String},
     account_customer_id: {type:Schema.Types.ObjectId,ref:'Customer',index:true},
     shipping_address:String,shipping_city:String,shipping_state:String,
@@ -17,7 +19,7 @@ const OrderSchema = new Schema(
     shipping_status:{type:String,enum:['Confirmed','Preparing','Ready to Dispatch','Shipped','Delivered','Cancelled','Pending','Packed','In Transit','Returned'],default:'Pending'},
     shipping_version:{type:Number,default:0},shipping_notification_keys:{type:[String],default:[]},
     shipping_arranged_separately:{type:Boolean,default:false},
-    download_token:{type:String,select:false},download_expires_at:Date,
+    download_token:{type:String,select:false},download_expires_at:Date,digital_delivery_issued_at:Date,
     download_assets:{type:[new Schema({name:String,file:String,watermark_pdf:Boolean},{_id:false})],select:false,default:undefined},
     customer_id: {
       type: Schema.Types.ObjectId,

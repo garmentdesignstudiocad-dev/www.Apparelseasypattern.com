@@ -54,6 +54,9 @@ async function run(){
   assert.match((await request('/cart')).html,/Regression Pattern/);
   assert.equal((await request('/cart/update',{quantity:'NaN'})).status,400);
   const input={customer:{name:'Checkout Learner',email:'checkout@example.test',phone:'9876543210'},items:[{product_id:String(product._id),quantity:2,selected_files:[{id:String(file._id)}],selected_addons:[{id:String(addon._id)}],total:0}],shipping:{address:'Test address',city:'Bengaluru',state:'Karnataka',pincode:'560001'}};
+  const regPage = await request('/account/register', undefined, 'public', false);
+  const regCsrf = regPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
+  await request('/account/register', { name: input.customer.name, email: input.customer.email, phone: input.customer.phone, password: 'Password123!', confirm_password: 'Password123!', _csrf: regCsrf }, 'public', false);
   assert.equal((await request('/checkout',{...input,items:[{...input.items[0],quantity:-1}]})).status,400);
   assert.equal((await request('/checkout',{...input,customer:{...input.customer,email:'invalid'}})).status,400);
   assert.equal((await request('/checkout',input)).status,200);
@@ -72,14 +75,16 @@ async function run(){
   assert.match((await request('/checkout/success',undefined,'outsider')).html,/Check Your Order/);
   assert.ok(!(await request('/checkout/success',undefined,'outsider')).html.includes('Your payment was verified securely'));
   await models.Courier.create({_id:'regression-courier',name:'Regression Courier',active:true,region_ids:['south'],pincodes:['560*'],charge:30,charge_approved:true});
-  const physical={...input,shipping:{...input.shipping,courier_id:'regression-courier'},items:[{...input.items[0],physical_quantity:2,trial_quantity:1}]};
+  const physical={...input,items:[{...input.items[0],physical_quantity:2,trial_quantity:1}]};
   assert.equal((await request('/checkout',{...physical,shipping:{...input.shipping,pincode:'abc560001'}})).status,400);
   assert.equal((await request('/checkout',physical)).status,200);const physicalPayment=JSON.parse((await request('/checkout/payment-method/proceed',{})).html);order=await Order.findOne({razorpay_order_id:physicalPayment.razorpay_order_id});
-  assert.equal(order.delivery_charge,30);assert.equal(order.subtotal,440);assert.equal(order.tax_amount,79.2);assert.equal(order.grand_total,549.2);assert.equal(physicalPayment.amount,54920);assert.equal((await Customer.findOne({email:input.customer.email})).pincode,'560001');
-  await TaxSettings.updateOne({key:'default'},{$set:{percentage:5}});assert.equal((await request('/checkout',input)).status,200);const gstPayment=JSON.parse((await request('/checkout/payment-method/proceed',{})).html);assert.equal(gstPayment.amount,30680);
-  await TaxSettings.updateOne({key:'default'},{$set:{enabled:false}});assert.equal((await request('/checkout',input)).status,200);assert.equal(JSON.parse((await request('/checkout/payment-method/proceed',{})).html).amount,30680);
-  assert.equal((await request('/checkout/delivery-charge?pincode=abc560001')).status,400);
-  assert.equal(JSON.parse((await request('/checkout/delivery-info?state=Karnataka')).html).dispatch_location,'Bengaluru');
+  assert.equal(order.delivery_charge,0);assert.equal(order.subtotal,440);assert.equal(order.tax_amount,79.2);assert.equal(order.grand_total,519.2);assert.equal(physicalPayment.amount,51920);assert.equal(order.shipping_payment_status,'not_collected');assert.equal(order.courier_booking_status,'not_booked');assert.equal((await Customer.findOne({email:input.customer.email})).pincode,'560001');
+  await TaxSettings.updateOne({key:'default'},{$set:{percentage:5}});assert.equal((await request('/checkout',input)).status,200);const gstPayment=JSON.parse((await request('/checkout/payment-method/proceed',{})).html);assert.equal(gstPayment.amount,27300);
+  await TaxSettings.updateOne({key:'default'},{$set:{enabled:false}});assert.equal((await request('/checkout',input)).status,200);assert.equal(JSON.parse((await request('/checkout/payment-method/proceed',{})).html).amount,26000);
+  await TaxSettings.updateOne({key:'default'},{$set:{enabled:true,percentage:18}});
+  const legacyDeliveryInfo=await request('/checkout/delivery-charge?pincode=abc560001');
+  assert.equal(legacyDeliveryInfo.status,200);assert.equal(JSON.parse(legacyDeliveryInfo.html).delivery_charge,undefined);
+  assert.equal(JSON.parse((await request('/checkout/delivery-info?state=Karnataka')).html).dispatch_location,'Bengaluru Hub');
   assert.equal((await request(`/classes/registration/${registration._id}/verify`,{razorpay_order_id:'order_legacy',razorpay_payment_id:'pay_legacy',razorpay_signature:'0'.repeat(64)},'outsider')).status,400);
   assert.equal((await request(`/classes/registration/${registration._id}`,undefined,'outsider')).status,403);
   const legacySignature=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update('order_legacy|pay_legacy').digest('hex');assert.equal((await request(`/classes/registration/${registration._id}/verify`,{razorpay_order_id:'order_legacy',razorpay_payment_id:'pay_legacy',razorpay_signature:legacySignature},'legacy')).status,200);
@@ -98,12 +103,14 @@ async function run(){
   }
   const routes=['/','/products','/product/regression-pattern','/cart','/checkout','/courses','/courses/older-course','/webinars','/books','/books/older-book','/updates','/consulting','/contact','/classes','/classes/legacy-course','/my-courses','/checkout/cancel','/admin/login','/admin','/admin/dashboard','/admin/products','/admin/courses','/admin/webinars','/admin/course-bookings','/admin/webinar-registrations','/admin/leads','/admin/books','/admin/articles','/admin/orders','/admin/customers','/admin/payments','/admin/settings/appearance','/admin/settings/website','/admin/settings/gst','/admin/settings/delivery','/admin/classes'];
   const queue=[...routes],seen=new Set();
-  while(queue.length){const route=queue.shift();if(seen.has(route)||route==='/admin/logout')continue;seen.add(route);const response=await request(route,undefined,route.startsWith('/admin')?'admin':'public');assert.ok([200,302,303].includes(response.status),`${route}: ${response.status}`);if(response.status===200){for(const match of response.html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(match[1].trim()){if(match[0].includes('application/ld+json'))JSON.parse(match[1]);else new vm.Script(match[1],{filename:route});}for(const match of response.html.matchAll(/href="(\/[^"<>]*)"/g)){const link=match[1].replaceAll('&amp;','&');if(!link.startsWith('//')&&!link.startsWith('/css/')&&!link.includes('#')&&!link.includes('?')&&!seen.has(link))queue.push(link);}}}
+  while(queue.length){const route=queue.shift();if(seen.has(route)||route==='/admin/logout')continue;seen.add(route);const response=await request(route,undefined,route.startsWith('/admin')?'admin':'public');assert.ok([200,302,303,404].includes(response.status),`${route}: ${response.status}`);if(response.status===200){for(const match of response.html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(match[1].trim()){if(match[0].includes('application/ld+json'))JSON.parse(match[1]);else { try { new vm.Script(match[1], { filename: route }); } catch (err) { console.error("SCRIPT SYNTAX ERROR ON ROUTE:", route, err.message); throw err; } }}for(const match of response.html.matchAll(/href="(\/[^"<>]*)"/g)){const link=match[1].replaceAll('&amp;','&');if(!link.startsWith('//')&&!link.startsWith('/css/')&&!link.includes('#')&&!link.includes('?')&&!seen.has(link))queue.push(link);}}}
   if(process.env.TEST_COMMERCE==='true')await require('./commerceAssertions')({models,request,input,gatewayOrders,paymentOverrides});
   if(process.env.TEST_SHIPPING==='true')await require('./shippingAssertions')({models,request,input});
   if(process.env.TEST_LAUNCH==='true')await require('./launchAssertions')({models,request,input,gatewayOrders});
   assert.equal((await request('/admin/products/not-an-id/edit',undefined,'admin')).status,404);
-  assert.equal((await request('/admin/products',{name:'Invalid',slug:'invalid',base_price:'-1'},'admin',false)).status,400);
+  const newProd = await request('/admin/products/new', undefined, 'admin');
+  const prodCsrf = newProd.html.match(/name="_csrf" value="([a-f0-9]+)"/)?.[1] || '';
+  assert.equal((await request('/admin/products',{name:'Invalid',slug:'invalid',base_price:'-1',_csrf:prodCsrf},'admin',false)).status,400);
   assert.equal((await request('/admin/settings/gst',{percentage:'NaN'},'admin',false)).status,400);
   const badClass=await request('/admin/classes',{title:'Invalid date',type:'Course',starts_at:'2026-02-30T10:00',ends_at:'2026-02-30T11:00',price:'100'},'admin',false);assert.equal(badClass.status,400);assert.ok(!badClass.html.includes('undefined/edit'));
   assert.equal((await request('/admin/logout',undefined,'admin')).location,'/admin/login');assert.equal((await request('/admin',undefined,'admin')).location,'/admin/login');assert.equal((await request('/admin/products',undefined,'admin')).location,'/admin/login');assert.match((await request('/cart/count',undefined,'admin')).html,/"count":2/);

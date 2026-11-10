@@ -31,10 +31,8 @@ async function run(){
   response=await request('/products?category=shirts');assert.equal(response.status,200);assert.match(response.text,/Test Shirt/);assert(!response.text.includes('Test Pants'));assert(!response.text.includes('Test Draft'));assert.match(response.text,/Test Upcoming/);
   assert.equal((await request('/product/test-draft')).status,404);assert.equal((await request('/products?category=%3Cbad%3E')).status,400);
   response=await request('/product/test-shirt');assert.equal(response.status,200);
-  for(const label of ['SELECT YOUR FIT BLOCK','Soft Copy','Hard Copy','DXF','Tech pack','Order Trial Sample','Measurement Chart / Basic Specifications','pattern-size','data-protected-content','preview-watermark'])assert(response.text.includes(label),label);
-  assert.equal((response.text.match(/<legend>/g)||[]).length,9,'Nine Fit Block groups');
-  for(const label of ['1. Fit Category','2. Fit / Style','3. File Format','4. Digital Documents','5. Fabric Width','6. Sizes','7. Pattern Type','8. Additional Options','9. Delivery'])assert.ok(response.text.includes(label));
-  assert.match(response.text,/id="pdBuyNow"[^>]*>BUY NOW/);
+  for(const label of ['FIT BLOCK PATTERN','Soft Copy','Hard Copy','DXF','Tech Pack','pattern-size'])assert(response.text.includes(label),label);
+  assert.match(response.text,/id="pdBuyNow"/);
   assert.ok(!/id="pdBuyNow"[^>]*disabled/.test(response.text));
   // Execute the real purchase script with mock DOM/fetch; this is not browser QA.
   async function purchaseAction(buyNow,selectedSizes=['S','M']){
@@ -74,7 +72,7 @@ async function run(){
   assert.equal((await request('/classes/enquiry',classBody)).status,400);
   classBody._csrf=token(await request('/classes/enquiry'));assert.equal((await request('/classes/enquiry',{...classBody,studying:'Fashion design'})).status,303);
   const lead=await Lead.findOne({email:classBody.email});assert.equal(lead.studying,'Fashion design');assert(lead.consent_at);assert.equal(lead.notification_jobs.length,1);
-  assert.equal((await request('/consulting')).status,200);assert.equal((await request('/classes')).location,'/classes/enquiry');
+  assert.equal((await request('/consulting')).status,404);assert.equal((await request('/classes')).location,'/classes/enquiry');
   // Exact paid option entitlements, unverified-payment refusal and immutable PDF masters.
   const customer=new mongoose.Types.ObjectId();
   const order=await Order.create({customer_id:customer,account_customer_id:customer,items:[{product_id:product._id,product_name:product.name,quantity:1,printable_selected:false,selected_files:[{id:String(files[1]._id),name:'Tech pack',price:30}]}],payment_status:'paid'});

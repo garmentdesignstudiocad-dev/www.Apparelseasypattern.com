@@ -15,7 +15,8 @@ const allowed = {
   "image/png": { ext: ".png", kind: "image" },
   "image/webp": { ext: ".webp", kind: "image" },
   "video/mp4": { ext: ".mp4", kind: "video" },
-  "video/webm": { ext: ".webm", kind: "video" }
+  "video/webm": { ext: ".webm", kind: "video" },
+  "application/pdf": { ext: ".pdf", kind: "document" }
 };
 
 const limits = {
@@ -46,6 +47,11 @@ function signatureMatches(buffer, mime) {
 
   if (mime === "video/mp4") {
     return buffer.toString("ascii", 4, 8) === "ftyp";
+  }
+
+  if (mime === "application/pdf") {
+    return buffer.length >= 4 &&
+      buffer.subarray(0, 4).toString("ascii") === "%PDF";
   }
 
   if (mime === "video/webm") {
@@ -83,13 +89,22 @@ const upload = multer({
       return cb(new Error("Only JPEG, PNG, WebP, MP4 and WebM allowed"));
     }
 
+    const extension = path.extname(file.originalname || '').toLowerCase();
+    const extensions = file.mimetype === 'image/jpeg' ? ['.jpg', '.jpeg'] : [config.ext];
+    if (!extensions.includes(extension)) return cb(new Error('File extension does not match its media type'));
+
     const isVideoField = file.fieldname === "product_video";
+    const isDocField = file.fieldname === "size_chart_pdf_file";
 
     if (isVideoField && config.kind !== "video") {
       return cb(new Error("Video field requires MP4 or WebM"));
     }
 
-    if (!isVideoField && config.kind !== "image") {
+    if (isDocField && config.kind !== "document") {
+      return cb(new Error("Size chart requires a PDF document"));
+    }
+
+    if (!isVideoField && !isDocField && config.kind !== "image") {
       return cb(new Error("Image field requires an image"));
     }
 
@@ -101,7 +116,8 @@ const fields = upload.fields([
   { name: "main_image", maxCount: 1 },
   { name: "gallery_images", maxCount: 10 },
   { name: "sample_image", maxCount: 1 },
-  { name: "product_video", maxCount: 1 }
+  { name: "product_video", maxCount: 1 },
+  { name: "size_chart_pdf_file", maxCount: 1 }
 ]);
 
 function flattenFiles(req) {
@@ -162,7 +178,7 @@ async function validateProductMedia(req, res, next) {
 
 function publicMediaUrl(file) {
   if (!file || !file.filename ||
-      !/^[a-f0-9-]{36}\.(jpg|png|webp|mp4|webm)$/.test(file.filename)) {
+      !/^[a-f0-9-]{36}\.(jpg|png|webp|mp4|webm|pdf)$/.test(file.filename)) {
     throw new Error("Invalid stored media filename");
   }
 
@@ -170,6 +186,7 @@ function publicMediaUrl(file) {
 }
 
 async function publishProductMedia(req) {
+  if (!flattenFiles(req).length) return;
   await fsp.mkdir(MEDIA_ROOT, { recursive: true });
   for (const file of flattenFiles(req)) {
     publicMediaUrl(file);

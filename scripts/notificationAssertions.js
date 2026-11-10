@@ -75,7 +75,7 @@ module.exports=async function({models,request,token,course,book,adminCsrf,gatewa
   assert.equal(await Log.countDocuments({reference_id:registration._id,event:'webinar_status_update'}),2);
   const scheduleLog=await Log.findOne({reference_id:registration._id,event:'webinar_status_update'});assert.ok(!scheduleLog.message.includes('new-private-meeting'));
   const oldReminder=await Log.findOne({event:'webinar_reminder',channel:'whatsapp'});await dispatch(oldReminder._id);assert.equal((await Log.findById(oldReminder._id)).status,'skipped');
-  const consulting=await models.ConsultationBooking.findOne();assert.equal((await request(`/admin/access-records/consulting/${consulting._id}/status`,{_csrf:adminCsrf,status:'Completed'},'admin')).status,303);assert.equal(await Log.countDocuments({reference_id:consulting._id,event:'consulting_status_update'}),2);
+  const consulting=await models.ConsultationBooking.findOne();await models.ConsultationBooking.updateOne({_id:consulting._id},{$set:{scheduling_status:'Approved',registration_status:'Confirmed'}});assert.equal((await request(`/admin/access-records/consulting/${consulting._id}/status`,{_csrf:adminCsrf,status:'Completed'},'admin')).status,303);assert.equal(await Log.countDocuments({reference_id:consulting._id,event:'consulting_status_update'}),2);
 
   // Website settings persist valid links, reject unsafe URLs, and independently hide book/footer sections.
   let page=await request('/books');assert.match(page.html,/Connect with Ganesh Subramani on LinkedIn/);assert.match((await request('/books/digital-book')).html,/Follow Garment Design Studio on LinkedIn/);
@@ -110,7 +110,7 @@ module.exports=async function({models,request,token,course,book,adminCsrf,gatewa
     assert.match(incompletePage.html,/WhatsApp configuration: incomplete/);
   }finally{for(const [key,value] of Object.entries(savedEnv)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
   const enquiryPage=await request('/classes/enquiry',null,'enquiry');
-  const enquiry={_csrf:token(enquiryPage.html),name:'Enquiry Customer',email:'enquiry@example.test',whatsapp:'9791753067',location:'Chennai',interested_course:'Pattern Making',experience:'Beginner',preferred_timing:'Evenings',message:'Course details please'};
+  const enquiry={_csrf:token(enquiryPage.html),name:'Enquiry Customer',email:'enquiry@example.test',whatsapp:'9791753067',location:'Chennai',interested_course:'Pattern Making',profession:'Other',consent:'on',experience:'Beginner',preferred_timing:'Evenings',message:'Course details please'};
   assert.equal((await request('/classes/enquiry',enquiry,'enquiry')).status,303);
   const lead=await models.Lead.findOne({email:enquiry.email});
   await notifications.flush('course_enquiry',lead._id);

@@ -4,6 +4,18 @@ const {
   publicMediaUrl
 } = require("../middleware/productMediaUpload");
 
+// Public photos come only from the validated image upload store, never private
+// document paths, legacy static artwork or remote URLs. Image content still
+// requires owner review: a raster image can depict a technical diagram.
+function publicGarmentMedia(product) {
+  if (!product) return product;
+  const p = typeof product.toObject === 'function' ? product.toObject() : product;
+  const confirmed = new Set(p.finished_garment_images || []);
+  const photo = value => confirmed.has(value) && typeof value === 'string' && /^\/uploads\/products\/[a-f0-9-]{36}\.(jpg|png|webp)$/.test(value) ? value : '';
+  const images = Array.isArray(p.images) ? p.images : [];
+  return { ...p, images: [photo(images[0]), ...images.slice(1).map(photo).filter(Boolean)], sample_image_url: photo(p.sample_image_url) };
+}
+
 function getFiles(files, field) {
   return Array.isArray(files?.[field])
     ? files[field]
@@ -29,10 +41,12 @@ function collectMediaUpdate(existingProduct, body = {}, files = {}) {
   const gallery = getFiles(files, "gallery_images");
   const sample = getFiles(files, "sample_image")[0];
   const video = getFiles(files, "product_video")[0];
+  const sizeChartPdfFile = getFiles(files, "size_chart_pdf_file")[0];
 
   const removeMain = isChecked(body.remove_main_image);
   const removeSample = isChecked(body.remove_sample_image);
   const removeVideo = isChecked(body.remove_video);
+  const removeSizeChartPdf = isChecked(body.remove_size_chart_pdf);
 
   const removeGallery = new Set(
     asStrings(
@@ -78,13 +92,27 @@ function collectMediaUpdate(existingProduct, body = {}, files = {}) {
       ? ""
       : existingProduct.video_url || "";
 
+  let sizeChartPdf = removeSizeChartPdf ? "" : (existingProduct.size_chart_pdf || "");
+  let sizeChartPdfName = removeSizeChartPdf ? "" : (existingProduct.size_chart_pdf_name || "");
+  if (sizeChartPdfFile) {
+    sizeChartPdf = publicMediaUrl(sizeChartPdfFile);
+    sizeChartPdfName = sizeChartPdfFile.originalname || sizeChartPdf.split('/').pop();
+  }
+
   return {
     images,
+    finished_garment_images: [...new Set([
+      ...asStrings(existingProduct.finished_garment_images),
+      ...[main, ...gallery, sample].filter(Boolean).map(publicMediaUrl)
+    ])].filter(url => images.includes(url) || url === sampleImage),
     sample_image_url: sampleImage,
-    video_url: videoUrl
+    video_url: videoUrl,
+    size_chart_pdf: sizeChartPdf,
+    size_chart_pdf_name: sizeChartPdfName
   };
 }
 
 module.exports = {
-  collectMediaUpdate
+  collectMediaUpdate,
+  publicGarmentMedia
 };

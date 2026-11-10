@@ -1,516 +1,1716 @@
-<style>
-/* AEP_EMPTY_PREVIEW_FIX */
-[data-aep-target][hidden] {
-  display: none !important;
-}
-.aep-media-removal[hidden] {
-  display: none !important;
-}
-</style>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <link rel="stylesheet" href="/css/admin-products.css">
-<style id="aep-simple-editor-css">
-.aep-simple-toggle {
-  margin-left:auto;
-  padding:10px 16px;
-  border:1px solid #d8d4ce;
-  border-radius:10px;
-  background:#fff;
-  color:#292524;
-  font-weight:700;
-  cursor:pointer;
-}
-.admin-product-section > header {
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.admin-product-section.aep-collapsed > :not(header) {
-  display:none !important;
-}
-.aep-simple-hint {
-  margin:12px 0;
-  padding:12px 16px;
-  border-radius:10px;
-  background:#f5f3ee;
-  color:#44403c;
-  line-height:1.6;
-}
-@media(max-width:600px) {
-  .aep-simple-toggle {padding:8px 10px;font-size:12px}
-}
-</style>
+  <style>
+    /* =========================================================================
+       REFERENCE IMAGE 2 RIGHT SIDE & 6-STEP REORGANIZED WORKFLOW STYLING
+       ========================================================================= */
+    :root {
+      --admin-navy: #0B192C;
+      --admin-slate: #1E3E62;
+      --admin-orange: #F26522;
+      --admin-orange-hover: #D9531E;
+      --admin-green: #10B981;
+      --admin-border: #E2E8F0;
+      --admin-bg: #F8FAFC;
+    }
+
+    /* Orange active state on sidebar matching Reference Image 2 */
+    .admin-sidebar nav a.active,
+    .admin-sidebar nav a[aria-current="page"] {
+      background: var(--admin-orange) !important;
+      color: #FFFFFF !important;
+      font-weight: 700;
+      border-radius: 8px;
+    }
+
+    /* Stepper Navigation Bar */
+    .workflow-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 12px 16px;
+      background: #FFFFFF;
+      border: 1px solid var(--admin-border);
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .step-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #64748B;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .step-nav-btn:hover {
+      background: #F1F5F9;
+      color: var(--admin-navy);
+    }
+
+    .step-nav-btn.active {
+      background: var(--admin-navy);
+      color: #FFFFFF;
+    }
+
+    .step-nav-btn.completed {
+      color: var(--admin-navy);
+      border-color: #CBD5E1;
+    }
+
+    .step-nav-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .step-nav-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .step-nav-btn.active .step-nav-dot {
+      background: var(--admin-orange);
+      color: #FFFFFF;
+    }
+
+    .step-nav-btn.completed .step-nav-dot {
+      background: var(--admin-green);
+      color: #FFFFFF;
+    }
+
+    .step-nav-arrow {
+      color: #CBD5E1;
+      font-size: 12px;
+    }
+
+    /* Cards */
+    .editor-step-card {
+      background: #FFFFFF;
+      border: 1px solid var(--admin-border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .editor-step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+
+    .editor-step-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--admin-navy);
+      color: #FFFFFF;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .editor-step-header h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--admin-navy);
+    }
+
+    .editor-step-header p {
+      margin: 0;
+      color: #64748B;
+      font-size: 13px;
+    }
+
+    /* Top Breadcrumb & Status Pill matching Reference Image 2 */
+    .editor-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .editor-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #64748B;
+    }
+
+    .editor-breadcrumb a {
+      color: #475569;
+      text-decoration: none;
+    }
+
+    .editor-published-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .published-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+    }
+
+    /* Product Images Strip matching Reference Image 2 */
+    .product-images-strip {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .ref-image-card {
+      position: relative;
+      width: 105px;
+      height: 105px;
+      border-radius: 10px;
+      border: 1px solid var(--admin-border);
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .ref-image-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ref-image-main-badge {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: var(--admin-orange);
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ref-image-trash {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+
+    .ref-image-trash:hover {
+      background: #FEF2F2;
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+
+    .ref-image-add-card {
+      width: 105px;
+      height: 105px;
+      border-radius: 10px;
+      border: 2px dashed #CBD5E1;
+      background: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      color: #64748B;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .ref-image-add-card:hover {
+      border-color: var(--admin-orange);
+      color: var(--admin-orange);
+      background: #FFF7ED;
+    }
+
+    .ref-image-add-card .add-icon {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* Classification Selectors (Step 1) */
+    .classification-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .classification-field label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--admin-navy);
+      margin-bottom: 6px;
+    }
+
+    .classification-field select,
+    .classification-field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--admin-border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #FFFFFF;
+      color: var(--admin-navy);
+      transition: border-color 0.15s ease;
+    }
+
+    .classification-field select:focus,
+    .classification-field input:focus {
+      outline: none;
+      border-color: var(--admin-orange);
+      box-shadow: 0 0 0 3px rgba(242, 101, 34, 0.12);
+    }
+
+    .dept-cards-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .dept-card-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: 2px solid var(--admin-border);
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: var(--admin-navy);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dept-card-btn:hover {
+      border-color: #CBD5E1;
+      background: #F8FAFC;
+    }
+
+    .dept-card-btn.active {
+      border-color: var(--admin-orange);
+      background: #FFF7ED;
+      color: var(--admin-orange);
+    }
+
+    /* Reference Image 2 Lower Split (Files & Pricing) */
+    .ref-split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .ref-files-box,
+    .ref-pricing-box {
+      background: #FFFFFF;
+      border: 1px solid var(--admin-border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .ref-box-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--admin-navy);
+      margin: 0 0 14px;
+    }
+
+    .ref-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #F1F5F9;
+      background: #F8FAFC;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .ref-file-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .file-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .file-badge--pdf { background: #FEE2E2; color: #DC2626; }
+    .file-badge--dxf { background: #DCFCE7; color: #16A34A; }
+    .file-badge--hpgl { background: #E0E7FF; color: #4F46E5; }
+    .file-badge--zip { background: #F3E8FF; color: #9333EA; }
+
+    /* Size-wise Pricing Table matching Reference Image 2 */
+    .ref-pricing-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .ref-pricing-table th {
+      text-align: left;
+      padding: 8px 10px;
+      background: #F8FAFC;
+      color: #64748B;
+      font-weight: 700;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .ref-pricing-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #F1F5F9;
+      color: var(--admin-navy);
+    }
+
+    .ref-pricing-table input {
+      width: 90px;
+      padding: 6px 10px;
+      border: 1px solid var(--admin-border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Product Settings 4 Toggles matching Reference Image 2 */
+    .ref-settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .ref-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--admin-navy);
+      background: #F8FAFC;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--admin-border);
+    }
+
+    /* Switch styling */
+    .switch-input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 38px;
+      height: 20px;
+      background: #CBD5E1;
+      border-radius: 20px;
+      position: relative;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .switch-input::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      transition: transform 0.2s ease;
+    }
+
+    .switch-input:checked {
+      background: var(--admin-green);
+    }
+
+    .switch-input:checked::after {
+      transform: translateX(18px);
+    }
+
+    /* Action Buttons Footer matching Reference Image 2 */
+    .ref-actions-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 0;
+      border-top: 1px solid var(--admin-border);
+    }
+
+    .btn-orange {
+      background: var(--admin-orange) !important;
+      color: #FFFFFF !important;
+      border: none !important;
+      font-weight: 700 !important;
+      padding: 10px 24px !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 6px rgba(242, 101, 34, 0.35);
+      cursor: pointer;
+    }
+
+    .btn-orange:hover {
+      background: var(--admin-orange-hover) !important;
+    }
+
+    /* Hidden step states for new product progression */
+    .step-section--locked {
+      display: none !important;
+    }
+
+    /* Live Summary Card (Step 6) */
+    .review-summary-card {
+      background: #FFF7ED;
+      border: 1px solid #FED7AA;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .review-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .review-summary-item strong {
+      display: block;
+      font-size: 11px;
+      color: #9A3412;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .review-summary-item span {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--admin-navy);
+    }
+  </style>
 </head>
 <body class="admin-product-editor">
   <%- include('../partials/admin_header') %>
+
   <main class="admin-product-editor-main">
-    <header class="admin-product-editor-heading">
+
+    <!-- Top Breadcrumb & Status Toggle matching Reference Image 2 Right Side -->
+    <div class="editor-top-bar">
+      <div class="editor-breadcrumb">
+        <a href="/admin/products">&#127968; Products</a>
+        <span>&gt;</span>
+        <span><%= editingProduct ? 'Edit Product' : 'Add Product' %></span>
+      </div>
       <div>
-        <a class="admin-product-back" href="/admin/products">&larr; Products / Patterns</a>
-        <p class="eyebrow">Admin Portal</p>
-        <h1><%= editingProduct ? 'Edit Product' : 'Add Product' %></h1>
-        <p><%= editingProduct ? productForm.name : 'Add a product now; complete details and pricing before making it available.' %></p>
+        <% const isPublished = productForm.active && (productForm.status === 'active' || !productForm.status); %>
+        <span class="editor-published-toggle">
+          <span class="published-dot"></span>
+          <span><%= isPublished ? 'Published' : 'Draft' %></span>
+        </span>
+      </div>
+    </div>
+
+    <header class="admin-product-editor-heading" style="margin-bottom:16px">
+      <div>
+        <h1 style="font-size:26px;margin:0 0 4px"><%= editingProduct ? 'Edit Product' : 'Add Product' %></h1>
+        <p><%= editingProduct ? (productForm.name || 'Edit pattern specifications') : 'Select product classification first to unlock basic information and pattern media.' %></p>
       </div>
     </header>
 
-    <% if (message) { %><div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>" role="status"><%= message %></div><% } %>
-
-    <% if (editingProduct) { %>
-      <section class="admin-setup-panel" aria-labelledby="product-setup-heading">
-        <div class="admin-setup-heading">
-          <div><h2 id="product-setup-heading">Product Setup</h2><p>Complete the required sections below before activating this product.</p></div>
-          <span class="admin-badge <%= productSetup.missing.length ? 'admin-badge--setup' : 'admin-badge--active' %>"><%= productSetup.missing.length ? 'Setup Required' : 'Ready for Review' %></span>
-        </div>
-        <ol class="admin-setup-steps">
-          <% productSetup.steps.forEach(step => { %><li class="<%= step.complete ? 'is-complete' : '' %>"><span aria-hidden="true"><%= step.complete ? '\u2713' : '\u25CB' %></span><%= step.label %></li><% }) %>
-        </ol>
-        <% if (productSetup.missing.length) { %>
-          <div class="admin-setup-missing"><strong>Setup Required</strong><ul><% productSetup.missing.forEach(item => { %><li><%= item %></li><% }) %></ul></div>
-        <% } %>
-      </section>
+    <% if (message) { %>
+      <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>" role="status"><%= message %></div>
     <% } %>
 
+    <!-- 6-STEP WORKFLOW STEPPER BAR -->
+    <nav class="workflow-stepper" aria-label="Product Configuration Workflow">
+      <button type="button" class="step-nav-btn active" data-step-nav="1">
+        <span class="step-nav-dot">1</span>
+        <span>Classification</span>
+      </button>
+      <span class="step-nav-arrow">&rarr;</span>
+
+      <button type="button" class="step-nav-btn <%= editingProduct ? '' : 'disabled' %>" data-step-nav="2">
+        <span class="step-nav-dot">2</span>
+        <span>Basic Info</span>
+      </button>
+      <span class="step-nav-arrow">&rarr;</span>
+
+      <button type="button" class="step-nav-btn <%= editingProduct ? '' : 'disabled' %>" data-step-nav="3">
+        <span class="step-nav-dot">3</span>
+        <span>Garment Media</span>
+      </button>
+      <span class="step-nav-arrow">&rarr;</span>
+
+      <button type="button" class="step-nav-btn <%= editingProduct ? '' : 'disabled' %>" data-step-nav="4">
+        <span class="step-nav-dot">4</span>
+        <span>Private Files</span>
+      </button>
+      <span class="step-nav-arrow">&rarr;</span>
+
+      <button type="button" class="step-nav-btn <%= editingProduct ? '' : 'disabled' %>" data-step-nav="5">
+        <span class="step-nav-dot">5</span>
+        <span>Sizes &amp; Pricing</span>
+      </button>
+      <span class="step-nav-arrow">&rarr;</span>
+
+      <button type="button" class="step-nav-btn <%= editingProduct ? '' : 'disabled' %>" data-step-nav="6">
+        <span class="step-nav-dot">6</span>
+        <span>Review &amp; Publish</span>
+      </button>
+    </nav>
+
     <% const uploadCsrf = typeof productMediaCsrf === "string" ? productMediaCsrf : ""; %>
-    <form class="admin-product-form" method="POST" enctype="<%= editingProduct ? 'multipart/form-data' : 'application/x-www-form-urlencoded' %>" action="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/edit' : '/admin/products' %>">
+    <form id="admin-product-form" class="admin-product-form" method="POST" enctype="multipart/form-data" action="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/edit' : '/admin/products' %>">
       <input type="hidden" name="_csrf" value="<%= uploadCsrf %>">
       <input type="hidden" name="pattern_configuration" value="1">
-      <% if (editingProduct) { %>
-        <input type="hidden" name="status" value="<%= productForm.status || 'draft' %>">
-        <input type="hidden" name="active" value="<%= productForm.active ? '1' : '0' %>">
-      <% } else { %>
-        <input type="hidden" name="status" value="draft">
-      <% } %>
+      <input type="hidden" name="status" id="form-status-input" value="<%= productForm.status || 'draft' %>">
+      <input type="hidden" name="active" id="form-active-input" value="<%= productForm.active ? '1' : '0' %>">
 
-      <section class="admin-product-section">
-        <header><span>1</span><div><h2>Product Basics</h2><p>Tell customers what this pattern is.</p></div></header>
-        <div class="admin-product-fields">
-          <label><span>Product Name</span><small>The name shown on product listings and product details. Example: Slim Fit Shirt.</small><input name="name" required maxlength="160" value="<%= productForm.name || '' %>"></label>
-          <label><span>URL Name</span><small>Used in the product web address. Leave blank to create it from the product name.</small><input name="slug" value="<%= productForm.slug || '' %>" placeholder="slim-fit-shirt"></label>
-          <label><span>Category</span><small>Groups similar products so customers can browse them. Example: shirts, pants or shorts.</small><input name="category" maxlength="80" list="product-categories" value="<%= productForm.category || '' %>" placeholder="shirts"><datalist id="product-categories"><option value="shirts"><option value="pants"><option value="shorts"></datalist></label>
-          <label class="admin-product-field--wide"><span>Product Description</span><small>A customer-friendly explanation of what the pattern is and what the customer receives. Use only confirmed product details.</small><textarea name="description" rows="4" maxlength="3000"><%= productForm.description || '' %></textarea></label>
-          <label><span>Measurement Chart / Basic Specifications</span><small>Confirmed measurements or specifications shown on the product page. Do not add unverified details.</small><textarea name="size_information" rows="3"><%= productForm.size_information || '' %></textarea></label>
-          <label><span>File Formats</span><small>List only the actual formats customers receive. Example: PDF. Check the associated files first.</small><textarea name="file_formats" rows="3"><%= productForm.file_formats || '' %></textarea></label>
-          <label><span>Delivery / Fulfilment Information</span><small>Explain confirmed digital or physical fulfilment details customers will see before ordering.</small><textarea name="delivery_information" rows="3"><%= productForm.delivery_information || '' %></textarea></label>
-          <label><span>Download Information</span><small>Optional instructions shown to customers about accessing their purchased files.</small><textarea name="download_information" rows="3"><%= productForm.download_information || '' %></textarea></label>
-        </div>
-      </section>
-
-      <section class="admin-product-section">
-        <header><span>2</span><div><h2>Images &amp; Preview</h2><p>Show customers what the pattern or finished product represents.</p></div></header>
-        <div class="admin-product-fields">
-
-<label class="admin-product-field--wide">
-  <span>Upload Main Product Photo</span>
-  <% if (editingProduct) { %>
-    <small>JPEG, PNG or WebP. Maximum 10 MB.</small>
-    <input type="file" name="main_image"
-      accept="image/jpeg,image/png,image/webp"
-      data-aep-preview="main">
-    <img data-aep-target="main"
-      alt="Main image preview"
-      <%= (productForm.images || [])[0] ? '' : 'hidden' %>
-      <% if ((productForm.images || [])[0]) { %>
-        src="<%= productForm.images[0] %>"
-      <% } %>
-      style="max-width:220px;max-height:220px;object-fit:contain">
-    <label class="aep-media-removal" <%= (productForm.images || [])[0] ? "" : "hidden" %>><input type="checkbox" name="remove_main_image">
-      Remove existing main image</label>
-  <% } else { %>
-    <input type="hidden" name="main_image_url" value="">
-    <small>Create a Draft first, then upload media.</small>
-  <% } %>
-</label>
-
-<label class="admin-product-field--wide">
-  <span>Upload Gallery Photos</span>
-  <% if (editingProduct) { %>
-    <small>Choose up to 10 images, maximum 10 MB each.</small>
-    <div class="aep-pdf-manage-link" style="margin:18px 0;padding:16px;border:1px solid #ddd;border-radius:10px">
-  <h3>PDF Pattern Documents</h3>
-  <p>Upload pattern layouts, size charts and technical PDF files securely.</p>
-  <% if (editingProduct) { %>
-    <a href="/admin/products/<%= editingProduct._id %>/digital-files">
-      Manage PDF / DXF Files
-    </a>
-  <% } else { %>
-    <p>Save the product first to manage PDF documents.</p>
-  <% } %>
-</div>
-<input type="file" name="gallery_images" multiple
-      accept="image/jpeg,image/png,image/webp"
-      data-aep-gallery>
-    <div data-aep-gallery-preview
-      style="display:flex;gap:10px;flex-wrap:wrap"></div>
-    <% (productForm.images || []).slice(1).forEach((src,index)=>{ %>
-      <div>
-        <img src="<%= src %>" alt="Gallery preview"
-          style="max-width:120px;max-height:120px">
-        <label><input type="checkbox"
-          name="remove_gallery_image"
-          value="<%= index %>"> Remove</label>
-      </div>
-    <% }) %>
-  <% } else { %>
-    <input type="hidden" name="gallery_image_urls" value="">
-  <% } %>
-</label>
-
-<label>
-  <span>Finished Upload Sample Photo</span>
-  <% if (editingProduct) { %>
-    <input type="file" name="sample_image"
-      accept="image/jpeg,image/png,image/webp"
-      data-aep-preview="sample">
-    <img data-aep-target="sample" alt="Sample preview"
-      <%= productForm.sample_image_url ? '' : 'hidden' %>
-      <% if (productForm.sample_image_url) { %>
-        src="<%= productForm.sample_image_url %>"
-      <% } %>
-      style="max-width:180px;max-height:180px">
-    <label class="aep-media-removal" <%= productForm.sample_image_url ? "" : "hidden" %>><input type="checkbox" name="remove_sample_image">
-      Remove sample image</label>
-  <% } else { %>
-    <input type="hidden" name="sample_image_url" value="">
-  <% } %>
-</label>
-
-<label>
-  <span>Upload Product Video</span>
-  <% if (editingProduct) { %>
-    <small>MP4 or WebM. Maximum 100 MB.</small>
-    <input type="file" name="product_video"
-      accept="video/mp4,video/webm"
-      data-aep-preview="video">
-    <video data-aep-target="video" controls
-      preload="metadata"
-      <%= productForm.video_url ? '' : 'hidden' %>
-      <% if (productForm.video_url) { %>
-        src="<%= productForm.video_url %>"
-      <% } %>
-      style="width:100%;max-width:320px"></video>
-    <label class="aep-media-removal" <%= productForm.video_url ? "" : "hidden" %>><input type="checkbox" name="remove_video">
-      Remove current video</label>
-  <% } else { %>
-    <input type="hidden" name="video_url" value="">
-  <% } %>
-</label>
-        </div>
-      </section>
-
-      <section class="admin-product-section" id="files-section">
-        <header><span>3</span><div><h2>Pattern Files</h2><p>Choose which files customers receive, either with the pattern or as a separate paid option.</p></div></header>
-        <% if (editingProduct) { %>
-          <p class="admin-product-guidance">Unconfirmed files stay inactive and are not sold until reviewed. Choose only a purpose you can verify from the supplied file.</p>
-          <% if (productFiles.length) { %>
-            <ul class="admin-product-file-list">
-              <% productFiles.forEach(file => { %>
-                <% const reviewRequired=file.purpose==='other'&&(editingProduct.import_source_key||file.import_source_key); %>
-                <li><div><strong><%= file.file_name %></strong><small>Purpose: <%= reviewRequired ? 'Needs Review' : ({other:'Other file',dxf:'Editable DXF',tech_pack:'Basic Tech Pack',specs:'Measurement / Specifications'}[file.purpose] || 'Other file') %><% if (!file.active) { %> &middot; Inactive<% } %></small><% if (reviewRequired) { %><small>This file has been imported successfully, but its purpose has not yet been confirmed. Review the file and select the correct purpose before activating the product.</small><% } %></div><a class="btn small ghost" href="/admin/products/<%= editingProduct._id %>/files/<%= file._id %>/edit"><%= reviewRequired ? 'Set Purpose' : 'Edit File' %></a></li>
-              <% }) %>
-            </ul>
-          <% } else { %><p class="admin-product-empty">No product files have been added yet.</p><% } %>
-          <div class="admin-product-actions admin-editor-file-actions">
-            <a class="btn ghost" href="/admin/products/<%= editingProduct._id %>/files">Manage Product Files</a>
-            <a class="btn ghost" href="/admin/products/<%= editingProduct._id %>/digital-files">Upload / Manage Private Files</a>
+      <!-- =========================================================================
+           STEP 1: PRODUCT CLASSIFICATION (Mandatory First Step)
+           ========================================================================= -->
+      <section class="editor-step-card" id="step-1-classification">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">1</span>
+            <div>
+              <h2>Step 1: Product Classification</h2>
+              <p>Select Department, Product Type, Style, and Fit before proceeding to product details.</p>
+            </div>
           </div>
-          <p class="admin-product-help">Product Files describe an option and its price. Private Digital Files stores the actual customer download securely outside the public website.</p>
-        <% } else { %>
-          <p class="admin-product-guidance">Save the product first, then add file options and upload the private files from its product management page.</p>
-        <% } %>
-      </section>
+        </header>
 
-      <section class="admin-product-section">
-        <header><span>4</span><div><h2>Sizes</h2><p>Choose the sizes available for purchase.</p></div></header>
-        <label class="admin-product-field"><span>Available Sizes</span><small>Select the pattern sizes customers can choose. Enter sizes separated by commas. Example: XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL.</small><input name="available_sizes" maxlength="500" value="<%= (productForm.available_sizes || []).join(', ') %>" placeholder="XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL"></label>
-      </section>
+        <!-- Department Selection -->
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:8px">
+            1. Select Department *
+          </label>
+          <%
+            // Resolve department from saved record or guess from category if legacy
+            let currentDept = (productForm.department || '').toLowerCase();
+            if (!currentDept) {
+              const cat = (productForm.category || '').toLowerCase();
+              if (cat.includes('men') && !cat.includes('women')) currentDept = 'men';
+              else if (cat.includes('women') || ['dresses','tops','kurtas','blouses'].includes(cat)) currentDept = 'women';
+              else if (cat.includes('kid')) currentDept = 'kids';
+              else currentDept = 'men';
+            }
+          %>
+          <div class="dept-cards-row">
+            <button type="button" class="dept-card-btn <%= currentDept === 'men' ? 'active' : '' %>" data-dept-val="Men">
+              <span>&#128084;</span>
+              <span>Men</span>
+            </button>
+            <button type="button" class="dept-card-btn <%= currentDept === 'women' ? 'active' : '' %>" data-dept-val="Women">
+              <span>&#128087;</span>
+              <span>Women</span>
+            </button>
+            <button type="button" class="dept-card-btn <%= currentDept === 'kids' ? 'active' : '' %>" data-dept-val="Kids">
+              <span>&#128085;</span>
+              <span>Kids</span>
+            </button>
+          </div>
+          <input type="hidden" name="department" id="input-department" value="<%= currentDept ? currentDept.charAt(0).toUpperCase() + currentDept.slice(1) : 'Men' %>">
+        </div>
 
-      <section class="admin-product-section">
-        <header><span>5</span><div><h2>Pricing &amp; Paid Options</h2><p>Set what customers pay for each available option.</p></div></header>
-        <div class="admin-option-list">
-          <label class="admin-option-row"><input type="checkbox" name="printable_enabled" <%= productForm.pattern_options?.printable !== false ? 'checked' : '' %>><span><strong>Printable Soft Copy</strong><small>The ready-to-print pattern file for customers who want to print and use it. Requires its private file and confirmed price.</small></span></label>
-          <label class="admin-product-field"><span>Printable Soft Copy Price</span><small>Enter the amount the customer must pay for this option. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="base_price" min="0" step="0.01" value="<%= productForm.base_price ?? '' %>" placeholder="Final price"></label>
-          <label class="admin-product-field"><span>Additional Size Price</span><small>Extra amount charged for each additional selected size, if applicable. Leave blank until confirmed.</small><input type="number" name="additional_size_price" min="0" step="0.01" value="<%= productForm.additional_size_price ?? '' %>" placeholder="Optional"></label>
-          <div class="admin-option-row admin-option-row--info"><span><strong>Editable DXF</strong><small>An editable professional pattern file. It is a separate paid option, not the normal printable pattern. Confirm its file purpose and price under Pattern Files.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
-          <div class="admin-option-row admin-option-row--info"><span><strong>Basic Tech Pack</strong><small>Additional garment construction or specification information sold as a separate paid option.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
-          <div class="admin-option-row admin-option-row--info"><span><strong>Measurement Chart / Basic Specs</strong><small>Confirmed measurement or specification file. Set it up as a separate paid file only if that is what customers will receive.</small></span><a class="btn small ghost" href="<%= editingProduct ? '/admin/products/' + editingProduct._id + '/files' : '#files-section' %>">Manage Product Files</a></div>
+        <!-- Classification Dependent Dropdowns -->
+        <div class="classification-grid">
+          <!-- 2. Product Type -->
+          <div class="classification-field">
+            <label for="select-product-type">2. Select Product Type *</label>
+            <select id="select-product-type" required>
+              <!-- Populated dynamically via JS based on Department -->
+            </select>
+            <div id="custom-type-wrap" style="display:none;margin-top:8px">
+              <input type="text" id="custom-product-type" placeholder="Enter custom product type...">
+            </div>
+            <input type="hidden" name="product_type" id="input-product-type" value="<%= productForm.product_type || 'Shirt' %>">
+          </div>
+
+          <!-- 3. Style -->
+          <div class="classification-field">
+            <label for="select-style">3. Select Style *</label>
+            <select id="select-style" required>
+              <option value="Formal" <%= (productForm.style === 'Formal' || !productForm.style) ? 'selected' : '' %>>Formal</option>
+              <option value="Casual" <%= productForm.style === 'Casual' ? 'selected' : '' %>>Casual</option>
+              <option value="Business" <%= productForm.style === 'Business' ? 'selected' : '' %>>Business</option>
+              <option value="Traditional" <%= productForm.style === 'Traditional' ? 'selected' : '' %>>Traditional</option>
+              <option value="Other" <%= (productForm.style && !['Formal','Casual','Business','Traditional'].includes(productForm.style)) ? 'selected' : '' %>>Other (Custom)</option>
+            </select>
+            <div id="custom-style-wrap" style="display:none;margin-top:8px">
+              <input type="text" id="custom-style" placeholder="Enter custom style...">
+            </div>
+            <input type="hidden" name="style" id="input-style" value="<%= productForm.style || 'Formal' %>">
+          </div>
+
+          <!-- 4. Fit -->
+          <div class="classification-field">
+            <label for="select-fit">4. Select Fit *</label>
+            <select id="select-fit" required>
+              <option value="Slim Fit" <%= (productForm.fit === 'Slim Fit' || !productForm.fit) ? 'selected' : '' %>>Slim Fit</option>
+              <option value="Regular Fit" <%= productForm.fit === 'Regular Fit' ? 'selected' : '' %>>Regular Fit</option>
+              <option value="Relaxed Fit" <%= productForm.fit === 'Relaxed Fit' ? 'selected' : '' %>>Relaxed Fit</option>
+              <option value="Comfort Fit" <%= productForm.fit === 'Comfort Fit' ? 'selected' : '' %>>Comfort Fit</option>
+              <option value="Other" <%= (productForm.fit && !['Slim Fit','Regular Fit','Relaxed Fit','Comfort Fit'].includes(productForm.fit)) ? 'selected' : '' %>>Other (Custom)</option>
+            </select>
+            <div id="custom-fit-wrap" style="display:none;margin-top:8px">
+              <input type="text" id="custom-fit" placeholder="Enter custom fit...">
+            </div>
+            <input type="hidden" name="fit" id="input-fit" value="<%= productForm.fit || 'Slim Fit' %>">
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" class="btn primary btn-orange" id="btn-proceed-step-2">
+            Proceed to Basic Information &rarr;
+          </button>
         </div>
       </section>
 
-      <section class="admin-product-section">
-        <header><span>6</span><div><h2>Physical Delivery</h2><p>Configure pattern options that require manual courier fulfilment.</p></div></header>
-        <div class="admin-product-fields">
-          <label class="admin-option-row"><input type="checkbox" name="physical_enabled" <%= productForm.pattern_options?.physical !== false ? 'checked' : '' %>><span><strong>Physical Pattern</strong><small>Select this only when customers can receive a physical printed or cut pattern.</small></span></label>
-          <label><span>Physical Pattern Price</span><small>Enter the amount the customer must pay for this option, before any applicable shipping. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="physical_price" min="0" step="0.01" value="<%= productForm.physical_price ?? '' %>" placeholder="Final price"></label>
-          <label><span>Physical Price by Size</span><small>Optional confirmed amount per selected size, one per line. Example: M=500. Leave blank if one physical price applies to all sizes. Do not use ₹0 as a temporary price.</small><textarea name="size_prices" rows="3"><%= (productForm.size_prices || []).map(row => row.size + '=' + row.price).join('\n') %></textarea></label>
-          <label class="admin-option-row"><input type="checkbox" name="trial_enabled" <%= productForm.pattern_options?.trial !== false ? 'checked' : '' %>><span><strong>Trial Sample</strong><small>Select this only when you can make an optional paid sample for customers to inspect.</small></span></label>
-          <label><span>Trial Sample Price</span><small>Enter the amount the customer must pay for this sample. Leave unset until the final price is confirmed. Do not use ₹0 as a temporary price.</small><input type="number" name="trial_price" min="0" step="0.01" value="<%= productForm.trial_price ?? '' %>" placeholder="Final price"></label>
-          <label><span>Printable Dimensions / Format Notes</span><small>Optional confirmed print dimensions or format notes shown to customers.</small><input name="printable_dimensions" maxlength="500" value="<%= productForm.printable_dimensions || '' %>"></label>
+      <!-- =========================================================================
+           STEP 2: BASIC INFORMATION
+           ========================================================================= -->
+      <section class="editor-step-card <%= editingProduct ? '' : 'step-section--locked' %>" id="step-2-basics">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">2</span>
+            <div>
+              <h2>Step 2: Basic Information</h2>
+              <p>Configure product title, category dropdown, short description, and delivery terms.</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Two-Column Fields matching Reference Image 2 Right Side -->
+        <div class="admin-product-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
+          <label>
+            <span style="font-weight:700;color:var(--admin-navy)">Product Title *</span>
+            <input name="name" required maxlength="160" value="<%= productForm.name || '' %>" placeholder="e.g. Basic Slim Fit Shirt" style="padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;width:100%;font-size:14px">
+          </label>
+
+          <label>
+            <span style="font-weight:700;color:var(--admin-navy)">Category *</span>
+            <%
+              const currentCategory = productForm.category || "Men's Pattern";
+            %>
+            <select name="category" id="admin-category-select" style="padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;width:100%;font-size:14px;background:#FFF;font-weight:700">
+              <option value="MEN" <%= (currentCategory.toUpperCase().includes("MEN") && !currentCategory.toUpperCase().includes("WOMEN")) ? 'selected' : '' %>>MEN</option>
+              <option value="WOMEN" <%= currentCategory.toUpperCase().includes("WOMEN") ? 'selected' : '' %>>WOMEN</option>
+              <option value="KIDS" <%= currentCategory.toUpperCase().includes("KID") ? 'selected' : '' %>>KIDS</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="admin-product-field--wide" style="display:block;margin-bottom:18px">
+          <span style="display:block;font-weight:700;color:var(--admin-navy);margin-bottom:6px">Short Description *</span>
+          <textarea name="description" rows="3" maxlength="3000" placeholder="Professional slim fit shirt pattern with multiple file formats, measurement chart and construction guide." style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:13.5px"><%= productForm.description || '' %></textarea>
+        </label>
+
+        <!-- Technical Specs & Delivery Information -->
+        <div class="admin-product-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
+          <label>
+            <span style="font-weight:700;color:var(--admin-navy)">Product Specifications &amp; POM</span>
+            <textarea name="size_information" rows="2" placeholder="Chest: 40 | Waist: 34 | Seam Allowance: 1/2 inch" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:13.5px"><%= productForm.size_information || '' %></textarea>
+          </label>
+
+          <label>
+            <span style="font-weight:700;color:var(--admin-navy)">Available File Formats</span>
+            <textarea name="file_formats" rows="2" placeholder="PDF Instructions, DXF CAD File, HPGL Plotter, Tech Pack" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:13.5px"><%= productForm.file_formats || '' %></textarea>
+          </label>
+        </div>
+
+        <label class="admin-product-field--wide" style="display:block;margin-bottom:14px">
+          <span style="display:block;font-weight:700;color:var(--admin-navy);margin-bottom:6px">Delivery Information</span>
+          <textarea name="delivery_information" rows="2" placeholder="Digital download instant after payment. Physical printout dispatched within 2 business days via express courier." style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:13.5px"><%= productForm.delivery_information || '' %></textarea>
+        </label>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" class="btn primary btn-orange" id="btn-proceed-step-3">
+            Proceed to Garment Media &rarr;
+          </button>
         </div>
       </section>
 
-      <section class="admin-product-section">
-        <header><span>7</span><div><h2>Product Status</h2><p>Review the product before making it available to customers.</p></div></header>
-        <% if (editingProduct) { %>
-          <% const isLive = productForm.active && productForm.status === 'active'; %>
-          <p>Current status: <span class="admin-badge <%= isLive ? 'admin-badge--active' : 'admin-badge--draft' %>"><%= isLive ? 'Active' : productForm.status === 'coming_soon' ? 'Coming Soon' : 'Draft' %></span></p>
-          <ul class="admin-status-guide">
-            <li><strong>Draft:</strong> saved in Admin; customers cannot purchase it.</li>
-            <li><strong>Active:</strong> available to customers after you select Activate Product.</li>
-            <li><strong>Setup Required:</strong> a reminder listing the information that still needs review.</li>
-          </ul>
-        <% } else { %>
-          <p>Current status: <span class="admin-badge admin-badge--draft">Draft</span></p>
-          <ul class="admin-status-guide">
-            <li><strong>Draft:</strong> saved in Admin; customers cannot purchase it.</li>
-            <li><strong>Active:</strong> available to customers after you review setup and select Activate Product.</li>
-            <li><strong>Setup Required:</strong> a reminder listing the information that still needs review.</li>
-          </ul>
-        <% } %>
-      </section>
+      <!-- =========================================================================
+           STEP 3: GARMENT MEDIA (Finished Garment Photography)
+           ========================================================================= -->
+      <section class="editor-step-card <%= editingProduct ? '' : 'step-section--locked' %>" id="step-3-media">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">3</span>
+            <div>
+              <h2>Step 3: Garment Media (Product Images &amp; Video)</h2>
+              <p>Upload real photographs of the finished stitched garment. Direct upload supported.</p>
+            </div>
+          </div>
+        </header>
 
-      <details class="admin-product-section admin-product-seo">
-        <summary>8. SEO &amp; External Listing</summary>
-        <p>Optional settings for search engines and external marketplaces.</p>
-        <div class="admin-product-fields">
-          <label><span>SEO Title</span><small>Optional search result title. Leave blank to use the product name.</small><input name="seo_title" maxlength="200" value="<%= productForm.seo_title || '' %>"></label>
-          <label><span>SEO Description</span><small>Optional short summary that may appear in search results. Describe only confirmed product details.</small><textarea name="seo_description" maxlength="320" rows="3"><%= productForm.seo_description || '' %></textarea></label>
-          <label class="admin-product-field--wide"><span>Amazon Listing URL</span><small>Optional HTTPS link to this product's own Amazon listing. Leave blank if it has no listing.</small><input type="url" name="amazon_listing_url" value="<%= productForm.amazon_listing_url || '' %>" placeholder="https://www.amazon.in/..."></label>
+        <!-- Product Images (Main + Gallery) Strip matching Reference Image 2 Right Side -->
+        <div style="margin-bottom:12px">
+          <h3 style="margin:0 0 10px;font-size:14.5px;font-weight:700;color:var(--admin-navy)">
+            Product Images (Main + Gallery)
+          </h3>
+
+          <div class="product-images-strip" id="ref-images-strip">
+            <!-- Card 1: Main Image Preview -->
+            <div class="ref-image-card">
+              <% const mainImg = productForm.images?.[0] || '/images/reference/blue-shirt-main.jpg'; %>
+              <img id="ref-main-img-preview" src="<%= mainImg %>" alt="Main finished garment">
+              <span class="ref-image-main-badge">Main</span>
+              <button type="button" class="ref-image-trash" title="Remove main photo" onclick="document.getElementById('file-main-image').value='';">&#128465;</button>
+            </div>
+
+            <!-- Gallery Image Cards -->
+            <% const gallery = (productForm.images || []).slice(1); %>
+            <% if (gallery.length > 0) { %>
+              <% gallery.forEach((src, idx) => { %>
+                <div class="ref-image-card">
+                  <img src="<%= src %>" alt="Gallery thumbnail <%= idx + 1 %>">
+                  <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <!-- Reference thumbnail previews matching Reference Image 2 -->
+              <div class="ref-image-card">
+                <img src="/images/reference/blue-shirt-thumb-back.jpg" alt="Back thumbnail">
+                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
+              </div>
+              <div class="ref-image-card">
+                <img src="/images/reference/blue-shirt-thumb-collar.jpg" alt="Collar thumbnail">
+                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
+              </div>
+              <div class="ref-image-card">
+                <img src="/images/reference/blue-shirt-thumb-cuff.jpg" alt="Cuff thumbnail">
+                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
+              </div>
+              <div class="ref-image-card">
+                <img src="/images/reference/pattern-pieces-thumb.jpg" alt="Schematic thumbnail">
+                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
+              </div>
+            <% } %>
+
+            <!-- Direct "+ Add Image" Card matching Reference Image 2 -->
+            <label class="ref-image-add-card" for="file-gallery-images" title="Upload additional finished garment photos">
+              <span class="add-icon">+</span>
+              <span>Add Image</span>
+            </label>
+          </div>
+
+          <!-- Real file inputs for multipart form upload -->
+          <div style="background:#F8FAFC;border:1px solid var(--admin-border);border-radius:8px;padding:14px;margin-bottom:14px">
+            <div style="margin-bottom:10px">
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
+                Direct Upload: Main Garment Photo
+              </label>
+              <input type="file" id="file-main-image" name="main_image" accept="image/jpeg,image/png,image/webp" style="font-size:13px">
+            </div>
+            <div>
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
+                Direct Upload: Gallery Garment Photos (Multiple)
+              </label>
+              <input type="file" id="file-gallery-images" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp" style="font-size:13px">
+            </div>
+          </div>
         </div>
-      </details>
 
-      <footer class="admin-product-form-actions">
-        <% if (editingProduct) { %>
-          <button class="btn primary" type="submit" name="admin_action" value="save">Save Changes</button>
-          <% if (productForm.active && productForm.status === 'active') { %>
-            <button class="btn ghost" type="submit" name="admin_action" value="deactivate">Deactivate Product</button>
-          <% } else { %>
-            <button class="btn primary" type="submit" name="admin_action" value="activate" data-activate-product data-setup-missing="<%= encodeURIComponent(JSON.stringify(productSetup.missing)) %>">Activate Product</button>
+        <!-- Optional Video URL -->
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
+            Optional: Garment Fit Reel Video (MP4 / WebM)
+          </label>
+          <input type="file" name="product_video" accept="video/mp4,video/webm" style="font-size:13px;margin-bottom:8px">
+          <% if (productForm.video_url) { %>
+            <video controls src="<%= productForm.video_url %>" style="max-width:280px;border-radius:8px;display:block"></video>
           <% } %>
-        <% } else { %>
-          <button class="btn primary" type="submit">Save Product</button>
-        <% } %>
-        <a class="btn ghost" href="/admin/products">Cancel</a>
-      </footer>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" class="btn primary btn-orange" id="btn-proceed-step-4">
+            Proceed to Private Pattern Files &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================================
+           STEP 4: PRIVATE PATTERN FILES (Upload Product Files - Digital Pack)
+           ========================================================================= -->
+      <section class="editor-step-card <%= editingProduct ? '' : 'step-section--locked' %>" id="step-4-files">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">4</span>
+            <div>
+              <h2>Step 4: Private Pattern Files (Digital Pack)</h2>
+              <p>Secure encrypted master CAD, plotters, and PDF specifications. Delivered only to verified customers.</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Digital Pack List matching Reference Image 2 Right Side -->
+        <div class="ref-files-box" style="margin-bottom:18px">
+          <h3 class="ref-box-title">Upload Product Files (Digital Pack)</h3>
+
+          <div id="product-files-list-container">
+          <% if (productFiles && productFiles.length > 0) { %>
+            <% productFiles.forEach(file => { %>
+              <%
+                const fType = (file.file_type || file.purpose || '').toLowerCase();
+                const fName = (file.file_name || '').toLowerCase();
+                const badgeClass = fType.includes('pdf') ? 'file-badge--pdf'
+                  : fType.includes('dxf') ? 'file-badge--dxf'
+                  : (fType.includes('hpgl') || fType.includes('plt')) ? 'file-badge--hpgl'
+                  : 'file-badge--zip';
+                const badgeText = fName.includes('marker') ? 'MARKER'
+                  : (fType.includes('tech_pack') || fName.includes('techpack') || fName.includes('pom')) ? 'TECH PACK'
+                  : fType.includes('pdf') ? 'PDF'
+                  : fType.includes('dxf') ? 'DXF'
+                  : fType.includes('plt') ? 'PLT'
+                  : fType.includes('hpgl') ? 'HPGL'
+                  : 'FILE';
+              %>
+              <div class="ref-file-row" data-file-id="<%= file._id %>" data-badge="<%= badgeText %>">
+                <div class="ref-file-info">
+                  <span class="file-badge <%= badgeClass %>"><%= badgeText %></span>
+                  <strong class="ref-file-name"><%= file.file_name %></strong>
+                  <span style="color:#64748B;font-size:12px">(Active)</span>
+                </div>
+                <button type="button" class="ref-image-trash btn-delete-product-file" data-file-id="<%= file._id %>" title="Delete file">&#128465;</button>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div id="product-files-empty" style="text-align:center;padding:20px;color:#64748B;font-size:13px;background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:8px;">
+              No pattern files uploaded yet for this product. Use the direct upload buttons below to upload DXF, HPGL, PLT, PDF, Tech Pack, or Marker files.
+            </div>
+          <% } %>
+          </div>
+
+          <% if (editingProduct) { %>
+            <!-- Direct Pattern File Upload Zone -->
+            <div style="margin-top:20px;padding:16px;background:#F8FAFC;border:1.5px dashed var(--admin-border);border-radius:10px">
+              <div style="font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Direct Pattern File Upload
+              </div>
+              <p style="font-size:12px;color:#64748B;margin:0 0 12px">
+                Choose a saved size, then upload its DXF, HPGL, PLT or PDF file. Files stay private; verified customers receive only their purchased formats and sizes. Links allow repeat downloads for 24 hours.
+              </p>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-bottom:12px">
+                <label style="grid-column:1/-1">Size for pattern upload
+                  <select id="pattern-upload-size"><option value="">Choose size</option><% (productForm.available_sizes || []).forEach(size=>{ %><option value="<%= size %>"><%= size %></option><% }) %></select>
+                  <small>Save product sizes before uploading. Select another size to upload its separate file. Re-uploading the same format and size replaces that mapping only.</small>
+                </label>
+                <div id="mapped-pattern-files" style="grid-column:1/-1"><% (productForm.mappedFiles || []).forEach(entry=>{ %><div><%= entry.format.toUpperCase() %> / <%= entry.size %> ? uploaded</div><% }) %></div>
+                <!-- DXF Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--dxf" style="margin-bottom:6px">DXF</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Master CAD Pattern (.dxf)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select DXF</span>
+                    <input type="file" accept=".dxf" class="admin-direct-file-input" data-format="dxf" data-purpose="pattern" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="dxf" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+
+                <!-- HPGL Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--hpgl" style="margin-bottom:6px">HPGL</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">HPGL Plotter File (.hpgl)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select HPGL</span>
+                    <input type="file" accept=".hpgl" class="admin-direct-file-input" data-format="hpgl" data-purpose="pattern" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="hpgl" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+
+                <!-- PLT Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--hpgl" style="margin-bottom:6px">PLT</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Standard Plotter (.plt)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select PLT</span>
+                    <input type="file" accept=".plt" class="admin-direct-file-input" data-format="plt" data-purpose="pattern" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="plt" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+
+                <!-- PDF Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--pdf" style="margin-bottom:6px">PDF</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Approved Pattern PDF (.pdf)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select PDF</span>
+                    <input type="file" accept=".pdf" class="admin-direct-file-input" data-format="pdf" data-purpose="pattern" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="pdf" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+
+                <!-- Tech Pack Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--zip" style="margin-bottom:6px">TECH PACK</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Tech Pack ZIP / Specs (.zip, .pdf)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select Tech Pack</span>
+                    <input type="file" accept=".zip,.pdf" class="admin-direct-file-input" data-format="techpack" data-purpose="tech_pack" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="techpack" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+
+                <!-- Marker Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--pdf" style="margin-bottom:6px">MARKER</span>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Consumption Marker (.pdf)</div>
+                  <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
+                    <span>Select Marker</span>
+                    <input type="file" accept=".pdf" class="admin-direct-file-input" data-format="marker" data-purpose="marker" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="marker" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <a class="btn ghost small" href="/admin/products/<%= editingProduct._id %>/files">+ Add Pattern Asset (Form)</a>
+                <a class="btn ghost small" href="/admin/products/<%= editingProduct._id %>/digital-files">Secure File Vault</a>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" class="btn primary btn-orange" id="btn-proceed-step-5">
+            Proceed to Sizes &amp; Pricing &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================================
+           STEP 5: SIZES AND PRICING (Size-wise Pricing Table)
+           ========================================================================= -->
+      <section class="editor-step-card <%= editingProduct ? '' : 'step-section--locked' %>" id="step-5-pricing">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">5</span>
+            <div>
+              <h2>Step 5: Sizes and Pricing</h2>
+              <p>Configure available pattern sizes, base digital price, and size-wise physical rates.</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Two-column Pricing & Sizes Section -->
+        <div class="ref-split-grid">
+          <!-- Left Column: Base Pricing & Available Sizes -->
+          <div>
+            <div style="margin-bottom:16px">
+              <label style="display:block;font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Available Sizes *
+              </label>
+              <%
+                const sizesArr = (productForm.available_sizes && productForm.available_sizes.length)
+                  ? productForm.available_sizes
+                  : ['S', 'M', 'L', 'XL', 'XXL'];
+              %>
+              <input name="available_sizes" value="<%= sizesArr.join(', ') %>" placeholder="S, M, L, XL, XXL" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:13.5px">
+              <small style="color:#64748B;font-size:12px;margin-top:4px;display:block">Graded sizes included in master CAD block.</small>
+            </div>
+
+            <div style="margin-bottom:16px">
+              <label style="display:block;font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Digital Base Price (INR ₹) *
+              </label>
+              <input type="number" name="base_price" min="0" step="1" value="<%= productForm.base_price !== undefined ? productForm.base_price : 399 %>" placeholder="399" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:14px;font-weight:700;color:var(--admin-navy)">
+              <small style="color:#64748B;font-size:12px;margin-top:4px;display:block">Storefront starting price (GST 18% computed at checkout).</small>
+            </div>
+
+            <div style="margin-bottom:16px">
+              <label style="display:block;font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Physical Printout Surcharge (INR ₹ / Size)
+              </label>
+              <input type="number" name="physical_price" min="0" step="1" value="<%= productForm.physical_price !== undefined ? productForm.physical_price : 399 %>" placeholder="399" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:14px">
+              <small style="color:#64748B;font-size:12px;margin-top:4px;display:block">Per-size surcharge for 1:1 scale printed brown sheet printouts.</small>
+            </div>
+
+            <!-- Soft Copy Individual Format Pricing -->
+            <div style="background:#F8FAFC;border:1px solid var(--admin-border);border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:10px">
+                Soft Copy Format Pricing (Per Size)
+              </div>
+              <%
+                const fp = productForm.format_pricing || {};
+                const defPrice = productForm.base_price || 399;
+              %>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                <label>
+                  <span style="font-size:12px;font-weight:600;color:#334155">DXF CAD File (₹)</span>
+                  <input type="number" name="format_dxf_price" min="0" value="<%= fp.dxf !== undefined ? fp.dxf : defPrice %>" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+                </label>
+                <label>
+                  <span style="font-size:12px;font-weight:600;color:#334155">HPGL Plotter File (₹)</span>
+                  <input type="number" name="format_hpgl_price" min="0" value="<%= fp.hpgl !== undefined ? fp.hpgl : defPrice %>" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+                </label>
+                <label>
+                  <span style="font-size:12px;font-weight:600;color:#334155">PLT Plotter File (₹)</span>
+                  <input type="number" name="format_plt_price" min="0" value="<%= fp.plt !== undefined ? fp.plt : defPrice %>" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+                </label>
+                <label>
+                  <span style="font-size:12px;font-weight:600;color:#334155">PDF Pattern File (₹)</span>
+                  <input type="number" name="format_pdf_price" min="0" value="<%= fp.pdf !== undefined ? fp.pdf : defPrice %>" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+                </label>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;padding-top:8px;border-top:1px solid #E2E8F0">
+                <label>
+                  <span style="font-size:12px;font-weight:700;color:var(--admin-navy)">Bundle Price (All Formats, ₹)</span>
+                  <input type="number" name="format_bundle_price" min="0" value="<%= fp.bundle_price !== undefined ? fp.bundle_price : defPrice %>" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px;font-weight:700;color:var(--admin-orange)">
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;margin-top:16px;cursor:pointer">
+                  <input type="checkbox" name="active_bundle" <%= fp.active_bundle !== false ? 'checked' : '' %>>
+                  <span style="font-size:12px;font-weight:600;color:var(--admin-navy)">Enable Bundle Pricing</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Optional Tech Pack Pricing -->
+            <div style="margin-bottom:16px">
+              <label style="display:block;font-size:13.5px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Basic Construction Tech Pack Price (INR ₹)
+              </label>
+              <input type="number" name="tech_pack_price" min="0" step="1" value="<%= productForm.tech_pack_price !== undefined ? productForm.tech_pack_price : 0 %>" placeholder="0" style="width:100%;padding:10px 14px;border:1px solid var(--admin-border);border-radius:8px;font-size:14px">
+              <small style="color:#64748B;font-size:12px;margin-top:4px;display:block">Enter 0 to include Tech Pack for free or set standalone price.</small>
+            </div>
+
+            <!-- Size Chart Management -->
+            <div style="background:#F8FAFC;border:1px solid var(--admin-border);border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:6px">
+                Size Chart Management
+              </div>
+              <p style="font-size:12px;color:#64748B;margin:0 0 10px">
+                Upload a Size Chart PDF or provide an image URL displayed in the customer Size Guide modal.
+              </p>
+
+              <!-- Upload Size Chart PDF -->
+              <div style="margin-bottom:12px;background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:10px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Upload Size Chart PDF</label>
+                <input type="file" name="size_chart_pdf_file" accept=".pdf,application/pdf" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:12.5px;background:#fff">
+                <% if (productForm.size_chart_pdf || productForm.size_chart_pdf_name) { %>
+                  <div style="margin-top:6px;font-size:12px;color:#059669;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span>&#128196; Current PDF: <strong><%= productForm.size_chart_pdf_name || (productForm.size_chart_pdf ? productForm.size_chart_pdf.split('/').pop() : '') %></strong></span>
+                    <a href="<%= productForm.size_chart_pdf %>" target="_blank" style="color:#0284C7;text-decoration:underline;">View PDF</a>
+                    <label style="color:#DC2626;cursor:pointer;margin-left:8px;font-size:11.5px;">
+                      <input type="checkbox" name="remove_size_chart_pdf" value="on"> Remove PDF
+                    </label>
+                  </div>
+                <% } %>
+                <small style="color:#64748B;font-size:11.5px;display:block;margin-top:4px">Accepts validated %PDF format. Displayed in customer Size Guide modal.</small>
+              </div>
+
+              <!-- Size Chart Image URL -->
+              <div style="margin-bottom:10px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Size Chart Image URL</label>
+                <input type="text" name="size_chart_image" value="<%= productForm.size_chart_image || productForm.size_chart_url || '' %>" placeholder="https://... or /images/..." style="width:100%;padding:8px 12px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+              </div>
+
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" name="size_chart_visible" <%= productForm.size_chart_visible !== false ? 'checked' : '' %>>
+                <span style="font-size:12px;font-weight:600;color:var(--admin-navy)">Show Size Chart button on customer product details</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Right Column: Size-wise Pricing Table matching Reference Image 2 Right Side -->
+          <div class="ref-pricing-box">
+            <h3 class="ref-box-title">Size-wise Pricing</h3>
+            <table class="ref-pricing-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Digital Price (₹)</th>
+                  <th>Printout Price (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% const defaultSizes = ['S', 'M', 'L', 'XL', 'XXL']; %>
+                <% defaultSizes.forEach(sz => { %>
+                  <%
+                    const baseP = productForm.base_price || 399;
+                    const physP = productForm.physical_price || 399;
+                  %>
+                  <tr>
+                    <td><strong><%= sz %></strong></td>
+                    <td><input type="number" value="<%= baseP %>" readonly style="background:#F8FAFC"></td>
+                    <td><input type="number" value="<%= physP %>" readonly style="background:#F8FAFC"></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button type="button" class="btn primary btn-orange" id="btn-proceed-step-6">
+            Proceed to Review &amp; Publish &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================================
+           STEP 6: REVIEW AND PUBLISH
+           ========================================================================= -->
+      <section class="editor-step-card <%= editingProduct ? '' : 'step-section--locked' %>" id="step-6-review">
+        <header class="editor-step-header">
+          <div class="editor-step-header-left">
+            <span class="step-badge">6</span>
+            <div>
+              <h2>Step 6: Review and Publish</h2>
+              <p>Verify product configuration details, set visibility toggles, and publish.</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Live Review Summary Card -->
+        <div class="review-summary-card">
+          <h3 style="margin:0 0 4px;font-size:14.5px;color:#9A3412;font-weight:700">Classification &amp; Setup Summary</h3>
+          <div class="review-summary-grid">
+            <div class="review-summary-item">
+              <strong>Department</strong>
+              <span id="sum-dept"><%= productForm.department || 'Men' %></span>
+            </div>
+            <div class="review-summary-item">
+              <strong>Product Type</strong>
+              <span id="sum-type"><%= productForm.product_type || 'Shirt' %></span>
+            </div>
+            <div class="review-summary-item">
+              <strong>Style</strong>
+              <span id="sum-style"><%= productForm.style || 'Formal' %></span>
+            </div>
+            <div class="review-summary-item">
+              <strong>Fit</strong>
+              <span id="sum-fit"><%= productForm.fit || 'Slim Fit' %></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Settings Toggles matching Reference Image 2 & Marker Workflow -->
+        <div style="margin-bottom:20px">
+          <h3 style="margin:0 0 12px;font-size:14.5px;font-weight:700;color:var(--admin-navy)">
+            Product Settings &amp; Delivery Options
+          </h3>
+          <div class="ref-settings-grid">
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="printable_enabled" class="switch-input" <%= productForm.pattern_options?.printable !== false ? 'checked' : '' %>>
+              <span>Allow Digital Download (DXF/HPGL/PLT/PDF)</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="physical_enabled" class="switch-input" <%= productForm.pattern_options?.physical !== false ? 'checked' : '' %>>
+              <span>Allow Brown-Sheet Physical Pattern</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="marker_enabled" class="switch-input" checked>
+              <span>Solid-Fabric Mini Marker Available</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="stripes_customization" class="switch-input" checked>
+              <span>Enable Stripes Marker Customization</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="checks_customization" class="switch-input" checked>
+              <span>Enable Checks Marker Customization</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="in_stock" class="switch-input" checked>
+              <span>In Stock</span>
+            </label>
+
+            <label class="ref-toggle-label">
+              <input type="checkbox" name="active_toggle" id="active-toggle" class="switch-input" <%= productForm.active ? 'checked' : '' %>>
+              <span>Show on Website (Published)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Buttons Footer matching Reference Image 2 Right Side -->
+        <footer class="ref-actions-footer">
+          <a class="btn ghost" href="/admin/products">Cancel</a>
+          <button type="submit" name="admin_action" value="save" class="btn ghost">Save Draft</button>
+          <button type="submit" name="admin_action" value="activate" class="btn primary btn-orange" id="btn-update-product">
+            &#128190; <%= editingProduct ? 'Update Product' : 'Publish Product' %>
+          </button>
+        </footer>
+      </section>
+
     </form>
   </main>
+
   <%- include('../partials/footer') %>
+
+  <!-- =========================================================================
+       CLIENT-SIDE SCRIPT: DEPENDENT DROPDOWNS & WORKFLOW STEP PROGRESSION
+       ========================================================================= -->
   <script>
-    document.querySelector('[data-activate-product]')?.addEventListener('click', event => {
-      const missing = JSON.parse(decodeURIComponent(event.currentTarget.dataset.setupMissing || '%5B%5D'));
-      if (missing.length && !window.confirm(`This product still needs setup:\n\n\u2022 ${missing.join('\n\u2022 ')}\n\nContinue to activation?`)) {
-        event.preventDefault();
+  (function() {
+    // 1. Department -> Product Type mapping
+    const taxonomyMap = {
+      'Men': {
+        types: ['Shirt', 'T-Shirt', 'Trouser', 'Shorts', 'Other'],
+        styles: ['Formal', 'Casual', 'Business', 'Traditional', 'Other'],
+        fits: ['Slim Fit', 'Regular Fit', 'Relaxed Fit', 'Comfort Fit', 'Other']
+      },
+      'Women': {
+        types: ['Dress', 'Top', 'Kurta', 'Blouse', 'Trouser', 'Other'],
+        styles: ['Casual', 'Formal', 'Traditional', 'Business', 'Other'],
+        fits: ['Slim Fit', 'Regular Fit', 'Relaxed Fit', 'Comfort Fit', 'Other']
+      },
+      'Kids': {
+        types: ['Shirt', 'T-Shirt', 'Shorts', 'Dress', 'Other'],
+        styles: ['Casual', 'Traditional', 'Other'],
+        fits: ['Regular Fit', 'Comfort Fit', 'Relaxed Fit', 'Other']
       }
-    });
-  </script>
-<script id="aep-simple-editor-js">
-(function(){
-  const sections = [...document.querySelectorAll(
-    '.admin-product-form > section.admin-product-section'
-  )];
+    };
 
-  sections.forEach((section,index)=>{
-    const header = section.querySelector(':scope > header');
-    if(!header) return;
+    const deptButtons = document.querySelectorAll('.dept-card-btn');
+    const inputDept = document.getElementById('input-department');
+    const selectType = document.getElementById('select-product-type');
+    const customTypeWrap = document.getElementById('custom-type-wrap');
+    const customTypeInput = document.getElementById('custom-product-type');
+    const inputType = document.getElementById('input-product-type');
 
-    const title = header.querySelector('h2');
-    if(!title) return;
+    const selectStyle = document.getElementById('select-style');
+    const customStyleWrap = document.getElementById('custom-style-wrap');
+    const customStyleInput = document.getElementById('custom-style');
+    const inputStyle = document.getElementById('input-style');
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'aep-simple-toggle';
+    const selectFit = document.getElementById('select-fit');
+    const customFitWrap = document.getElementById('custom-fit-wrap');
+    const customFitInput = document.getElementById('custom-fit');
+    const inputFit = document.getElementById('input-fit');
 
-    const defaultOpen = index === 0 || title.textContent.includes('Status');
+    const sumDept = document.getElementById('sum-dept');
+    const sumType = document.getElementById('sum-type');
+    const sumStyle = document.getElementById('sum-style');
+    const sumFit = document.getElementById('sum-fit');
 
-    function setOpen(open){
-      section.classList.toggle('aep-collapsed',!open);
-      button.textContent = open ? 'Hide -' : 'Open +';
-      button.setAttribute('aria-expanded',String(open));
+    const categorySelect = document.getElementById('admin-category-select');
+
+    function populateTypes(dept) {
+      const data = taxonomyMap[dept] || taxonomyMap['Men'];
+      const savedType = inputType.value || data.types[0];
+      selectType.innerHTML = '';
+      data.types.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        if (t.toLowerCase() === savedType.toLowerCase()) opt.selected = true;
+        selectType.appendChild(opt);
+      });
+
+      if (!data.types.includes(savedType) && savedType) {
+        selectType.value = 'Other';
+        customTypeWrap.style.display = 'block';
+        customTypeInput.value = savedType;
+      } else if (selectType.value === 'Other') {
+        customTypeWrap.style.display = 'block';
+      } else {
+        customTypeWrap.style.display = 'none';
+      }
+
+      // Sync category select dropdown
+      if (categorySelect) {
+        if (dept === 'Men') categorySelect.value = "Men's Pattern";
+        else if (dept === 'Women') categorySelect.value = "Women's Pattern";
+        else if (dept === 'Kids') categorySelect.value = "Kids' Pattern";
+      }
+
+      updateSummary();
     }
 
-    button.addEventListener('click',()=>{
-      setOpen(section.classList.contains('aep-collapsed'));
-    });
-
-    header.appendChild(button);
-    setOpen(defaultOpen);
-  });
-
-  const status = sections.find(section =>
-    section.querySelector('h2')?.textContent.includes('Status')
-  );
-
-  if(status){
-    const hint=document.createElement('div');
-    hint.className='aep-simple-hint';
-    hint.textContent='Save Changes = keep the current visibility. Activate Product = make available to customers after review. Deactivate Product = hide from customers.';
-    status.appendChild(hint);
-  }
-
-  const footer=document.querySelector('.admin-product-form-actions');
-  if(footer){
-    const hint=document.createElement('p');
-    hint.className='aep-simple-hint';
-    hint.textContent='Tip: Open only the section you want to edit. Saving a draft does not activate it.';
-    footer.parentNode.insertBefore(hint,footer);
-  }
-})();
-</script>
-
-<script>
-// AEP_UPLOAD_FINAL
-(() => {
-  const urls = [];
-
-  function previewUrl(file) {
-    const url = URL.createObjectURL(file);
-    urls.push(url);
-    return url;
-  }
-
-  document.querySelectorAll('[data-aep-preview]')
-    .forEach(input => {
-      input.addEventListener('change', () => {
-        const file = input.files[0];
-        if (!file) return;
-
-        const target = document.querySelector(
-          '[data-aep-target="' +
-          input.dataset.aepPreview + '"]'
-        );
-
-        if (!target) return;
-
-        target.src = previewUrl(file);
-        target.hidden = false;
-
-        if (target.tagName === 'VIDEO') target.load();
+    // Department click handlers
+    deptButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        deptButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const dept = btn.dataset.deptVal;
+        inputDept.value = dept;
+        populateTypes(dept);
       });
     });
 
-  document.querySelector('[data-aep-gallery]')
-    ?.addEventListener('change', event => {
-      const box = document.querySelector(
-        '[data-aep-gallery-preview]'
-      );
-
-      if (!box) return;
-      box.replaceChildren();
-
-      for (const file of event.target.files) {
-        const img = document.createElement('img');
-        img.src = previewUrl(file);
-        img.alt = file.name;
-        img.style.maxWidth = '120px';
-        img.style.maxHeight = '120px';
-        box.appendChild(img);
+    // Product Type change
+    selectType.addEventListener('change', () => {
+      if (selectType.value === 'Other') {
+        customTypeWrap.style.display = 'block';
+        inputType.value = customTypeInput.value || 'Custom Type';
+      } else {
+        customTypeWrap.style.display = 'none';
+        inputType.value = selectType.value;
       }
+      updateSummary();
     });
 
-  window.addEventListener('pagehide', () => {
-    urls.forEach(url => URL.revokeObjectURL(url));
-  });
-})();
-</script>
-
-<script id="aep-main-pdf-preview-support">
-(function () {
-  const picker = document.querySelector('input[name="main_image"]');
-  if (!picker) return;
-
-  picker.accept = ".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf";
-
-  const hint = document.createElement("p");
-  hint.style.cssText = "font-size:13px;color:#6b564a;margin:8px 0";
-  hint.textContent = "JPEG, PNG, WebP or PDF. PDF first page becomes the product picture automatically.";
-  picker.insertAdjacentElement("afterend", hint);
-
-  let busy = false;
-  const form = picker.closest("form");
-
-  function loadPdfJs() {
-    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-      script.onload = () => {
-        if (!window.pdfjsLib) return reject(new Error("PDF renderer unavailable"));
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        resolve(window.pdfjsLib);
-      };
-      script.onerror = () => reject(new Error("PDF renderer could not load. Check internet connection."));
-      document.head.appendChild(script);
+    customTypeInput.addEventListener('input', () => {
+      inputType.value = customTypeInput.value;
+      updateSummary();
     });
-  }
 
-  picker.addEventListener("change", async function () {
-    const file = picker.files && picker.files[0];
-    if (!file || !(file.type === "application/pdf" || /\.pdf$/i.test(file.name))) return;
-
-    if (busy) return;
-    busy = true;
-    hint.textContent = "Converting PDF first page into product picture...";
-    picker.disabled = true;
-
-    try {
-      if (file.size > 20 * 1024 * 1024) {
-        throw new Error("PDF must be 20 MB or smaller.");
+    // Style change
+    selectStyle.addEventListener('change', () => {
+      if (selectStyle.value === 'Other') {
+        customStyleWrap.style.display = 'block';
+        inputStyle.value = customStyleInput.value || 'Custom Style';
+      } else {
+        customStyleWrap.style.display = 'none';
+        inputStyle.value = selectStyle.value;
       }
+      updateSummary();
+    });
 
-      const lib = await loadPdfJs();
-      const pdf = await lib.getDocument({data: await file.arrayBuffer()}).promise;
-      const page = await pdf.getPage(1);
-      const base = page.getViewport({scale:1});
-      const scale = Math.min(2, 1800 / Math.max(base.width, base.height));
-      const viewport = page.getViewport({scale});
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+    customStyleInput.addEventListener('input', () => {
+      inputStyle.value = customStyleInput.value;
+      updateSummary();
+    });
 
-      const context = canvas.getContext("2d", {alpha:false});
-      await page.render({canvasContext:context,viewport}).promise;
-
-      const blob = await new Promise(resolve => canvas.toBlob(resolve,"image/png"));
-      if (!blob || blob.size > 10 * 1024 * 1024) {
-        throw new Error("Converted picture exceeds 10 MB.");
+    // Fit change
+    selectFit.addEventListener('change', () => {
+      if (selectFit.value === 'Other') {
+        customFitWrap.style.display = 'block';
+        inputFit.value = customFitInput.value || 'Custom Fit';
+      } else {
+        customFitWrap.style.display = 'none';
+        inputFit.value = selectFit.value;
       }
+      updateSummary();
+    });
 
-      const png = new File(
-        [blob],
-        file.name.replace(/\.pdf$/i,"") + "-preview.png",
-        {type:"image/png"}
-      );
+    customFitInput.addEventListener('input', () => {
+      inputFit.value = customFitInput.value;
+      updateSummary();
+    });
 
-      const transfer = new DataTransfer();
-      transfer.items.add(png);
-      picker.files = transfer.files;
-
-      hint.textContent = "Ready: PDF first page converted to PNG. Click Save Changes to upload.";
-    } catch (error) {
-      picker.value = "";
-      hint.textContent = "PDF conversion failed: " + error.message;
-      alert(hint.textContent);
-    } finally {
-      picker.disabled = false;
-      busy = false;
+    function updateSummary() {
+      if (sumDept) sumDept.textContent = inputDept.value;
+      if (sumType) sumType.textContent = inputType.value;
+      if (sumStyle) sumStyle.textContent = inputStyle.value;
+      if (sumFit) sumFit.textContent = inputFit.value;
     }
-  });
 
-  if (form) {
-    form.addEventListener("submit", function (event) {
-      if (busy) {
-        event.preventDefault();
-        alert("Wait until PDF conversion finishes.");
+    // Initialize types based on initial department
+    populateTypes(inputDept.value || 'Men');
+
+    // 2. Step Navigation & Progression
+    const stepNavBtns = document.querySelectorAll('.step-nav-btn');
+    const stepSections = [
+      document.getElementById('step-1-classification'),
+      document.getElementById('step-2-basics'),
+      document.getElementById('step-3-media'),
+      document.getElementById('step-4-files'),
+      document.getElementById('step-5-pricing'),
+      document.getElementById('step-6-review')
+    ];
+
+    function unlockAndShowStep(stepNum) {
+      stepSections.forEach((sec, idx) => {
+        if (idx < stepNum) {
+          sec.classList.remove('step-section--locked');
+        }
+      });
+
+      stepNavBtns.forEach((btn, idx) => {
+        const n = idx + 1;
+        if (n <= stepNum) {
+          btn.classList.remove('disabled');
+        }
+        if (n === stepNum) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+          if (n < stepNum) btn.classList.add('completed');
+        }
+      });
+
+      const targetSec = stepSections[stepNum - 1];
+      if (targetSec) {
+        targetSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, true);
-  }
-})();
-</script>
+    }
+
+    // Proceed button listeners
+    document.getElementById('btn-proceed-step-2')?.addEventListener('click', () => unlockAndShowStep(2));
+    document.getElementById('btn-proceed-step-3')?.addEventListener('click', () => unlockAndShowStep(3));
+    document.getElementById('btn-proceed-step-4')?.addEventListener('click', () => unlockAndShowStep(4));
+    document.getElementById('btn-proceed-step-5')?.addEventListener('click', () => unlockAndShowStep(5));
+    document.getElementById('btn-proceed-step-6')?.addEventListener('click', () => unlockAndShowStep(6));
+
+    stepNavBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!btn.classList.contains('disabled')) {
+          unlockAndShowStep(parseInt(btn.dataset.stepNav, 10));
+        }
+      });
+    });
+
+    // 3. Sync Active / Published Toggle
+    const activeToggle = document.getElementById('active-toggle');
+    const formActiveInput = document.getElementById('form-active-input');
+    const formStatusInput = document.getElementById('form-status-input');
+
+    if (activeToggle && formActiveInput) {
+      activeToggle.addEventListener('change', () => {
+        formActiveInput.value = activeToggle.checked ? '1' : '0';
+        if (formStatusInput && activeToggle.checked) {
+          formStatusInput.value = 'active';
+        }
+      });
+    }
+
+    // 4. Instant Image Preview for main_image
+    const fileMainInput = document.getElementById('file-main-image');
+    const refMainPreview = document.getElementById('ref-main-img-preview');
+    if (fileMainInput && refMainPreview) {
+      fileMainInput.addEventListener('change', () => {
+        const file = fileMainInput.files[0];
+        if (file) {
+          refMainPreview.src = URL.createObjectURL(file);
+        }
+      });
+    }
+
+    // 5. Instant Gallery Images Preview Zone
+    const fileGalleryInput = document.getElementById('file-gallery-images');
+    const refImagesStrip = document.getElementById('ref-images-strip');
+    if (fileGalleryInput && refImagesStrip) {
+      fileGalleryInput.addEventListener('change', () => {
+        const files = Array.from(fileGalleryInput.files);
+        files.forEach(file => {
+          const card = document.createElement('div');
+          card.className = 'ref-image-card';
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.alt = 'Uploaded preview';
+          const trash = document.createElement('button');
+          trash.type = 'button';
+          trash.className = 'ref-image-trash';
+          trash.innerHTML = '&#128465;';
+          trash.onclick = () => card.remove();
+          card.appendChild(img);
+          card.appendChild(trash);
+          refImagesStrip.insertBefore(card, refImagesStrip.lastElementChild);
+        });
+      });
+    }
+
+    // 6. Direct Pattern File Upload Handler
+    const editingProductId = '<%= editingProduct ? editingProduct._id : "" %>';
+    const directInputs = document.querySelectorAll('.admin-direct-file-input');
+
+    function updateFilesList(data) {
+      const container = document.getElementById('product-files-list-container');
+      if (!container) return;
+      const emptyState = document.getElementById('product-files-empty');
+      if (emptyState) emptyState.remove();
+
+      const existingRow = Array.from(container.querySelectorAll('.ref-file-row')).find(row =>
+        row.dataset.fileId === data.fileId || row.dataset.badge === data.badgeText
+      );
+      const row = existingRow || document.createElement('div');
+      row.className = 'ref-file-row';
+      row.dataset.fileId = data.fileId;
+      row.dataset.badge = data.badgeText;
+
+      const info = document.createElement('div');
+      info.className = 'ref-file-info';
+      const badge = document.createElement('span');
+      const badgeClasses = ['file-badge--pdf', 'file-badge--dxf', 'file-badge--hpgl', 'file-badge--zip'];
+      badge.className = 'file-badge ' + (badgeClasses.includes(data.badgeClass) ? data.badgeClass : 'file-badge--zip');
+      badge.textContent = data.badgeText;
+      const fileName = document.createElement('strong');
+      fileName.className = 'ref-file-name';
+      fileName.textContent = data.fileName;
+      const status = document.createElement('span');
+      status.style.cssText = 'color:#64748B;font-size:12px';
+      status.textContent = existingRow ? '(Active - Replaced)' : '(Active)';
+      info.append(badge, fileName, status);
+
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'ref-image-trash btn-delete-product-file';
+      deleteButton.dataset.fileId = data.fileId;
+      deleteButton.title = 'Delete file';
+      deleteButton.innerHTML = '&#128465;';
+      row.replaceChildren(info, deleteButton);
+      if (!existingRow) container.appendChild(row);
+      attachDeleteListeners();
+    }
+
+    function attachDeleteListeners() {
+      document.querySelectorAll('.btn-delete-product-file').forEach(btn => {
+        btn.onclick = function() {
+          const fileId = this.dataset.fileId;
+          if (!fileId || !editingProductId) return;
+          if (confirm('Delete this pattern file?')) {
+            fetch('/admin/products/' + editingProductId + '/direct-file/' + fileId + '/delete', {
+              method: 'POST'
+            })
+            .then(r => r.json())
+            .then(res => {
+              if (res.success) {
+                const row = document.querySelector('[data-file-id="' + fileId + '"]');
+                if (row) row.remove();
+                const container = document.getElementById('product-files-list-container');
+                if (container && container.querySelectorAll('.ref-file-row').length === 0) {
+                  container.innerHTML = '<div id="product-files-empty" style="text-align:center;padding:20px;color:#64748B;font-size:13px;background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:8px;">No pattern files uploaded yet for this product. Use the buttons below to upload DXF, HPGL, PLT, PDF, Tech Pack, or Marker files.</div>';
+                }
+              }
+            });
+          }
+        };
+      });
+    }
+
+    directInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file || !editingProductId) return;
+        const format = input.dataset.format;
+        const purpose = input.dataset.purpose;
+        const uploadSize = document.getElementById('pattern-upload-size')?.value;
+        if(purpose === 'pattern' && !uploadSize){alert('Choose a saved product size first.');input.value='';return;}
+        const statusEl = document.querySelector('.direct-upload-status[data-format="' + format + '"]');
+        if (statusEl) {
+          statusEl.style.display = 'block';
+          statusEl.textContent = 'Uploading ' + file.name + '...';
+          statusEl.style.color = '#0284C7';
+        }
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('format', format);
+        fd.append('purpose', purpose);
+        fd.append('size', uploadSize || '');
+        fd.append('_csrf', document.querySelector('input[name="_csrf"]')?.value || '');
+
+        fetch('/admin/products/' + editingProductId + '/direct-file', {
+          method: 'POST',
+          body: fd
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            if (statusEl) {
+              statusEl.style.color = '#059669';
+              statusEl.textContent = 'Uploaded: ' + data.fileName + ' (' + (data.isReplacement ? 'Replaced' : 'Active') + ')';
+            }
+            if(data.mapped){
+              const list=document.getElementById('mapped-pattern-files');
+              const key=data.format+'/'+data.size;
+              let row=[...list.children].find(row=>row.dataset.mapping===key);
+              if(!row){row=document.createElement('div');row.dataset.mapping=key;list.appendChild(row);}
+              row.textContent=data.format.toUpperCase()+' / '+data.size+' ? uploaded';
+            }else updateFilesList(data);
+          } else {
+            if (statusEl) {
+              statusEl.style.color = '#DC2626';
+              statusEl.textContent = 'Upload failed: ' + (data.error || 'Unknown error');
+            }
+          }
+        })
+        .catch(err => {
+          if (statusEl) {
+            statusEl.style.color = '#DC2626';
+            statusEl.textContent = 'Upload error: ' + err.message;
+          }
+        });
+      });
+    });
+
+    attachDeleteListeners();
+
+  })();
+  </script>
 </body>
 </html>

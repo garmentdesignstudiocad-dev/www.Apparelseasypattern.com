@@ -2,8 +2,11 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 async function verify(){
   const controller=require('../controllers/checkoutController');
   const template=fs.readFileSync(require('node:path').join(__dirname,'../views/checkout.ejs'),'utf8');
-  const code=template.slice(template.indexOf('    const cityInput='),template.indexOf('    const productTotalElement'))+
-    template.slice(template.indexOf('    async function loadDeliveryRoute()'),template.indexOf('    function updateCheckoutTotals()'));
+  const cityIdx = template.search(/\bconst\s+cityInput\s*=/);
+  const prodIdx = template.search(/\bconst\s+productTotalElement\b/);
+  const fetchIdx = template.search(/\basync\s+function\s+loadDeliveryRoute\b/);
+  const updateIdx = template.search(/\bfunction\s+updateCheckoutTotals\b/);
+  const code = template.slice(cityIdx, prodIdx) + template.slice(fetchIdx, updateIdx);
   for(const [state,city,region,hub] of [['Tamil Nadu','Tiruppur','South','Bengaluru'],['Punjab','Ludhiana','North','Mumbai']]){
     let data;
     await controller.getDeliveryCharge({query:{state,city,pincode:'638751'}},{json(body){data=body;},status(){throw new Error('Delivery API failed');}});

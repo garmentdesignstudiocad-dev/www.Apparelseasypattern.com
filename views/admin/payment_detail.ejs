@@ -38,7 +38,22 @@
             <p class="muted">No related order available.</p>
           <% } %>
 
-          <% if(order?.delivery_flow_version===2 && order.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %><p>Courier: <%= order.courier_name || 'Not recorded' %></p><p>Courier Charge (included in Razorpay amount): <%= formatCurrency(order.delivery_charge || 0) %></p><% } else if(order?.delivery_flow_version!==2 && order?.courier_payment_separate && order.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %><p>Courier: <%= order.courier_name || 'Not recorded' %></p><p>Courier Charge: <%= formatCurrency(order.delivery_charge || 0) %> - Pay Separately / Pay on Delivery</p><% } %><h4>Customer</h4>
+          <% if(order?.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %>
+            <% if(order.delivery_flow_version===3){ %>
+              <p><strong>Delivery address:</strong> <%= [order.shipping_address,order.shipping_city,order.shipping_state,order.delivery_pincode].filter(Boolean).join(', ') %></p>
+              <p><strong>Dispatch hub:</strong> <%= order.dispatch_location || 'Pending Manual Assignment' %></p>
+              <p><strong>Courier charges:</strong> Pay separately; not collected by this website (INR 0 shipping charge collected online)</p>
+              <p><strong>Shipping payment status:</strong> <%= order.shipping_payment_status === 'not_collected' ? 'Not collected' : order.shipping_payment_status %></p>
+              <p><strong>Courier booking status:</strong> <%= order.courier_booking_status === 'not_booked' ? 'Not booked' : order.courier_booking_status %></p>
+            <% } else if(order.delivery_flow_version===2){ %>
+              <p>Courier: <%= order.courier_name || 'Not recorded' %></p>
+              <p>Courier Charge (included in Razorpay amount): <%= formatCurrency(order.delivery_charge || 0) %></p>
+            <% } else if(order.courier_payment_separate){ %>
+              <p>Courier: <%= order.courier_name || 'Not recorded' %></p>
+              <p>Courier Charge: <%= formatCurrency(order.delivery_charge || 0) %> - Pay Separately / Pay on Delivery</p>
+            <% } %>
+          <% } %>
+          <h4>Customer</h4>
           <% if (customer) { %>
             <p><strong><%= customer.name %></strong> — <%= customer.email %></p>
           <% } else { %>

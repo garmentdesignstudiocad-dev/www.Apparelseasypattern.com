@@ -24,7 +24,7 @@ async function run(){
    await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<900});
    for(const page of ['home','product','books','classes']){
     await call('Page.navigate',{url:origin+'/'+page});
-    for(let i=0;i<50;i++){if(await evaluate('document.readyState==="complete"'))break;await new Promise(r=>setTimeout(r,100));}
+    for(let i=0;i<50;i++){if(await evaluate('document.readyState==="complete" && document.querySelector("#cart-count")?.textContent === "2"'))break;await new Promise(r=>setTimeout(r,100));}
     const layout=await evaluate(`(()=>{const nav=document.querySelector('#main-nav');if(innerWidth<900)document.querySelector('#nav-toggle').click();const links=[...document.querySelectorAll('.nav-auth>a')].map(a=>a.getBoundingClientRect());return {width:innerWidth,scroll:document.documentElement.scrollWidth,sameRow:links[0].top===links[1].top,navOpen:innerWidth>=900||nav.classList.contains('open'),cart:document.querySelector('#cart-count').textContent};})()`);
     if(layout.width!==width||layout.scroll>width)console.log(page,width,layout,await evaluate("[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>"+width+").map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right})).slice(0,20)"));assert.equal(layout.width,width);assert(layout.scroll<=width,page+' overflow at '+width);assert(layout.sameRow);assert(layout.navOpen,page+' navigation did not open at '+width+'px: '+JSON.stringify(layout));assert.equal(layout.cart,'2');
     if(page==='product'){

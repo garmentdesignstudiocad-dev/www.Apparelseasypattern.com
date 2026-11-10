@@ -3,23 +3,26 @@ const fs=require('node:fs/promises');
 const os=require('node:os');
 const path=require('node:path');
 module.exports=async({models,request,input})=>{
-  const {Order,DeliverySettings,Courier,Product,NotificationLog}=models;
+  const {Order,Courier,Product,NotificationLog}=models;
   await Courier.create({_id:'test-courier',name:'Test Courier',active:true,region_ids:['south'],pincodes:['560*'],tracking_url:'https://courier.example.test/{awb}',charge:77,charge_approved:true});
-  await models.DeliveryZone.updateOne({_id:'south'},{$addToSet:{partner_ids:'test-courier'}});
-  await DeliverySettings.updateOne({key:'default'},{$set:{enabled:false}});
   const options=JSON.parse((await request('/checkout/delivery-info?state=Karnataka')).html);
-  assert.equal(options.delivery_charge,undefined);assert.equal(options.dispatch_location,'Bengaluru');
-  assert.ok(options.couriers.some(c=>c._id==='test-courier'));
-  assert.ok(!JSON.parse((await request('/checkout/delivery-info?state=Unassigned')).html).couriers.some(c=>c._id==='test-courier'));
-  const physical={...input,items:[{...input.items[0],physical_quantity:1}],shipping:{...input.shipping,courier_id:'test-courier'}};
+  assert.equal(options.dispatch_location,'Bengaluru Hub');assert.equal(options.couriers,undefined);
+  const unassigned=JSON.parse((await request('/checkout/delivery-info?state=Unassigned')).html);
+  assert.equal(unassigned.dispatch_location,'Pending Manual Assignment');
+  assert.equal(unassigned.hub_assignment_status,'pending_manual');
+  const regPage = await request('/account/register', undefined, 'shipping', false);
+  const regCsrf = regPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
+  await request('/account/register', { name: 'Shipping Customer', email: 'shipping@example.test', phone: '9876543210', password: 'Password123!', confirm_password: 'Password123!', _csrf: regCsrf }, 'shipping', false);
+  const physical={...input,items:[{...input.items[0],physical_quantity:1}],shipping:{...input.shipping}};
   for(const field of ['address','city','state','pincode'])assert.equal((await request('/checkout',{...physical,shipping:{...physical.shipping,[field]:''}},'shipping')).status,400);
-  assert.equal((await request('/checkout',{...physical,shipping:{...physical.shipping,courier_id:'missing'}},'shipping')).status,400);
+  assert.equal((await request('/checkout',{...physical,shipping:{...physical.shipping,state:'Unassigned'}},'shipping')).status,200);
   assert.equal((await request('/checkout',physical,'shipping')).status,200);
-  assert.match((await request('/checkout/payment-method',undefined,'shipping')).html,/Bengaluru/);
+  const summary=await request('/checkout/payment-method',undefined,'shipping');
+  assert.match(summary.html,/Bengaluru Hub/);assert.match(summary.html,/Shipping payment status:<\/strong> Not collected/);assert.match(summary.html,/Courier booking status:<\/strong> Not booked/);
   const result=JSON.parse((await request('/checkout/payment-method/proceed',{},'shipping')).html);
   let order=await Order.findById(result.order_id);
   if(!order)order=await Order.findOne({razorpay_order_id:result.razorpay_order_id});
-  assert.equal(order.delivery_charge,77);assert.equal(order.shipping_arranged_separately,false);assert.equal(order.courier_id,'test-courier');
+  assert.equal(order.delivery_charge,0);assert.equal(order.shipping_arranged_separately,true);assert.equal(order.courier_id,'');assert.equal(order.shipping_payment_status,'not_collected');assert.equal(order.courier_booking_status,'not_booked');
   const page=await request('/admin/orders/'+order._id,undefined,'admin');
   const csrf=page.html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
   const shipment={_csrf:csrf,courier_id:'test-courier',tracking_number:'AWB123',dispatch_date:'2026-09-28',shipping_status:'Shipped'};
@@ -33,6 +36,9 @@ module.exports=async({models,request,input})=>{
   }
   assert.equal((await request(endpoint,shipment,'admin')).status,303);
   assert.equal((await request(endpoint,shipment,'admin')).status,303);
+  const shippedOrder=await Order.findById(order._id).lean();
+  assert.equal(shippedOrder.courier_booking_status,'booked');
+  assert.equal(shippedOrder.shipping_payment_status,'not_collected');
   assert.equal(await NotificationLog.countDocuments({reference_id:String(order._id),event:'order_shipped'}),2);
   const shipped=await NotificationLog.findOne({reference_id:String(order._id),event:'order_shipped'});
   assert.match(shipped.message,/AWB123/);assert.match(shipped.message,/https:\/\/courier.example.test\/AWB123/);
@@ -41,7 +47,7 @@ module.exports=async({models,request,input})=>{
   try{
     await fs.writeFile(path.join(dir,'pattern.pdf'),'%PDF-1.4 test pattern');
     const product=await Product.create({name:'Private pattern',slug:'private-test-pattern',base_price:100,digital_file:'pattern.pdf'});
-    const digital=await Order.create({customer_id:order.customer_id,items:[{product_id:product._id,quantity:1}],grand_total:100});
+    const digital=await Order.create({customer_id:order.customer_id,account_customer_id:order.account_customer_id||order.customer_id,items:[{product_id:product._id,quantity:1}],grand_total:100});
     const service=require('../services/digitalDeliveryService');
     assert.equal(await service.ensure(digital._id),null);
     await Order.updateOne({_id:digital._id},{$set:{payment_status:'paid'}});
@@ -50,7 +56,7 @@ module.exports=async({models,request,input})=>{
     const grants=await Promise.all([service.ensure(digital._id),service.ensure(digital._id)]);
     assert.equal(grants[0].download_token,grants[1].download_token);
     const url='/downloads/'+grants[0].download_token;
-    assert.equal((await request(url)).status,200);assert.equal((await request(url+'/0')).status,200);
+    assert.equal((await request(url,undefined,'shipping')).status,200);assert.equal((await request(url+'/0',undefined,'shipping')).status,200);
     await require('../services/notificationService').flush('product_order',digital._id);
     await require('../services/notificationService').flush('product_order',digital._id);
     const logs=await NotificationLog.find({reference_id:String(digital._id),event:'order_digital_ready'});
@@ -69,6 +75,5 @@ module.exports=async({models,request,input})=>{
     if(previous===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=previous;
     await fs.unlink(path.join(dir,'pattern.pdf'));await fs.rmdir(dir);
   }
-  await DeliverySettings.updateOne({key:'default'},{$set:{enabled:true}});
-  console.log('PASS: shipping toggle, required address, courier rules, verified digital grants, expiry, and deduplicated email/WhatsApp shipment/download jobs.');
+  console.log('PASS: state routing, required address, courier-free checkout, separate charges, manual dispatch status updates, verified digital grants, expiry, and deduplicated email/WhatsApp shipment/download jobs.');
 };

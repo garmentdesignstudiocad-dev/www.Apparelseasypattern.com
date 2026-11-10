@@ -21,6 +21,7 @@ module.exports = {
     ['/admin/settings/paid-access', 'Paid Access Settings'], ['/admin/settings/gst', 'GST Settings'],
     ['/admin/settings/delivery', 'Delivery Settings'], ['/admin/settings/coupons', 'Coupons'],
     ['/admin/settings/couriers', 'Courier Settings'],
+    ['/admin/settings/product-config', 'Product Configuration'],
     ['/admin/settings/pricing', 'Pricing Settings'], ['/admin/settings/admin', 'Admin Settings'],
   ],
   Communication: [

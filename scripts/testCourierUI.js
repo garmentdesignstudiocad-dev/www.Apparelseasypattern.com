@@ -1,38 +1,18 @@
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const template=fs.readFileSync(require('node:path').join(__dirname,'../views/checkout.ejs'),'utf8');
-const optionsCode=template.slice(template.indexOf("    const cityInput="),template.indexOf('    const productTotalElement'));
-const fetchCode=template.slice(template.indexOf('    async function loadDeliveryRoute()'),template.indexOf('    function updateCheckoutTotals()'));
-function element(){return {textContent:'',classList:{toggle(){},add(){},remove(){}}};}
-async function run(){
-  const elements={},requests=[];
-  const select={value:'',options:[],replaceChildren(option){this.options=[option];this.value='';},add(option){this.options.push(option);}};
-  const sandbox={document:{getElementById:id=>elements[id] ||= {...element(),value:id==='city'?'Tiruppur':id==='state'?'Tamil Nadu':''}},Option:function(text,value){this.text=text;this.value=value;},
-    deliveryRequestId:0,deliveryRequired:true,courierSelect:select,courierHelp:element(),deliveryTotalElement:element(),deliveryEstimate:element(),updateCheckoutTotals(){},
-    deliveryEtaSummary:element(),estimatedDeliveryTime:element(),estimatedDeliveryDate:element(),deliveryStatus:element(),pincodeInput:{value:'560001'},
-    formatCurrency:value=>'INR '+Number(value).toFixed(2),fetch:()=>new Promise(resolve=>requests.push(resolve))};
-  vm.createContext(sandbox);vm.runInContext(optionsCode+fetchCode,sandbox);
-  const first=sandbox.loadDeliveryRoute();
-  elements.city.value='Coimbatore';sandbox.resetCouriers();sandbox.renderCourierSummary();
-  const second=sandbox.loadDeliveryRoute();
-  requests[1]({ok:true,json:async()=>({ok:true,pincode:'638751',district:'Tiruppur',state:'Tamil Nadu',region:'South',dispatch_location:'Bengaluru',couriers:[{_id:'destination',name:'Destination Courier',charge:250,charge_approved:true,estimated_delivery:'3-4 Days'}]})});await second;
-  assert.equal(select.value,'','No courier is automatically selected');
-  assert.equal(select.disabled,false,'Enabled partners enable dropdown');
-  select.value='destination';sandbox.renderCourierSummary();
-  assert.equal(elements['selected-courier-summary'].textContent,'Destination Courier');assert.equal(elements['selected-courier-charge'].textContent,'INR 250.00');assert.equal(elements['dispatch-summary'].textContent,'Bengaluru');assert.deepEqual(select.options.map(option=>option.text),['Choose a delivery partner','Destination Courier — INR 250.00']);
-  requests[0]({ok:true,json:async()=>({ok:true,couriers:[{_id:'wrong',name:'Old destination',charge:999}]})});
-  assert.equal((await first).stale,true);assert.equal(select.value,'destination');
-  elements.city.value='Unknown';sandbox.resetCouriers();sandbox.renderCourierSummary();assert.equal(select.value,'');assert.equal(elements['dispatch-summary'].textContent,'');
-  const third=sandbox.loadDeliveryRoute();requests[2]({ok:true,json:async()=>({ok:true,region_id:'south',region:'South',dispatch_location:'Bengaluru',couriers:[]})});await third;
-  assert.equal(select.disabled,true);assert.equal(select.value,'');assert.match(sandbox.courierHelp.textContent,/No delivery partners have been enabled for the Bengaluru dispatch hub/);
-  assert.equal(elements['region-summary'].textContent,'South');assert.equal(elements['dispatch-summary'].textContent,'Bengaluru');
-  elements.state.value='';assert.equal(await sandbox.loadDeliveryRoute(),null);assert.equal(select.value,'');
-  sandbox.deliveryRequired=false;assert.equal(await sandbox.loadDeliveryRoute(),0);
-  assert.match(template,/id="courier-charge"/);assert.match(template,/id="selected-courier-charge"/);assert.match(template,/contact the studio/i);
-  assert.ok(!template.includes('Shipping to be arranged'));assert.ok(!template.includes('Preferred courier'));
-  sandbox.showCouriers(['Blue Dart','DTDC','Delhivery','India Post / Speed Post'].map((name,index)=>({_id:String(index),name,estimated_delivery:'Not configured'})));
-  assert.deepEqual(select.options.map(option=>option.text),['Choose a delivery partner','Blue Dart — rate not approved','DTDC — rate not approved','Delhivery — rate not approved','India Post / Speed Post — rate not approved']);
-  assert.equal(select.disabled,true);assert.match(sandbox.courierHelp.textContent,/contact the studio/i);
-  assert.doesNotMatch(template,/Estimated Delivery|Estimated delivery|estimated-delivery|delivery-eta-summary/);
-  console.log('PASS: checkout UI destination refresh, stale-response rejection, explicit customer choice, dispatch summary without ETA, unconfigured/empty state reset, and digital courier bypass.');
-}
-run().catch(error=>{console.error(error);process.exitCode=1;});
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+
+const template=fs.readFileSync(path.join(__dirname,'../views/checkout.ejs'),'utf8');
+assert.ok(template.includes('id="address"'),'Physical checkout keeps its delivery address field.');
+assert.ok(template.includes('id="city"') && template.includes('id="state"') && template.includes('id="pincode"'),'Physical checkout keeps city, state and pincode fields.');
+assert.ok(!template.includes('courier-select') && !template.includes('courier_id'),'Checkout does not require courier selection.');
+assert.ok(template.includes('Courier charges payable separately directly to the courier company. They are not included in your order total.'),'Checkout displays the separate courier payment notice.');
+assert.ok(template.includes('Pending Manual Assignment'),'Unknown regions are not assigned a guessed hub.');
+assert.ok(template.includes('Courier booking: Not booked'),'Checkout does not claim a courier has been booked.');
+assert.ok(template.includes('const grandTotal = productTotal + tax;'),'Courier charges are excluded from the online total.');
+assert.ok(template.includes('courierPaymentRow.classList.add("hidden")'),'Digital-only checkout hides physical courier information.');
+assert.ok(template.includes('if (!address)') && template.includes('if (!city)') && template.includes('if (!state)'),'Checkout still validates the physical delivery address.');
+assert.ok(template.includes('if (!/^[0-9]{6}$/.test(pincode))'),'Checkout still validates six-digit pincodes.');
+assert.ok(template.includes('if (!phone || !/^[0-9]{10}$/.test(phone))'),'Checkout still validates the customer phone number.');
+assert.ok(template.includes('digitalMessage.classList.remove("hidden")'),'Digital-only checkout remains separate from the shipping form.');
+console.log('PASS: no courier selection or charge in checkout; required fields, hub fallback, separate-payment notice and digital-only UI remain.');

@@ -53,7 +53,7 @@ async function run(){
   assert.equal(rendered.seoTitle,'Owner-edited title');assert.equal(rendered.description,'Owner-edited description');
   const catalogue=await ejs.renderFile('views/products.ejs',{...rendered,siteSettings:settings,themeVariables:appearance.cssVariables(settings),...require('../config/features').helpers()});
   assert.match(catalogue,/<title>Owner-edited title<\/title>/);assert.match(catalogue,/<meta name="description" content="Owner-edited description">/);
-  assert.equal((catalogue.match(/Price on enquiry/g)||[]).length,4);assert.match(catalogue,/From ₹25\.00/);assert.doesNotMatch(catalogue,/Coming soon\s*₹|₹0\.00/);
+  assert.equal((catalogue.match(/class="pattern-price"[^>]*>\s*Price on enquiry/g)||[]).length,4);assert.match(catalogue,/From ₹25\.00/);assert.doesNotMatch(catalogue,/Coming soon\s*₹|₹0\.00/);
   console.log('PASS: owner-edited catalogue SEO reaches rendered metadata; missing/blank/zero prices do not claim a free price; Coming soon has no dangling currency.');
   console.log('PASS: homepage metadata, dynamic product metadata, safe image URLs, and factual Product structured data.');
 }

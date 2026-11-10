@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title><%= seoTitle || title || product?.name || 'Garment Pattern Store' %></title>
-  <meta name="description" content="<%= description || '' %>">
-  <meta property="og:title" content="<%= seoTitle || title || product?.name || 'Garment Pattern Store' %>">
+  <title><%= seoTitle || title || product?.name || 'Basic Slim Fit Shirt | Apparel Easy Patterns' %></title>
+  <meta name="description" content="<%= description || product?.description || '' %>">
+  <meta property="og:title" content="<%= seoTitle || title || product?.name || 'Apparel Easy Patterns' %>">
   <meta property="og:description" content="<%= description || '' %>">
   <meta property="og:type" content="product">
   <% if(canonicalUrl){ %><link rel="canonical" href="<%= canonicalUrl %>"><meta property="og:url" content="<%= canonicalUrl %>"><% } %>
@@ -15,1008 +15,2357 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
-    rel="stylesheet"
-  >
-
-  <link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/customer-experience.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/customer-experience.css">
+  <link rel="stylesheet" href="/css/storefront-theme.css">
+  <%- include('partials/theme') %>
 
   <style>
-    /* =====================================================
-       PRODUCT DETAIL — PREMIUM GARMENT STORE
-    ===================================================== */
-
+    /* ==========================================================================
+       APPAREL EASY PATTERNS — APPROVED REFERENCE DESIGN SYSTEM (LEFT PANEL)
+       Executive Navy: #0B192C | Midnight Slate: #1E3E62 | Warm Gold / Orange: #EA580C & #D97706
+       ========================================================================== */
     :root {
-      --ink: #18161a;
-      --muted: #77717a;
-      --cream: #f7f4ef;
-      --white: #ffffff;
-      --line: #e8e2db;
-      --brown: #684a36;
-      --brown-dark: #2a211c;
-      --sand: #ead6bf;
-      --gold: #b58a54;
+      --ref-navy: #0B192C;
+      --ref-navy-hover: #132742;
+      --ref-slate: #1E3E62;
+      --ref-orange: #EA580C;
+      --ref-orange-hover: #C2410C;
+      --ref-gold: #D97706;
+      --ref-bg-light: #F8FAFC;
+      --ref-card-bg: #FFFFFF;
+      --ref-border: #E2E8F0;
+      --ref-border-strong: #CBD5E1;
+      --ref-text-dark: #0B192C;
+      --ref-text-muted: #64748B;
+      --ref-text-sub: #475569;
+      --ref-peach-bg: #FFF7ED;
+      --ref-peach-border: #FFEDD5;
+      --ref-peach-divider: #FED7AA;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: var(--cream);
-      color: var(--ink);
-      font-family: "DM Sans", Arial, sans-serif;
+      background: var(--ref-bg-light);
+      color: var(--ref-text-dark);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    a {
-      color: inherit;
+    .pd-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* Breadcrumbs */
+    .pd-breadcrumbs {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--ref-text-muted);
+      margin-bottom: 24px;
+    }
+    .pd-breadcrumbs a {
+      color: var(--ref-text-sub);
       text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
     }
-
-    button {
-      font-family: inherit;
+    .pd-breadcrumbs a:hover {
+      color: var(--ref-orange);
     }
-
-    /* =====================================================
-       HEADER
-    ===================================================== */
-
-    .pd-header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-
-      background: rgba(255,255,255,.94);
-      backdrop-filter: blur(18px);
-
-      border-bottom: 1px solid var(--line);
+    .pd-breadcrumbs .sep {
+      color: #94A3B8;
+      font-size: 11px;
     }
-
-    .pd-nav {
-      width: min(1180px, calc(100% - 40px));
-      height: 76px;
-      margin: auto;
-
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 30px;
-    }
-
-    .pd-brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-    }
-
-    .pd-brand-mark {
-      width: 38px;
-      height: 38px;
-
-      display: grid;
-      place-items: center;
-
-      border-radius: 11px;
-
-      color: #fff;
-      background: linear-gradient(135deg, #2a211c, #77533b);
-
-      font-family: "Playfair Display", serif;
-      font-size: 13px;
+    .pd-breadcrumbs .current {
+      color: var(--ref-text-dark);
       font-weight: 700;
     }
 
-    .pd-brand-text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.05;
-    }
-
-    .pd-brand-text strong {
-      font-size: 13px;
-      letter-spacing: -.2px;
-    }
-
-    .pd-brand-text small {
-      margin-top: 4px;
-
-      color: #989097;
-
-      font-size: 7px;
-      letter-spacing: 1.3px;
-      text-transform: uppercase;
-    }
-
-    .pd-menu {
-      display: flex;
-      align-items: center;
-      gap: 29px;
-    }
-
-    .pd-menu a {
-      color: #625d63;
-
-      font-size: 11px;
-      font-weight: 600;
-
-      transition: .2s ease;
-    }
-
-    .pd-menu a:hover {
-      color: var(--ink);
-    }
-
-    .pd-actions {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .pd-signin {
-      color: #625d63;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .pd-cart {
-      padding: 11px 16px;
-
-      border-radius: 9px;
-
-      color: #fff;
-
-      background: var(--ink);
-
-      font-size: 10px;
-      font-weight: 700;
-    }
-
-    /* =====================================================
-       PAGE
-    ===================================================== */
-
-    .pd-page {
-      width: min(1180px, calc(100% - 40px));
-      margin: auto;
-      padding: 30px 0 90px;
-    }
-
-    /* =====================================================
-       BREADCRUMB
-    ===================================================== */
-
-    .pd-breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      margin-bottom: 28px;
-
-      color: #8c858d;
-
-      font-size: 9px;
-      font-weight: 600;
-    }
-
-    .pd-breadcrumb .current {
-      color: var(--brown);
-    }
-
-    /* =====================================================
-       PRODUCT GRID
-    ===================================================== */
-
-    .pd-product {
+    /* Main Two-Column Grid */
+    .pd-main-grid {
       display: grid;
-      grid-template-columns: 1.04fr .96fr;
-
-      gap: 54px;
-
+      grid-template-columns: 460px 1fr;
+      gap: 40px;
       align-items: start;
     }
 
-    /* =====================================================
-       PRODUCT VISUAL
-    ===================================================== */
-
-    .pd-visual {
-      position: sticky;
-      top: 105px;
+    @media (max-width: 1024px) {
+      .pd-main-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
     }
 
-    .pd-image-box {
-      position: relative;
-
-      min-height: 620px;
-
-      overflow: hidden;
-
-      border-radius: 24px;
-
-      background:
-        radial-gradient(
-          circle at 50% 25%,
-          rgba(255,255,255,.75),
-          transparent 30%
-        ),
-        linear-gradient(
-          145deg,
-          #eee5dc,
-          #d9cec3
-        );
-
-      box-shadow:
-        0 25px 65px rgba(45,31,20,.10);
-    }
-
-    .pd-image-box img {
-      width: 100%;
-      height: 620px;
-
-      object-fit: cover;
-    }
-
-    .pd-image-label {
-      position: absolute;
-      top: 25px;
-      left: 27px;
-
-      color: #786c63;
-
-      font-size: 8px;
-      font-weight: 800;
-
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .pd-number {
-      position: absolute;
-      top: 24px;
-      right: 26px;
-
-      color: rgba(60,45,35,.35);
-
-      font-family: "Playfair Display", serif;
-      font-size: 13px;
-    }
-
-    /* Pattern placeholder */
-
-    .pd-placeholder {
-      width: 100%;
-      height: 620px;
-
-      position: relative;
-
+    /* ==========================================================================
+       LEFT COLUMN: Image Card, 5 Thumbnails & What's Included
+       ========================================================================== */
+    .pd-left-col {
       display: flex;
       flex-direction: column;
+      gap: 20px;
+    }
+
+    .ref-image-card {
+      background: var(--ref-card-bg);
+      border: 1px solid var(--ref-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(11, 25, 44, 0.05);
+    }
+
+    .ref-main-img-box {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      min-height: 480px;
+      max-height: 480px;
+      border-radius: 10px;
+      background: #F8FAFC;
+      border: 1px solid var(--ref-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    .ref-main-img {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: opacity 0.2s ease, transform 0.25s ease;
+      cursor: zoom-in;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    .ref-main-img:hover {
+      transform: scale(1.02);
+    }
+
+    .ref-zoom-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--ref-border);
+      color: var(--ref-text-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.15s ease;
+      z-index: 2;
+    }
+    .ref-zoom-btn:hover {
+      background: #FFFFFF;
+      color: var(--ref-orange);
+      transform: scale(1.05);
+    }
+
+    /* Five Thumbnails Row */
+    .ref-thumb-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .ref-thumb-btn {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      border: 1.5px solid var(--ref-border);
+      padding: 2px;
+      background: #FFFFFF;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .ref-thumb-btn:hover {
+      border-color: #FDBA74;
+    }
+    .ref-thumb-btn.active {
+      border: 2px solid var(--ref-orange);
+      box-shadow: 0 0 0 1px var(--ref-orange);
+    }
+    .ref-thumb-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #F8FAFC;
+      border-radius: 5px;
+      image-rendering: -webkit-optimize-contrast;
+    }
+
+    /* What's Included Card */
+    .ref-included-card {
+      background: var(--ref-card-bg);
+      border: 1px solid var(--ref-border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(11, 25, 44, 0.05);
+    }
+    .ref-included-title {
+      margin: 0 0 14px;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+    }
+    .ref-included-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ref-included-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ref-text-sub);
+    }
+    .ref-included-list .check-icon {
+      color: var(--ref-orange);
+      font-weight: 800;
+      font-size: 14px;
+      width: 16px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
     }
 
-    .pd-placeholder::before {
-      content: "";
-
-      position: absolute;
-
-      width: 240px;
-      height: 420px;
-
-      border: 1px solid rgba(100,78,62,.35);
-
-      border-radius: 125px 125px 28px 28px;
-
-      transform: scaleX(.68);
-
-      opacity: .65;
+    /* ==========================================================================
+       RIGHT COLUMN: Product Details, 4-Step Selection & Order Summary
+       ========================================================================== */
+    .pd-right-col {
+      display: flex;
+      flex-direction: column;
     }
 
-    .pd-shirt {
-      position: relative;
-
-      width: 180px;
-      height: 250px;
-
-      border: 1px solid rgba(80,60,45,.42);
-
-      clip-path: polygon(
-        29% 0,
-        44% 0,
-        50% 12%,
-        56% 0,
-        71% 0,
-        100% 18%,
-        82% 38%,
-        75% 27%,
-        75% 100%,
-        25% 100%,
-        25% 27%,
-        18% 38%,
-        0 18%
-      );
-
-      opacity: .75;
+    .ref-product-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      margin: 0 0 6px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
     }
 
-    .pd-placeholder-name {
-      position: absolute;
-      bottom: 65px;
-
-      font-family: "Playfair Display", serif;
-      font-size: 26px;
-    }
-
-    .pd-placeholder-sub {
-      position: absolute;
-      bottom: 47px;
-
-      color: #8a7e75;
-
-      font-size: 7px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    /* =====================================================
-       PRODUCT INFO
-    ===================================================== */
-
-    .pd-info {
-      padding-top: 8px;
-    }
-
-    .pd-kicker {
-      display: block;
-
+    .ref-product-sub {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ref-text-muted);
       margin-bottom: 12px;
-
-      color: var(--brown);
-
-      font-size: 9px;
-      font-weight: 800;
-
-      letter-spacing: 2px;
-      text-transform: uppercase;
     }
 
-    .pd-title {
-      margin: 0;
-
-      font-family: "Playfair Display", serif;
-
-      font-size: clamp(48px, 5vw, 68px);
-      line-height: .94;
-
-      letter-spacing: -2px;
-    }
-
-    .pd-description {
-      max-width: 540px;
-
-      margin: 18px 0 26px;
-
-      color: var(--muted);
-
-      font-size: 13px;
-      line-height: 1.75;
-    }
-
-    /* =====================================================
-       PRICE
-    ===================================================== */
-
-    .pd-price-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      padding: 20px 22px;
-
-      margin-bottom: 25px;
-
-      border: 1px solid var(--line);
-      border-radius: 15px;
-
-      background: rgba(255,255,255,.72);
-    }
-
-    .pd-price-label {
-      display: block;
-
-      margin-bottom: 7px;
-
-      color: #8a8188;
-
-      font-size: 7px;
-      font-weight: 800;
-
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-    }
-
-    .pd-price {
-      font-family: "Playfair Display", serif;
-      font-size: 25px;
-    }
-
-    .pd-price-note {
-      color: #999198;
-      font-size: 9px;
-    }
-
-    /* =====================================================
-       SELECTION
-    ===================================================== */
-
-    .pd-section-title {
+    .ref-price-row {
       display: flex;
       align-items: center;
       gap: 12px;
-
-      margin-bottom: 13px;
+      margin-bottom: 14px;
     }
-
-    .pd-step {
-      width: 25px;
-      height: 25px;
-
-      display: grid;
-      place-items: center;
-
-      border-radius: 50%;
-
-      color: #fff;
-
-      background: var(--ink);
-
-      font-size: 8px;
+    .ref-price-main {
+      font-size: 30px;
       font-weight: 800;
+      color: var(--ref-orange);
+      letter-spacing: -0.01em;
     }
-
-    .pd-section-title strong {
+    .ref-price-compare {
+      font-size: 16px;
+      color: #94A3B8;
+      text-decoration: line-through;
+      font-weight: 600;
+    }
+    .ref-discount-badge {
       font-size: 12px;
+      font-weight: 800;
+      color: #DC2626;
+      background: #FEE2E2;
+      padding: 3px 8px;
+      border-radius: 4px;
     }
 
-    .pd-section-title small {
-      display: block;
-
-      margin-top: 3px;
-
-      color: #9b9399;
-
-      font-size: 8px;
+    .ref-short-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--ref-text-sub);
+      margin: 0 0 24px;
+      max-width: 620px;
     }
 
-    .pd-options {
-      display: grid;
-      gap: 9px;
-
-      margin-bottom: 24px;
+    /* Purchase Steps */
+    .ref-step-section {
+      margin-bottom: 22px;
     }
 
-    .pd-option {
-      width: 100%;
-
+    .ref-step-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 12px;
+    }
 
-      padding: 15px 15px;
+    .ref-step-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+    }
 
-      border: 1px solid #ddd4cc;
-      border-radius: 13px;
+    .ref-step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--ref-orange);
+      color: #FFFFFF;
+      font-size: 12.5px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
 
-      background: #fff;
-
+    .ref-size-chart-btn {
+      background: none;
+      border: none;
+      color: var(--ref-text-dark);
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       cursor: pointer;
-
-      text-align: left;
-
-      transition:
-        border-color .2s ease,
-        box-shadow .2s ease,
-        transform .2s ease;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .ref-size-chart-btn:hover {
+      color: var(--ref-orange);
+      background: #FFF7ED;
     }
 
-    .pd-option:hover {
-      transform: translateY(-1px);
-
-      border-color: var(--gold);
-
-      box-shadow: 0 7px 20px rgba(80,50,25,.07);
+    /* Step 1: Size Selector Pills */
+    .ref-size-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    .pd-option.active {
-      border-color: var(--gold);
-
-      box-shadow:
-        0 0 0 1px var(--gold),
-        0 8px 24px rgba(100,70,40,.08);
+    .ref-size-pill {
+      min-width: 60px;
+      height: 40px;
+      border-radius: 6px;
+      border: 1.5px solid var(--ref-border-strong);
+      background: #FFFFFF;
+      color: var(--ref-text-dark);
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .ref-size-pill:hover {
+      border-color: var(--ref-orange);
+    }
+    .ref-size-pill.selected {
+      background: var(--ref-navy);
+      border-color: var(--ref-navy);
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(11, 25, 44, 0.2);
+    }
+    #digitalSizeSelection.is-disabled .ref-size-pill {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #digitalSizeSelection .size-action-link:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      text-decoration: none;
     }
 
-    .pd-option-left {
+    /* Step 2: Digital Format Selection (Manual format checkboxes) */
+    .ref-format-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 580px) {
+      .ref-main-img-box {
+        height: 340px;
+        min-height: 340px;
+        max-height: 340px;
+        padding: 10px;
+      }
+      .ref-format-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ref-format-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ref-format-card:hover {
+      border-color: #FDBA74;
+    }
+    .ref-format-card.checked {
+      background: #FFFBF7;
+      border-color: var(--ref-orange);
+      box-shadow: 0 2px 8px rgba(234, 88, 12, 0.08);
+    }
+
+    .format-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .format-checkbox-custom {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 2px solid #CBD5E1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      transition: all 0.15s ease;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .ref-format-card.checked .format-checkbox-custom {
+      border-color: var(--ref-orange);
+      background: var(--ref-orange);
+      color: #FFFFFF;
+    }
+
+    .format-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      margin: 2px 0 0;
+    }
+    .format-sub {
+      font-size: 11px;
+      color: var(--ref-text-muted);
+      line-height: 1.35;
+    }
+
+    /* Step 3: Tech Pack & Step 4: Physical Printout Cards */
+    .ref-option-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .ref-option-card:hover {
+      border-color: #FDBA74;
+    }
+    .ref-option-card.checked {
+      background: #FFFBF7;
+      border-color: var(--ref-orange);
+      box-shadow: 0 2px 10px rgba(234, 88, 12, 0.08);
+    }
+
+    .ref-card-cb {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid #CBD5E1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .ref-option-card.checked .ref-card-cb {
+      border-color: var(--ref-orange);
+      background: var(--ref-orange);
+      color: #FFFFFF;
+    }
+
+    .ref-card-icon {
+      color: var(--ref-text-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ref-card-text {
+      flex: 1;
+    }
+    .ref-card-text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      margin-bottom: 2px;
+    }
+    .ref-card-text small {
+      font-size: 12px;
+      color: var(--ref-text-muted);
+    }
+
+    /* Step 5: Fabric Consumption Markers */
+    .marker-files-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 580px) {
+      .marker-files-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .marker-file-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 8px;
+      padding: 12px 14px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
-    .pd-option-icon {
-      width: 32px;
-      height: 32px;
-
-      display: grid;
-      place-items: center;
-
-      border-radius: 9px;
-
-      color: #fff;
-
-      background: linear-gradient(
-        135deg,
-        #3b2d24,
-        #896246
-      );
-
-      font-size: 8px;
-      font-weight: 800;
-    }
-
-    .pd-option-name {
-      display: block;
-
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .pd-option-description {
-      display: block;
-
-      margin-top: 4px;
-
-      color: #958d92;
-
-      font-size: 7px;
-    }
-
-    .pd-option-price {
-      color: #4e4036;
-
-      font-size: 9px;
-      font-weight: 800;
-    }
-
-    /* =====================================================
-       TOTAL
-    ===================================================== */
-
-    .pd-total {
-      display: flex;
+    .marker-file-badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-
-      padding: 19px 20px;
-
-      border-radius: 15px;
-
-      color: #fff;
-
-      background:
-        linear-gradient(
-          135deg,
-          #171419,
-          #2b211d
-        );
-
-      box-shadow:
-        0 15px 35px rgba(20,15,15,.18);
-    }
-
-    .pd-total-label {
-      display: block;
-
-      margin-bottom: 5px;
-
-      color: rgba(255,255,255,.5);
-
-      font-size: 7px;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
       font-weight: 800;
-
-      letter-spacing: 1.5px;
       text-transform: uppercase;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+    .marker-notice-box {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #64748B;
+      line-height: 1.45;
     }
 
-    .pd-total-price {
-      font-family: "Playfair Display", serif;
-      font-size: 25px;
+    /* Step 6: Customize Markers */
+    .custom-marker-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
     }
-
-    .pd-add {
-      min-width: 135px;
-
-      padding: 14px 18px;
-
-      border: 0;
-      border-radius: 10px;
-
-      color: #2a211c;
-
-      background: #e8c49a;
-
+    .custom-marker-tab-btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1.5px solid var(--ref-border);
+      background: #FFFFFF;
+      color: var(--ref-text-sub);
+      font-size: 12.5px;
+      font-weight: 700;
       cursor: pointer;
-
-      font-size: 9px;
-      font-weight: 800;
-
-      transition: .2s ease;
+      transition: all 0.15s ease;
     }
-
-    .pd-add:hover {
-      transform: translateY(-2px);
-
-      background: #f0d0aa;
+    .custom-marker-tab-btn.active {
+      border-color: var(--ref-navy);
+      background: var(--ref-navy);
+      color: #FFFFFF;
     }
-
-    /* =====================================================
-       TRUST
-    ===================================================== */
-
-    .pd-trust {
+    .custom-marker-panel {
+      display: none;
+      background: #FFFFFF;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .custom-marker-panel.active {
+      display: block;
+    }
+    .marker-field-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-
-      gap: 9px;
-
-      margin-top: 10px;
-    }
-
-    .pd-trust-card {
-      padding: 14px;
-
-      border: 1px solid var(--line);
-      border-radius: 12px;
-
-      background: rgba(255,255,255,.72);
-    }
-
-    .pd-trust-card strong {
-      display: block;
-
-      margin-bottom: 4px;
-
-      font-size: 8px;
-    }
-
-    .pd-trust-card span {
-      color: #958c92;
-
-      font-size: 7px;
-    }
-
-    /* =====================================================
-       DETAILS SECTION
-    ===================================================== */
-
-    .pd-details {
-      margin-top: 85px;
-
-      padding-top: 55px;
-
-      border-top: 1px solid var(--line);
-    }
-
-    .pd-details-grid {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-
-      gap: 70px;
-    }
-
-    .pd-details-title {
-      margin: 0;
-
-      font-family: "Playfair Display", serif;
-
-      font-size: 36px;
-      line-height: 1.05;
-    }
-
-    .pd-details-copy {
-      color: var(--muted);
-
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
-    .pd-feature-grid {
-      display: grid;
-      grid-template-columns: repeat(2,1fr);
-
       gap: 12px;
-
-      margin-top: 24px;
-    }
-
-    .pd-feature {
-      padding: 18px;
-
-      border: 1px solid var(--line);
-      border-radius: 13px;
-
-      background: #fff;
-    }
-
-    .pd-feature strong {
-      display: block;
-
-      margin-bottom: 5px;
-
-      font-size: 10px;
-    }
-
-    .pd-feature span {
-      color: #8c858b;
-
-      font-size: 8px;
-      line-height: 1.5;
-    }
-
-    /* =====================================================
-       FOOTER
-    ===================================================== */
-
-    .pd-footer {
-      margin-top: 20px;
-
-      background: #171419;
-      color: #fff;
-    }
-
-    .pd-footer-inner {
-      width: min(1180px, calc(100% - 40px));
-      margin: auto;
-
-      padding: 55px 0 22px;
-    }
-
-    .pd-footer-grid {
-      display: grid;
-      grid-template-columns: 1.7fr 1fr 1fr 1fr;
-
-      gap: 40px;
-
-      padding-bottom: 40px;
-    }
-
-    .pd-footer-brand strong {
-      display: block;
-
       margin-bottom: 12px;
-
-      font-family: "Playfair Display", serif;
-
-      font-size: 20px;
     }
-
-    .pd-footer-brand p {
-      max-width: 310px;
-
-      margin: 0;
-
-      color: rgba(255,255,255,.55);
-
-      font-size: 10px;
-      line-height: 1.7;
+    @media (max-width: 580px) {
+      .marker-field-row {
+        grid-template-columns: 1fr;
+      }
     }
-
-    .pd-footer-col h4 {
-      margin: 0 0 14px;
-
-      font-size: 9px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .pd-footer-col a,
-    .pd-footer-col span {
-      display: block;
-
-      margin-bottom: 9px;
-
-      color: rgba(255,255,255,.55);
-
-      font-size: 9px;
-    }
-
-    .pd-footer-bottom {
+    .marker-field-group {
       display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .marker-field-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ref-text-dark);
+    }
+    .marker-field-group input {
+      padding: 8px 12px;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 6px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ref-text-dark);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .marker-field-group input:focus {
+      border-color: var(--ref-orange);
+    }
+    .marker-field-group input.input-invalid {
+      border-color: #EF4444;
+      background: #FEF2F2;
+    }
+    .marker-field-error {
+      font-size: 11px;
+      color: #DC2626;
+      display: none;
+      margin-top: 2px;
+    }
+
+    /* Order Summary Card with Separate Tax Breakdown */
+    .ref-summary-box {
+      background: var(--ref-peach-bg);
+      border: 1px solid var(--ref-peach-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .ref-summary-box h4 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      letter-spacing: -0.01em;
+    }
+    .ref-summary-row {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      gap: 20px;
-
-      padding-top: 18px;
-
-      border-top: 1px solid rgba(255,255,255,.08);
-
-      color: rgba(255,255,255,.35);
-
-      font-size: 8px;
+      font-size: 13.5px;
+      color: var(--ref-text-sub);
+      margin-bottom: 8px;
+    }
+    .ref-summary-row strong {
+      font-weight: 700;
+      color: var(--ref-text-dark);
+    }
+    .ref-summary-divider {
+      border-top: 1px solid var(--ref-peach-divider);
+      margin: 12px 0;
+    }
+    .ref-summary-total-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+    }
+    .ref-summary-total-amount {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ref-orange);
     }
 
-    /* =====================================================
-       RESPONSIVE
-    ===================================================== */
-
-    @media (max-width: 900px) {
-
-      .pd-product {
-        grid-template-columns: 1fr;
-
-        gap: 35px;
-      }
-
-      .pd-visual {
-        position: relative;
-        top: auto;
-      }
-
-      .pd-image-box,
-      .pd-placeholder {
-        min-height: 520px;
-        height: 520px;
-      }
-
-      .pd-image-box img {
-        height: 520px;
-      }
-
-      .pd-menu {
-        display: none;
-      }
-
-      .pd-details-grid {
-        grid-template-columns: 1fr;
-        gap: 25px;
-      }
-
-      .pd-footer-grid {
-        grid-template-columns: repeat(2,1fr);
-      }
+    /* Action Buttons */
+    .ref-actions-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
     }
 
-    @media (max-width: 600px) {
-
-      .pd-nav,
-      .pd-page,
-      .pd-footer-inner {
-        width: calc(100% - 26px);
-      }
-
-      .pd-brand-text {
-        display: none;
-      }
-
-      .pd-actions {
-        gap: 9px;
-      }
-
-      .pd-signin {
-        display: none;
-      }
-
-      .pd-title {
-        font-size: 48px;
-      }
-
-      .pd-price-card {
-        padding: 17px;
-      }
-
-      .pd-total {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .pd-add {
-        width: 100%;
-      }
-
-      .pd-trust,
-      .pd-feature-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .pd-footer-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .pd-footer-bottom {
-        flex-direction: column;
-      }
+    .ref-btn-cart {
+      flex: 1;
+      height: 48px;
+      background: #FFFFFF;
+      border: 2px solid var(--ref-orange);
+      color: var(--ref-orange);
+      border-radius: 8px;
+      font-size: 14.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
-    .fit-selector fieldset{min-width:0;margin:0;border-color:var(--primary-color,#62392d)}
-    .fit-selector legend{font-weight:700;padding:0 8px}
-    .fit-selector .fit-option{display:block;padding:12px 0;overflow-wrap:anywhere}
-    .fit-unavailable{display:flex;flex-wrap:wrap;gap:10px}
-    .fit-unavailable>span{padding:8px 12px;border:1px dashed #aaa;border-radius:6px;flex:1 1 140px}
-    .fit-selector button{max-width:100%;white-space:normal}
-    .fit-selector :disabled{cursor:not-allowed;opacity:.65}
-    .fit-selector input:focus-visible,.fit-selector button:focus-visible{outline:3px solid var(--accent-color,#c58b62);outline-offset:3px}
-    @media(max-width:600px){.fit-selector fieldset{padding:12px}.fit-unavailable>span{flex-basis:100px}}
+    .ref-btn-cart:hover {
+      background: #FFF7ED;
+      transform: translateY(-1px);
+    }
+
+    .ref-btn-buy {
+      flex: 1.25;
+      height: 48px;
+      background: var(--ref-orange);
+      border: none;
+      color: #FFFFFF;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.25);
+    }
+    .ref-btn-buy:hover {
+      background: var(--ref-orange-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Error Message Banner */
+    .ref-error-banner {
+      display: none;
+      background: #FEE2E2;
+      border: 1px solid #FECACA;
+      color: #DC2626;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    /* ==========================================================================
+       MODALS: Size Guide, Image Lightbox, Sticky Buy Bar
+       ========================================================================== */
+    .modal-backdrop-custom {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 25, 44, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 99990;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop-custom.is-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    .size-guide-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -46%);
+      width: min(92vw, 680px);
+      max-height: 85vh;
+      background: #FFFFFF;
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(11, 25, 44, 0.25);
+      z-index: 99995;
+      overflow-y: auto;
+      padding: 28px 32px;
+      opacity: 0;
+      transition: all 0.22s ease;
+    }
+    .size-guide-modal.is-visible {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+
+    .size-guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ref-border);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .size-guide-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+    }
+    .size-guide-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #94A3B8;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .size-guide-close:hover {
+      color: var(--ref-text-dark);
+    }
+
+    /* Format badges & multi-size action links */
+    .format-price-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ref-orange);
+      background: var(--ref-peach-bg);
+      border: 1px solid var(--ref-peach-border);
+      padding: 2px 7px;
+      border-radius: 4px;
+      line-height: 1.2;
+    }
+    .size-action-link:hover {
+      text-decoration: underline !important;
+      opacity: 0.85;
+    }
+
+    /* Lightbox Modal */
+    .pd-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 25, 44, 0.9);
+      backdrop-filter: blur(6px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .pd-modal.is-open {
+      display: flex;
+    }
+    .pd-modal-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .pd-modal-img {
+      max-width: 100%;
+      max-height: 82vh;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #FFFFFF;
+    }
+    .pd-modal-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: none;
+      border: none;
+      color: #FFFFFF;
+      font-size: 32px;
+      cursor: pointer;
+    }
+
+    /* Sticky Buy Bar */
+    .sticky-buy-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #FFFFFF;
+      border-top: 1px solid var(--ref-border);
+      box-shadow: 0 -4px 20px rgba(11, 25, 44, 0.08);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 1000;
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+    }
+    .sticky-buy-bar.is-visible {
+      transform: translateY(0);
+    }
+    .sticky-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .sticky-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid var(--ref-border);
+    }
+    .sticky-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ref-text-dark);
+      margin: 0 0 2px;
+    }
+    .sticky-badges {
+      font-size: 12px;
+      color: var(--ref-text-muted);
+      font-weight: 600;
+    }
+    .sticky-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .sticky-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ref-orange);
+    }
   </style>
-<%- include('partials/theme') %><link rel="stylesheet" href="/css/business.css"></head>
+</head>
 
-<body><%- include('partials/header') %>
-<main class="pd-page"><nav aria-label="Breadcrumb"><a href="/products">Available Patterns</a> / <% if(product.category){ %><a href="/products?category=<%= encodeURIComponent(product.category) %>"><%= product.category.replaceAll('-',' ') %></a> / <% } %><%= product.name %></nav>
-<section class="pd-product pd-grid"><div data-protected-content><div class="pd-image-box preview-watermark" data-watermark="Apparel Easy Patterns - Preview"><% if(product.images?.length){ %><img src="<%= product.images[0] %>" alt="<%= product.name %>"><% }else{ %><div class="pattern-placeholder">Product image coming soon</div><% } %></div>
-<div class="pattern-gallery preview-watermark" data-watermark="Apparel Easy Patterns - Preview"><% (product.images||[]).slice(1).forEach((src,index)=>{ %><img loading="lazy" src="<%= src %>" alt="<%= product.name %> - view <%= index+2 %>"><% }) %><% if(product.sample_image_url){ %><figure><img src="<%= product.sample_image_url %>" alt="Finished garment sample for <%= product.name %>"><figcaption>Finished garment / sample</figcaption></figure><% } %></div>
-<% if(product.video_url){ %><div class="preview-watermark" data-watermark="Apparel Easy Patterns - Preview"><video class="pattern-video" controls preload="metadata" aria-label="<%= product.name %> product video" src="<%= product.video_url %>"></video></div><% } %></div>
-<div><span class="pd-kicker">Ready-to-use apparel pattern</span><h1 class="pd-title"><%= product.name %></h1><p data-protected-content><%= product.description || 'Choose the pattern options available for your sampling and garment-development requirements.' %></p>
-<% if(product.status==='coming_soon'){ %><p class="pattern-notice">COMING SOON</p><a href="/pattern-updates">Get pattern updates</a><% }else{ %>
-<%
-const positivePrice=value=>value!==null && value!==undefined && String(value).trim()!=='' && Number.isFinite(Number(value)) && Number(value)>0;
-const configuredSizes=(product.available_sizes || []).filter(size=>typeof size==='string' && /^[a-zA-Z0-9 ._-]{1,40}$/.test(size));
-const customWork=row=>/custom|modification/i.test(String(row.name || row.file_name || ''));
-const purchasableFile=file=>file.active===true && /^[a-f0-9]{24}$/i.test(String(file._id)) && positivePrice(file.file_price) && !customWork(file);
-const formatName=file=>file.purpose==='dxf'?'DXF':/^(hpgl|plt)$/i.test(file.file_type || '')?'HPGL Printable':/^pdf$/i.test(file.file_type || '')?'PDF':null;
-const documentFile=file=>['specs','tech_pack'].includes(file.purpose);
-const fileGroup=file=>documentFile(file)?'documents':formatName(file)?'formats':'additional';
-const fileMatchesLabel=(file,label,group)=>{
-  if(group==='formats')return formatName(file)===label;
-  if(group==='documents'){
-    const name=String(file.file_name||'').trim().toLowerCase();
-    const target=label.toLowerCase();
-    if(target==='measurement chart')return name==='measurement chart' || (file.purpose==='specs' && /(?:measurement|measure)/i.test(name));
-    if(target==='basic spec sheet / pom')return name==='basic spec sheet / pom' || name==='basic spec sheet' || name==='spec sheet' || name==='pom' || (file.purpose==='tech_pack' && /(?:spec|pom)/i.test(name));
-    return name===target;
-  }
-  return false;
-};
-const baseReady=optionAvailability.printable && product.pattern_options?.printable===true && positivePrice(product.base_price);
-const physicalReady=optionAvailability.physical && product.pattern_options?.physical===true && positivePrice(product.physical_price) && (product.size_prices || []).every(row=>positivePrice(row.price));
-const trialReady=optionAvailability.trial && product.pattern_options?.trial===true && positivePrice(product.trial_price);
-%>
-<form id="pattern-purchase" class="pattern-options fit-selector" aria-labelledby="fit-selector-title">
-<h2 id="fit-selector-title">SELECT YOUR FIT BLOCK</h2>
-<p>Choose from the configured options for this product. Unavailable choices cannot be purchased. Category, style and fabric width are not included in your order.</p>
-<fieldset><legend>1. Fit Category</legend><div class="fit-unavailable"><% ['Men','Women','Kids','Innerwear'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div></fieldset>
-<fieldset><legend>2. Fit / Style</legend><div class="fit-unavailable"><% ['Regular','Slim','Relaxed','Oversized','Custom'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div></fieldset>
-<% for(const group of ['formats','documents']){ %>
-<fieldset><legend><%= group==='formats'?'3. File Format':'4. Digital Documents' %></legend>
-<div class="fit-unavailable"><% (group==='formats'?['DXF','HPGL Printable','PDF']:['Measurement Chart','Basic Spec Sheet / POM','Construction Details','SPI Details','Fabric Guide']).forEach(label=>{const mapped=files.some(file=>fileGroup(file)===group && fileMatchesLabel(file,label,group) && purchasableFile(file)); %><% if(!mapped){ %><span><%= label %> <small>Enquire for availability</small></span><% } %><% }) %></div>
-<% files.forEach((file,index)=>{if(fileGroup(file)!==group)return;const ready=purchasableFile(file); %>
-<label class="fit-option"><input class="pattern-file" data-file-index="<%= index %>" type="checkbox" value="<%= file._id %>" data-price="<%= ready?Number(file.file_price):'' %>" data-per-selected-size="<%= file.price_per_selected_size?'1':'0' %>" <%= ready?'':'disabled' %>> <strong><%= group==='formats'?formatName(file):file.file_name %></strong><% if(ready){ %> &mdash; &#8377;<%= Number(file.file_price).toLocaleString('en-IN') %><%= file.price_per_selected_size?' per selected size':'' %><% }else{ %> &mdash; Not available yet<% } %><small class="pattern-file-price-detail" data-file-index="<%= index %>"><%= ready?(file.price_per_selected_size?'Select sizes to calculate this file option.':'Flat option price.'):'Enquire for availability and pricing.' %></small><small><%= file.file_name %> &middot; <%= file.file_type %></small></label>
-<% }) %>
-<small><%= group==='formats'?'Optional files are charged separately from the base printable option below.':'Only the named configured documents are offered; separate document contents are not implied.' %></small>
-</fieldset><% } %>
-<fieldset><legend>5. Fabric Width (inches)</legend><div class="fit-unavailable"><% [58,60,62,64,68,72].forEach(width=>{ %><span><%= width %> inches <small>Enquire for availability</small></span><% }) %></div><small>No width-specific file or fabric compatibility is confirmed by this list.</small></fieldset>
-<fieldset><legend>6. Sizes</legend><% if(configuredSizes.length){ %><div class="pattern-sizes"><% configuredSizes.forEach(size=>{ %><label><input type="checkbox" class="pattern-size" value="<%= size %>"> <%= size %></label><% }) %></div><% }else{ %><p>No sizes are configured for purchase. Enquire for availability.</p><% } %>
-<div class="fit-unavailable"><% ['XS','S','M','L','XL','XXL','3XL','4XL'].filter(size=>!configuredSizes.includes(size)).forEach(size=>{ %><span><%= size %> <small>Not available yet</small></span><% }) %></div><small>Size identifiers are shown as configured. Selected sizes do not imply separate size-specific files.</small>
-<% if(baseReady){ %><small>One size is included with the base printable option.<% if(positivePrice(product.additional_size_price)){ %> Each additional printable size: &#8377;<%= Number(product.additional_size_price).toLocaleString('en-IN') %>.<% }else{ %> Additional printable sizes require a confirmed price; select one size for this option.<% } %></small><% } %></fieldset>
-<fieldset><legend>7. Pattern Type</legend>
-<label class="fit-option"><input id="printable-option" type="checkbox" <%= baseReady?'checked':'disabled' %>> <strong>Soft Copy &ndash; Download (base printable file)</strong><% if(baseReady){ %> &mdash; &#8377;<%= Number(product.base_price).toLocaleString('en-IN') %><% }else{ %> &mdash; Not available yet<% } %><small>Select optional digital files above independently. The base file is charged only once when checked; its format is as listed for this product.</small></label>
-<label class="fit-option"><input id="physical-option" type="checkbox" <%= physicalReady?'':'disabled' %>> <strong>Hard Copy &ndash; Printed Pattern</strong><% if(physicalReady){ %> &mdash; from &#8377;<%= Number(product.physical_price).toLocaleString('en-IN') %> per size<% }else{ %> &mdash; Not available yet<% } %><small>Soft Copy and Hard Copy may be purchased together. Configured size-specific physical prices apply.</small><% if(physicalReady){ (product.size_prices || []).forEach(row=>{ %><small><%= row.size %>: &#8377;<%= Number(row.price).toLocaleString('en-IN') %> per printed pattern</small><% }); } %></label>
-<% if(product.printable_dimensions){ %><p><%= product.printable_dimensions %></p><% } %>
-</fieldset>
-<fieldset><legend>8. Additional Options</legend><div class="fit-unavailable"><% ['Grading File','Marker File','Detailed Construction Guide'].forEach(label=>{ %><span><%= label %> <small>Enquire for availability</small></span><% }) %></div>
-<% files.forEach((file,index)=>{if(fileGroup(file)!=='additional')return;const ready=purchasableFile(file); %><label class="fit-option"><input class="pattern-file" data-file-index="<%= index %>" type="checkbox" value="<%= file._id %>" data-price="<%= ready?Number(file.file_price):'' %>" data-per-selected-size="<%= file.price_per_selected_size?'1':'0' %>" <%= ready?'':'disabled' %>> <%= file.file_name %><% if(ready){ %> &mdash; &#8377;<%= Number(file.file_price).toLocaleString('en-IN') %><%= file.price_per_selected_size?' per selected size':'' %><% }else{ %> &mdash; Not available yet<% } %><small class="pattern-file-price-detail" data-file-index="<%= index %>"><%= ready?'Configured optional file.':'Enquire for availability and pricing.' %></small><small><%= file.file_type %></small></label><% }) %>
-<% addons.forEach(addon=>{if(customWork(addon))return;const ready=addon.active===true && /^[a-f0-9]{24}$/i.test(String(addon._id)) && positivePrice(addon.price); %><label class="fit-option"><input class="pattern-addon" type="checkbox" value="<%= addon._id %>" data-price="<%= ready?Number(addon.price):'' %>" <%= ready?'':'disabled' %>> <%= addon.name %><% if(ready){ %> &mdash; &#8377;<%= Number(addon.price).toLocaleString('en-IN') %><% }else{ %> &mdash; Not available yet<% } %><small><%= addon.description || '' %></small></label><% }) %>
-<p><strong>Custom Modification</strong> &mdash; enquiry / quotation only. Not included in your cart or total.</p><% if(canVisit('/contact')){ %><a href="/contact">Enquire About Custom Modification</a><% }else{ %><p>Contact the studio using the details below to request a quotation.</p><% } %>
-<label class="fit-option"><input id="trial-option" type="checkbox" <%= trialReady?'':'disabled' %>> <strong>Order Trial Sample Based on This Pattern</strong><% if(trialReady){ %> &mdash; &#8377;<%= Number(product.trial_price).toLocaleString('en-IN') %> per size<% }else{ %> &mdash; Not available yet<% } %></label>
-</fieldset>
-<fieldset><legend>9. Delivery</legend><p>For Hard Copy or trial samples, delivery address, city, state and a six-digit PIN will be collected at checkout. Choose a configured delivery partner there; courier charges are calculated at checkout.</p><small>Digital-only orders do not require a delivery address.</small></fieldset>
-<div class="pattern-summary"><p>Subtotal: <strong id="pattern-subtotal"></strong></p><p>GST (18%): <span id="pattern-tax"></span></p><p>Total: <strong id="pdTotal" aria-live="polite"></strong></p></div>
-<button class="fashion-button" id="pdAddToCart" type="submit" <%= configuredSizes.length?'':'disabled' %>>ADD TO CART</button><button class="fashion-button" id="pdBuyNow" type="button" <%= configuredSizes.length?'':'disabled' %>>BUY NOW</button><p id="pattern-error" role="alert"></p><small>Sign in before checkout. Purchased digital files become accessible after verified payment and file preparation.</small>
-</form>
-<script id="pattern-config" type="application/json"><%- JSON.stringify({id:String(product._id),base:Number(product.base_price||0),extra:Number(product.additional_size_price||0),physical:Number(product.physical_price||0),trial:Number(product.trial_price||0),sizePrices:product.size_prices||[]}).replace(/</g,'\\u003c') %></script><script src="/js/pattern-product.js" defer></script><% } %>
-</div></section>
-<section class="pd-details" data-protected-content><h2>Measurement Chart / Basic Specifications</h2><p><%= product.size_information || 'Owner-provided measurement information will be added when available. Contact us for details before ordering.' %></p><% if(product.file_formats){ %><p>Available formats: <%= product.file_formats %></p><% } %><% if(product.download_information){ %><p><%= product.download_information %></p><% } %><% if(product.delivery_information){ %><p><%= product.delivery_information %></p><% } %><p>The pattern is intended for practical sampling and garment-development use. Stitch and evaluate your sample before production, and verify construction allowances, sewing requirements and production parameters for your own manufacturing process.</p></section>
-<section><h2>Need further pattern assistance or custom requirements?</h2><p>Reach out to us.</p><%- include('partials/support-contact') %></section>
-</main><%- include('partials/footer') %><script src="/js/main.js"></script><script src="/js/content-protection.js"></script></body></html>
+<body>
+  <%- include('partials/header') %>
+
+  <%
+    // Approved gallery images for Basic Slim Fit Shirt
+    const galleryImages = (product.images || []).filter(Boolean);
+    const mainImageSrc = galleryImages[0] || '';
+
+    // Pricing setup
+    const basePrice = Number(product.base_price || 399);
+    const physicalPrice = Number(product.physical_price ?? 0);
+    const configuredSizes = (product.available_sizes && product.available_sizes.length) ? product.available_sizes : ['S', 'M', 'L', 'XL', 'XXL'];
+    const initialSelectedSize = configuredSizes.includes('L') ? 'L' : configuredSizes[0];
+
+    // Format pricing
+    const fp = product.format_pricing || {};
+    const priceDxf = Number(fp.dxf || basePrice);
+    const priceHpgl = Number(fp.hpgl || basePrice);
+    const pricePlt = Number(fp.plt || basePrice);
+    const pricePdf = Number(fp.pdf || basePrice);
+    const bundlePrice = Number(fp.bundle_price || basePrice);
+    const isBundleActive = fp.active_bundle !== false;
+
+    // Find separate tech pack file if present
+    const techPackFile = (files || []).find(f => f.purpose === 'tech_pack' || /tech\s*pack/i.test(f.file_name));
+    const techPackPrice = Number(product.tech_pack_price || (techPackFile ? Number(techPackFile.file_price || 0) : 0));
+
+    // Digital pattern formats available
+    const hasPdfFile = true; // PDF is an independent format alongside DXF, HPGL and PLT.
+
+    // Mini Marker files if present
+    const miniMarkerFiles = (files || []).filter(f => /marker|fabric/i.test(f.file_name) || /marker/i.test(f.file_type));
+    const hasPdfMarker = miniMarkerFiles.some(f => (f.file_type || '').toLowerCase().includes('pdf') || (f.file_name || '').toLowerCase().endsWith('.pdf'));
+    const hasCadMarker = miniMarkerFiles.some(f => !(f.file_type || '').toLowerCase().includes('pdf') && !(f.file_name || '').toLowerCase().endsWith('.pdf'));
+
+    // GST percentage
+    const gstRate = typeof configuredGstRate === 'number' ? configuredGstRate : 0;
+  %>
+
+  <main class="pd-container">
+    <!-- Breadcrumb Navigation matching reference: Home > Products > Basic Slim Fit Shirt -->
+    <nav aria-label="Breadcrumb" class="pd-breadcrumbs">
+      <a href="/">Home</a>
+      <span class="sep">&gt;</span>
+      <a href="/products">Products</a>
+      <span class="sep">&gt;</span>
+      <span class="current"><%= product.name %></span>
+    </nav>
+
+    <!-- Main Two-Column Layout -->
+    <section class="pd-main-grid">
+      <!-- LEFT COLUMN -->
+      <div class="pd-left-col">
+        <!-- Main Garment Image Card with Zoom -->
+        <div class="ref-image-card">
+          <div class="ref-main-img-box">
+            <% if(mainImageSrc){ %><img id="mainProductImage" class="ref-main-img" src="<%= mainImageSrc %>" alt="<%= product.name %>"><% }else{ %><div class="pattern-placeholder">Finished garment photo coming soon</div><% } %>
+            <button type="button" class="ref-zoom-btn" id="zoomTriggerBtn" aria-label="Zoom image" title="Enlarge image">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- 5 Thumbnail Gallery -->
+          <div class="ref-thumb-row">
+            <% galleryImages.slice(0, 5).forEach((src, idx) => { %>
+              <button type="button" class="ref-thumb-btn <%= idx === 0 ? 'active' : '' %>" data-src="<%= src %>" aria-label="View <%= idx + 1 %>">
+                <img src="<%= src %>" alt="<%= product.name %> thumbnail <%= idx + 1 %>" loading="lazy">
+              </button>
+            <% }) %>
+          </div>
+        </div>
+
+        <!-- What's Included? Card matching Reference Image 2 -->
+        <div class="ref-included-card">
+          <h3 class="ref-included-title">What's Included?</h3>
+          <ul class="ref-included-list">
+            <li><span class="check-icon">&#10003;</span> Shirt Pattern (All Sizes)</li>
+            <li><span class="check-icon">&#10003;</span> PDF Instructions &amp; Sewing Guide</li>
+            <li><span class="check-icon">&#10003;</span> DXF &amp; HPGL Pattern Files</li>
+            <li><span class="check-icon">&#10003;</span> Measurement Chart</li>
+            <li><span class="check-icon">&#10003;</span> Tech Pack (BOM, Construction)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="pd-right-col">
+        <h1 class="ref-product-title"><%= product.name %></h1>
+        <div class="ref-product-sub">
+          <%= product.department ? product.department + "'s Pattern" : "Men's Pattern" %> &middot; Digital Pattern &amp; Printout
+        </div>
+
+        <!-- Price Display -->
+        <div class="ref-price-row">
+          <span class="ref-price-main">&#8377;<%= basePrice.toLocaleString('en-IN') %></span>
+          <% if (product.compare_at_price && product.compare_at_price > basePrice) { %>
+            <span class="ref-price-compare">&#8377;<%= Number(product.compare_at_price).toLocaleString('en-IN') %></span>
+            <span class="ref-discount-badge"><%= Math.round((1 - basePrice / product.compare_at_price) * 100) %>% OFF</span>
+          <% } %>
+        </div>
+
+        <p class="ref-short-desc">
+          <%= product.description || 'Professional slim fit shirt pattern with multiple file formats, measurement chart and construction guide.' %>
+        </p>
+
+        <!-- Purchase Form -->
+        <form id="pattern-purchase" class="ref-purchase-form" novalidate>
+          <!-- Error banner -->
+          <div id="pattern-error" class="ref-error-banner" role="alert"></div>
+
+          <!-- STEP 1 — FIT BLOCK PATTERN — SOFT COPY (Multi-Format & Multi-Size) -->
+          <div class="ref-step-section" id="section-soft-copy">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">1</span>
+                <span>FIT BLOCK PATTERN &mdash; SOFT COPY</span>
+              </div>
+            </div>
+            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 12px;">
+              Ready-to-download digital CAD pattern files. Choose one, multiple, or all formats.
+            </p>
+
+            <!-- Base printable option linked to digital format selection -->
+            <input type="checkbox" id="printable-option" checked style="display:none">
+
+            <!-- Format Cards Grid: DXF, HPGL, PLT, PDF -->
+            <div class="ref-format-grid" style="grid-template-columns: repeat(<%= hasPdfFile ? 4 : 3 %>, 1fr); margin-bottom: 14px;">
+              <!-- DXF Card -->
+              <label class="ref-format-card" id="formatCardDxf" data-format="dxf" data-price="<%= priceDxf %>">
+                <div class="format-card-top">
+                  <div class="format-checkbox-custom" id="formatCbDxf">
+                    <span style="display:none">&#10003;</span>
+                  </div>
+                  <span class="format-price-badge">&#8377;<%= priceDxf.toLocaleString('en-IN') %></span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="digital-format-check"
+                  id="formatInputDxf"
+                  value="dxf"
+                  style="position:absolute;opacity:0;pointer-events:none;"
+                >
+                <div class="format-title">DXF</div>
+                <div class="format-sub">Editable DXF Pattern</div>
+              </label>
+
+              <!-- HPGL Card -->
+              <label class="ref-format-card" id="formatCardHpgl" data-format="hpgl" data-price="<%= priceHpgl %>">
+                <div class="format-card-top">
+                  <div class="format-checkbox-custom" id="formatCbHpgl">
+                    <span style="display:none">&#10003;</span>
+                  </div>
+                  <span class="format-price-badge">&#8377;<%= priceHpgl.toLocaleString('en-IN') %></span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="digital-format-check"
+                  id="formatInputHpgl"
+                  value="hpgl"
+                  style="position:absolute;opacity:0;pointer-events:none;"
+                >
+                <div class="format-title">HPGL</div>
+                <div class="format-sub">HPGL Plotter File</div>
+              </label>
+
+              <!-- PLT Card -->
+              <label class="ref-format-card" id="formatCardPlt" data-format="plt" data-price="<%= pricePlt %>">
+                <div class="format-card-top">
+                  <div class="format-checkbox-custom" id="formatCbPlt">
+                    <span style="display:none">&#10003;</span>
+                  </div>
+                  <span class="format-price-badge">&#8377;<%= pricePlt.toLocaleString('en-IN') %></span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="digital-format-check"
+                  id="formatInputPlt"
+                  value="plt"
+                  style="position:absolute;opacity:0;pointer-events:none;"
+                >
+                <div class="format-title">PLT</div>
+                <div class="format-sub">Standard Plotter</div>
+              </label>
+
+              <!-- PDF Card -->
+              <% if (hasPdfFile) { %>
+                <label class="ref-format-card" id="formatCardPdf" data-format="pdf" data-price="<%= pricePdf %>">
+                  <div class="format-card-top">
+                    <div class="format-checkbox-custom" id="formatCbPdf">
+                      <span style="display:none">&#10003;</span>
+                    </div>
+                    <span class="format-price-badge">&#8377;<%= pricePdf.toLocaleString('en-IN') %></span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="digital-format-check"
+                    id="formatInputPdf"
+                    value="pdf"
+                    style="position:absolute;opacity:0;pointer-events:none;"
+                  >
+                  <div class="format-title">PDF</div>
+                  <div class="format-sub">Approved Pattern PDF</div>
+                </label>
+              <% } %>
+            </div>
+
+            <!-- Soft Copy Size Selection -->
+            <div id="digitalSizeSelection" style="background:var(--ref-bg-light);border:1px solid var(--ref-border);border-radius:10px;padding:14px;margin-top:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
+                  <span>Select Digital Sizes</span>
+                  <span style="font-size:11.5px;font-weight:500;color:var(--ref-text-muted);" id="softSizeCountLabel">(1 size selected)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button type="button" id="btnSelectAllSoftSizes" class="size-action-link" style="background:none;border:none;color:var(--ref-orange);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">
+                    Select All Sizes
+                  </button>
+                  <span style="color:var(--ref-border-strong);">&middot;</span>
+                  <button type="button" id="btnClearSoftSizes" class="size-action-link" style="background:none;border:none;color:var(--ref-text-muted);font-size:12px;font-weight:600;cursor:pointer;padding:0;">
+                    Clear Selection
+                  </button>
+                  <span style="color:var(--ref-border-strong);">&middot;</span>
+                  <% if (product.size_chart_visible !== false) { %>
+                  <button type="button" id="btn-size-guide" class="ref-size-chart-btn" aria-label="Open size chart" style="padding:2px 8px;font-size:12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.3 8.7l-2-2-1.4 1.4 2 2M16.5 13.5l-2-2-1.4 1.4 2 2M11.7 18.3l-2-2-1.4 1.4 2 2"></path>
+                      <path d="M2 22l20-20"></path>
+                    </svg>
+                    <span>Size Chart</span>
+                  </button>
+                  <% } %>
+                </div>
+              </div>
+
+              <div class="ref-size-pills-row" id="softSizePillsRow" role="group" aria-label="Soft Copy Size Options">
+                <% configuredSizes.forEach(size => { %>
+                  <label class="ref-size-pill <%= size === initialSelectedSize ? 'selected' : '' %>" data-soft-size="<%= size %>">
+                    <input
+                      type="checkbox"
+                      name="selected_sizes"
+                      class="pattern-size soft-size-check"
+                      value="<%= size %>"
+                      <%= size === initialSelectedSize ? 'checked' : '' %>
+                      style="position:absolute;opacity:0;pointer-events:none;"
+                    >
+                    <span><%= size %></span>
+                  </label>
+                <% }) %>
+              </div>
+            </div>
+            <small style="display:block;font-size:11.5px;color:var(--ref-text-muted);margin-top:8px;">
+              Digital Pattern purchase includes 24-hour secure private download access per selected size and format.
+            </small>
+          </div>
+
+          <!-- STEP 2 — BASIC CONSTRUCTION TECH PACK -->
+          <div class="ref-step-section">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">2</span>
+                <span>BASIC CONSTRUCTION TECH PACK</span>
+              </div>
+            </div>
+
+            <label class="ref-option-card <%= (techPackFile || techPackPrice > 0) ? '' : 'disabled-add' %>" id="techPackCard">
+              <div class="ref-card-cb" id="techPackCheckMark">
+                <span style="display:none">&#10003;</span>
+              </div>
+              <input
+                type="checkbox"
+                class="pattern-file"
+                id="techPackInput"
+                value="<%= techPackFile ? techPackFile._id : '' %>"
+                data-price="<%= techPackPrice %>"
+                <%= (techPackFile || techPackPrice > 0) ? '' : 'disabled' %>
+                style="position:absolute;opacity:0;pointer-events:none;"
+              >
+              <div class="ref-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div class="ref-card-text">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                  <strong>Add Tech Pack &mdash; <%= techPackPrice > 0 ? '₹' + techPackPrice.toLocaleString('en-IN') : 'Included where configured' %></strong>
+                  <% if (techPackPrice > 0) { %>
+                    <span class="format-price-badge">&#8377;<%= techPackPrice.toLocaleString('en-IN') %></span>
+                  <% } %>
+                </div>
+                <small>Basic Construction Details &middot; Measurement Chart &middot; POM Specifications (Points of Measure)</small>
+              </div>
+            </label>
+          </div>
+
+          <!-- STEP 3 — PHYSICAL PATTERN — HARD COPY (BROWN SHEET) -->
+          <div class="ref-step-section" id="section-physical-pattern">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">3</span>
+                <span>PHYSICAL PATTERN &mdash; HARD COPY (BROWN SHEET)</span>
+              </div>
+            </div>
+
+            <% const isPhysicalEnabled = product.pattern_options?.physical !== false; %>
+            <label class="ref-option-card <%= !isPhysicalEnabled ? 'ref-option-card--disabled' : '' %>" id="physicalPrintoutCard" style="margin-bottom:12px;<%= !isPhysicalEnabled ? 'opacity:0.6;cursor:not-allowed;' : '' %>">
+              <div class="ref-card-cb" id="physicalPrintoutCheckMark">
+                <span style="display:none">&#10003;</span>
+              </div>
+              <input
+                type="checkbox"
+                id="physical-option"
+                data-price="<%= physicalPrice %>"
+                <%= !isPhysicalEnabled ? 'disabled' : '' %>
+                style="position:absolute;opacity:0;pointer-events:none;"
+              >
+              <div class="ref-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+              </div>
+              <div class="ref-card-text">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                  <strong>Add Physical Pattern (Printed Brown Sheet)<% if (!isPhysicalEnabled) { %> <span style="font-size:11.5px;color:#ef4444;font-weight:600;">(Currently Unavailable)</span><% } %></strong>
+                  <span class="format-price-badge">&#8377;<%= physicalPrice.toLocaleString('en-IN') %> / Size</span>
+                </div>
+                <small>Ready-to-use pattern printed on brown pattern paper/sheet. <%= product.printable_dimensions || 'A0 Plot (1:1) on 80 GSM Paper' %></small>
+              </div>
+            </label>
+
+            <!-- Physical Size Selection Row (Independent of soft copy) -->
+            <div id="physicalSizesContainer" style="background:var(--ref-bg-light);border:1px solid var(--ref-border);border-radius:10px;padding:14px;opacity:0.45;pointer-events:none;transition:all 0.2s ease;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
+                  <span>SELECT PHYSICAL PATTERN SIZES</span>
+                  <span style="font-size:11.5px;font-weight:500;color:var(--ref-text-muted);" id="physSizeCountLabel">(0 selected)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button type="button" id="btnSelectAllPhysSizes" class="size-action-link" style="background:none;border:none;color:var(--ref-orange);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">
+                    Select All Physical Sizes
+                  </button>
+                  <span style="color:var(--ref-border-strong);">&middot;</span>
+                  <button type="button" id="btnClearPhysSizes" class="size-action-link" style="background:none;border:none;color:var(--ref-text-muted);font-size:12px;font-weight:600;cursor:pointer;padding:0;">
+                    Clear Physical Selection
+                  </button>
+                </div>
+              </div>
+
+              <div class="ref-size-pills-row" id="physSizePillsRow" role="group" aria-label="Physical Pattern Size Options">
+                <% configuredSizes.forEach(size => { %>
+                  <label class="ref-size-pill" data-phys-size="<%= size %>">
+                    <input
+                      type="checkbox"
+                      name="physical_sizes"
+                      class="phys-size-check"
+                      value="<%= size %>"
+                      data-price="<%= product.size_prices?.find(row => row.size === size)?.price ?? physicalPrice %>"
+                      style="position:absolute;opacity:0;pointer-events:none;"
+                    >
+                    <span><%= size %><small style="display:block;font-size:10px;font-weight:600;">&#8377;<%= Number(product.size_prices?.find(row => row.size === size)?.price ?? physicalPrice).toLocaleString('en-IN') %></small></span>
+                  </label>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 4 — FABRIC CONSUMPTION MARKERS -->
+          <div class="ref-step-section">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">5</span>
+                <span>FABRIC CONSUMPTION MARKERS</span>
+              </div>
+            </div>
+            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 10px;">
+              Basic solid-fabric consumption markers for the selected garment and size.
+            </p>
+
+            <div class="marker-files-grid">
+              <div class="marker-file-card">
+                <span class="marker-file-badge">PDF</span>
+                <div>
+                  <strong style="font-size:13px;display:block;color:var(--ref-text-dark);">PDF Mini Marker</strong>
+                  <span style="font-size:11.5px;color:<%= hasPdfMarker ? '#10B981' : '#64748B' %>;">
+                    <%= hasPdfMarker ? '✓ Available for download' : 'Upload pending (available on request)' %>
+                  </span>
+                </div>
+              </div>
+              <div class="marker-file-card">
+                <span class="marker-file-badge">CAD</span>
+                <div>
+                  <strong style="font-size:13px;display:block;color:var(--ref-text-dark);">CAD Mini Marker</strong>
+                  <span style="font-size:11.5px;color:<%= hasCadMarker ? '#10B981' : '#64748B' %>;">
+                    <%= hasCadMarker ? '✓ Available for download' : 'Upload pending (available on request)' %>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="marker-notice-box">
+              <strong>Notice:</strong> Fabric consumption is calculated strictly from verified marker data. Mini marker files are included in release assets where uploaded.
+            </div>
+          </div>
+
+          <!-- STEP 6 — CUSTOMIZE MARKERS -->
+          <div class="ref-step-section">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">6</span>
+                <span>CUSTOMIZE MARKERS</span>
+              </div>
+            </div>
+            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 12px;">
+              Specify fabric repeat dimensions for custom engineered marker requests.
+            </p>
+
+            <div class="custom-marker-tabs" role="tablist">
+              <button type="button" class="custom-marker-tab-btn active" id="tabBtnStripes" role="tab" aria-selected="true" aria-controls="panelStripes">
+                A. Markers for Stripes
+              </button>
+              <button type="button" class="custom-marker-tab-btn" id="tabBtnChecks" role="tab" aria-selected="false" aria-controls="panelChecks">
+                B. Markers for Checks
+              </button>
+            </div>
+
+            <!-- Option A: Stripes Panel -->
+            <div class="custom-marker-panel active" id="panelStripes" role="tabpanel">
+              <h5 style="margin:0 0 10px;font-size:13.5px;color:var(--ref-text-dark);font-weight:700;">
+                A. CUSTOMIZE MARKERS FOR STRIPES
+              </h5>
+              <div class="marker-field-row">
+                <div class="marker-field-group">
+                  <label for="inputStripesRepeat">Stripes Repeat Width (cm) *</label>
+                  <input type="number" id="inputStripesRepeat" name="stripes_repeat_width_cm" min="0.1" step="0.1" placeholder="e.g. 5.0">
+                  <span class="marker-field-error" id="errStripesRepeat">Enter a valid positive number in cm</span>
+                </div>
+                <div class="marker-field-group">
+                  <label for="inputStripesCuttable">Fabric Cuttable Width (cm) *</label>
+                  <input type="number" id="inputStripesCuttable" name="stripes_fabric_width_cm" min="1" step="0.5" placeholder="e.g. 148.0">
+                  <span class="marker-field-error" id="errStripesCuttable">Enter a valid cuttable width in cm</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Option B: Checks Panel -->
+            <div class="custom-marker-panel" id="panelChecks" role="tabpanel">
+              <h5 style="margin:0 0 10px;font-size:13.5px;color:var(--ref-text-dark);font-weight:700;">
+                B. CUSTOMIZE MARKERS FOR CHECKS
+              </h5>
+              <div class="marker-field-row">
+                <div class="marker-field-group">
+                  <label for="inputChecksWarp">Stripes / Warp Repeat Width (cm) *</label>
+                  <input type="number" id="inputChecksWarp" name="checks_warp_repeat_cm" min="0.1" step="0.1" placeholder="e.g. 6.5">
+                  <span class="marker-field-error" id="errChecksWarp">Enter a valid warp repeat in cm</span>
+                </div>
+                <div class="marker-field-group">
+                  <label for="inputChecksWeft">Plaids / Weft Repeat Width (cm) *</label>
+                  <input type="number" id="inputChecksWeft" name="checks_weft_repeat_cm" min="0.1" step="0.1" placeholder="e.g. 8.0">
+                  <span class="marker-field-error" id="errChecksWeft">Enter a valid weft repeat in cm</span>
+                </div>
+              </div>
+              <div class="marker-field-group" style="max-width:280px;">
+                <label for="inputChecksCuttable">Fabric Cuttable Width (cm) *</label>
+                <input type="number" id="inputChecksCuttable" name="checks_fabric_width_cm" min="1" step="0.5" placeholder="e.g. 148.0">
+                <span class="marker-field-error" id="errChecksCuttable">Enter a valid cuttable width in cm</span>
+              </div>
+            </div>
+
+            <div class="marker-notice-box" style="margin-top:10px;">
+              <strong>Customization Workflow:</strong> Entered repeat dimensions are submitted with your order enquiry. Automated instant CAD generation is subject to verified marker engine integration.
+            </div>
+
+            <!-- Live Studio Marker Specification Enquiry -->
+            <div class="marker-enquiry-box" style="margin-top:14px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:14px;">
+              <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);margin-bottom:6px;">
+                Submit Custom Marker Specifications to Pattern Studio
+              </div>
+              <p style="font-size:12px;color:var(--ref-text-muted);margin:0 0 10px;">
+                Enter your fabric repeat dimensions above and contact details below. Our CAD pattern engineering team will review and prepare your custom marker.
+              </p>
+              <div class="marker-field-row" style="margin-bottom:10px;">
+                <div class="marker-field-group">
+                  <label for="markerLeadName" style="font-size:11.5px;">Your Name *</label>
+                  <input type="text" id="markerLeadName" placeholder="Full name" style="height:36px;font-size:13px;" value="<%= typeof user !== 'undefined' && user?.name ? user.name : '' %>">
+                </div>
+                <div class="marker-field-group">
+                  <label for="markerLeadEmail" style="font-size:11.5px;">Email Address *</label>
+                  <input type="email" id="markerLeadEmail" placeholder="name@domain.com" style="height:36px;font-size:13px;" value="<%= typeof user !== 'undefined' && user?.email ? user.email : '' %>">
+                </div>
+                <div class="marker-field-group">
+                  <label for="markerLeadWhatsapp" style="font-size:11.5px;">WhatsApp Number *</label>
+                  <input type="tel" id="markerLeadWhatsapp" placeholder="+91 98765 43210" style="height:36px;font-size:13px;">
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <button type="button" id="btnSubmitMarkerEnquiry" style="display:inline-flex;align-items:center;gap:6px;background:var(--ref-orange);color:#FFFFFF;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+                  <span>Submit Marker Specifications</span> &rarr;
+                </button>
+                <span id="markerSubmitStatus" style="font-size:12.5px;font-weight:600;display:none;" role="status"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ORDER SUMMARY with Dynamic Multi-Size & Multi-Format Breakdown -->
+          <div class="ref-summary-box">
+            <h4>Order Summary</h4>
+            <div class="ref-summary-row">
+              <span>Selected Product</span>
+              <strong style="text-align:right;"><%= product.name %></strong>
+            </div>
+            <div class="ref-summary-row" id="sumSoftCopyRow">
+              <span id="sumSoftCopyLabel">Soft Copy (1 size &times; 1 format)</span>
+              <strong id="sumSoftCopyPrice">&#8377;<%= basePrice.toLocaleString('en-IN') %></strong>
+            </div>
+            <div class="ref-summary-row" id="sumPhysicalRow" style="display:none">
+              <span id="sumPhysicalLabel">Hard Copy (0 sizes)</span>
+              <strong id="sumPhysicalPrice">&#8377;0</strong>
+            </div>
+            <div class="ref-summary-row" id="sumTechPackRow" style="display:none">
+              <span>Tech Pack (Optional)</span>
+              <strong id="sumTechPackPrice">&#8377;0</strong>
+            </div>
+            <div class="ref-summary-row" id="sumMarkerRow">
+              <span>Marker Service</span>
+              <span id="sumMarkerStatus" style="font-size:12px;color:var(--ref-text-muted);">Solid mini marker included</span>
+            </div>
+            <div class="ref-summary-divider"></div>
+            <div class="ref-summary-row">
+              <span>Subtotal</span>
+              <strong id="sumSubtotal">&#8377;<%= basePrice.toLocaleString('en-IN') %></strong>
+            </div>
+            <div class="ref-summary-row">
+              <span>Tax (GST <%= gstRate %>%)</span>
+              <strong id="sumTaxAmount">&#8377;<%= Math.round(basePrice * (gstRate / 100)).toLocaleString('en-IN') %></strong>
+            </div>
+            <div class="ref-summary-row" id="sumCourierRow">
+              <span>Courier Charges</span>
+              <span id="sumCourierStatus" style="font-size:12.5px;color:var(--ref-text-muted);">Calculated at checkout</span>
+            </div>
+            <div class="ref-summary-divider"></div>
+            <div class="ref-summary-total-row">
+              <span>Total Amount</span>
+              <span class="ref-summary-total-amount" id="pdTotal">&#8377;<%= (basePrice + Math.round(basePrice * (gstRate / 100))).toLocaleString('en-IN') %></span>
+            </div>
+          </div>
+
+          <!-- Hidden compatibility elements for backend & calculations -->
+          <span id="pattern-subtotal" style="display:none">&#8377;<%= basePrice %></span>
+          <span id="pattern-tax" style="display:none">&#8377;<%= Math.round(basePrice * (gstRate / 100)) %></span>
+
+          <!-- Two Buttons: Add to Cart (Left) & Place Order (Right) -->
+          <div class="ref-actions-row">
+            <button type="submit" id="pdAddToCart" class="ref-btn-cart">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+              <span>Add to Cart</span>
+            </button>
+            <button type="button" id="pdBuyNow" class="ref-btn-buy">
+              <span>Place Order</span>
+              <span style="font-size:18px;line-height:1;">&rarr;</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <% if (product.size_chart_visible !== false) { %>
+    <!-- Size Guide Modal -->
+    <div id="size-guide-backdrop" class="modal-backdrop-custom" aria-hidden="true"></div>
+    <div id="size-guide-modal" class="size-guide-modal" role="dialog" aria-modal="true" aria-labelledby="sizeGuideTitle">
+      <div class="size-guide-header">
+        <h3 id="sizeGuideTitle">Standard Size Guide &amp; Fit Measurements</h3>
+        <button type="button" id="size-guide-close" class="size-guide-close" aria-label="Close size guide">&times;</button>
+      </div>
+      <div>
+        <% if (product.size_chart_pdf) { %>
+          <div class="size-chart-pdf-container" style="margin-bottom:18px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;padding:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+              <div style="font-size:13px;font-weight:700;color:#1E293B;display:flex;align-items:center;gap:6px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span><%= product.size_chart_pdf_name || 'Size Chart Guide (PDF)' %></span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <a href="<%= product.size_chart_pdf %>" target="_blank" rel="noopener noreferrer" class="btn ghost small" style="padding:5px 12px;font-size:12px;font-weight:700;color:#0284C7;border:1px solid #0284C7;border-radius:6px;background:#FFF;text-decoration:none;">
+                  View PDF &nearr;
+                </a>
+                <a href="<%= product.size_chart_pdf %>" download="<%= product.size_chart_pdf_name || 'Size-Chart.pdf' %>" class="btn ghost small" style="padding:5px 12px;font-size:12px;font-weight:700;color:#059669;border:1px solid #059669;border-radius:6px;background:#FFF;text-decoration:none;">
+                  Download PDF &darr;
+                </a>
+              </div>
+            </div>
+            <div style="position:relative;width:100%;height:380px;border-radius:6px;overflow:hidden;background:#FFF;border:1px solid #E2E8F0;">
+              <iframe src="<%= product.size_chart_pdf %>#toolbar=1" width="100%" height="100%" style="border:none;" title="Size Chart PDF Document">
+                <p style="padding:16px;text-align:center;font-size:13px;color:#64748B;">
+                  Your browser does not display embedded PDFs inline.
+                  <a href="<%= product.size_chart_pdf %>" target="_blank" style="color:#0284C7;font-weight:700;">Click here to open the Size Chart PDF</a>.
+                </p>
+              </iframe>
+            </div>
+          </div>
+        <% } %>
+        <% if (product.size_chart_image || product.size_chart_url) { %>
+          <div style="text-align:center;margin-bottom:16px;">
+            <img src="<%= product.size_chart_image || product.size_chart_url %>" alt="Size Guide for <%= product.name %>" style="max-width:100%;border-radius:8px;border:1px solid #CBD5E1;">
+          </div>
+        <% } %>
+        <p style="font-size:13.5px;color:#475569;margin:0 0 16px;">
+          Select a size below to apply it directly to your order. All blocks include standard industrial seam allowances.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+          <% configuredSizes.forEach(size => { %>
+            <button type="button" class="ref-size-pill size-guide-select-chip" data-size="<%= size %>">
+              <%= size %>
+            </button>
+          <% }) %>
+        </div>
+        <% if (product.size_information) { %>
+          <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:14px;font-size:13px;line-height:1.6;color:#334155;white-space:pre-line;">
+            <%= product.size_information %>
+          </div>
+        <% } %>
+        <p style="font-size:12px;color:#64748B;margin:14px 0 0;">
+          Need custom POM grading? <a href="/classes/enquiry" style="color:#D97706;font-weight:700;">Request Custom Block specifications &rarr;</a>
+        </p>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Fullscreen Image Zoom Lightbox Modal -->
+    <div id="imageLightboxModal" class="pd-modal" role="dialog" aria-modal="true" aria-label="Garment image preview">
+      <div class="pd-modal-content">
+        <button type="button" class="pd-modal-close" id="closeLightboxBtn" aria-label="Close preview">&times;</button>
+        <img id="lightboxImg" class="pd-modal-img" src="" alt="Garment enlarged preview">
+      </div>
+    </div>
+
+    <!-- Sticky Buy Bar -->
+    <aside id="sticky-buy-bar" class="sticky-buy-bar" aria-label="Sticky Purchase Bar">
+      <div class="sticky-info">
+        <% if(mainImageSrc){ %><img src="<%= mainImageSrc %>" alt="" class="sticky-thumb" id="stickyThumb"><% } %>
+        <div>
+          <h4 class="sticky-title"><%= product.name %></h4>
+          <span class="sticky-badges" id="stickySizeBadge">Size: <%= initialSelectedSize %></span>
+        </div>
+      </div>
+      <div class="sticky-actions">
+        <span class="sticky-price" id="stickyTotal">&#8377;<%= (basePrice + Math.round(basePrice * (gstRate / 100))).toLocaleString('en-IN') %></span>
+        <button type="button" id="stickyAddToCart" class="ref-btn-cart" style="height:40px;padding:0 16px;font-size:13px;">Add to Cart</button>
+        <button type="button" id="stickyBuyNow" class="ref-btn-buy" style="height:40px;padding:0 20px;font-size:13px;">Place Order &rarr;</button>
+      </div>
+    </aside>
+
+    <!-- Configuration payload for client-side scripts -->
+    <script id="pattern-config" type="application/ld+json"><%- JSON.stringify({
+      id: String(product._id),
+      base: basePrice,
+      extra: Number(product.additional_size_price || 0),
+      physical: physicalPrice,
+      trial: Number(product.trial_price || 0),
+      formatPricing: fp,
+      bundlePrice: bundlePrice,
+      isBundleActive: isBundleActive,
+      priceDxf: priceDxf,
+      priceHpgl: priceHpgl,
+      pricePlt: pricePlt,
+      pricePdf: pricePdf,
+      techPackPrice: techPackPrice,
+      sizePrices: product.size_prices || []
+    }).replace(/</g, '\\u003c') %></script>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <!-- Interactive Client-side Logic -->
+  <script>
+  (() => {
+    // 1. Gallery Thumbnail Switching
+    const mainImg = document.getElementById('mainProductImage');
+    const thumbs = document.querySelectorAll('.ref-thumb-btn');
+
+    thumbs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newSrc = btn.dataset.src;
+        if (!newSrc || !mainImg) return;
+        mainImg.style.opacity = '0.35';
+        thumbs.forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        const pre = new Image();
+        pre.onload = () => {
+          mainImg.src = newSrc;
+          mainImg.style.opacity = '1';
+        };
+        pre.src = newSrc;
+      });
+    });
+
+    // 2. Image Zoom Lightbox
+    const modal = document.getElementById('imageLightboxModal');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const zoomBtn = document.getElementById('zoomTriggerBtn');
+    const closeBtn = document.getElementById('closeLightboxBtn');
+
+    function openModal() {
+      if (!modal || !lightboxImg || !mainImg) return;
+      lightboxImg.src = mainImg.src;
+      modal.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.remove('is-open');
+      document.body.style.overflow = '';
+    }
+    zoomBtn?.addEventListener('click', openModal);
+    mainImg?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    // 3. Size Guide Modal
+    const btnSizeGuide = document.getElementById('btn-size-guide');
+    const sizeGuideModal = document.getElementById('size-guide-modal');
+    const sizeGuideBackdrop = document.getElementById('size-guide-backdrop');
+    const sizeGuideClose = document.getElementById('size-guide-close');
+
+    function openSizeGuide() {
+      sizeGuideModal?.classList.add('is-visible');
+      sizeGuideBackdrop?.classList.add('is-visible');
+    }
+    function closeSizeGuide() {
+      sizeGuideModal?.classList.remove('is-visible');
+      sizeGuideBackdrop?.classList.remove('is-visible');
+    }
+    btnSizeGuide?.addEventListener('click', openSizeGuide);
+    sizeGuideClose?.addEventListener('click', closeSizeGuide);
+    sizeGuideBackdrop?.addEventListener('click', closeSizeGuide);
+
+    // Synchronize size chip from guide into main form
+    document.querySelectorAll('.size-guide-select-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sz = btn.dataset.size;
+        selectSize(sz);
+        closeSizeGuide();
+      });
+    });
+
+    // 4. STEP 1 — Soft Copy Sizes Selection (Multi-size checkboxes)
+    const softPills = document.querySelectorAll('.ref-size-pill[data-soft-size]');
+    const btnSelectAllSoft = document.getElementById('btnSelectAllSoftSizes');
+    const btnClearSoft = document.getElementById('btnClearSoftSizes');
+    const softSizeCountLabel = document.getElementById('softSizeCountLabel');
+    const stickySizeBadge = document.getElementById('stickySizeBadge');
+
+    function getSelectedSoftSizes() {
+      const selected = [];
+      softPills.forEach(pill => {
+        const input = pill.querySelector('input.soft-size-check');
+        if (input && input.checked) selected.push(pill.dataset.softSize);
+      });
+      return selected;
+    }
+
+    function updateSoftSizePillStates() {
+      const selected = getSelectedSoftSizes();
+      softPills.forEach(pill => {
+        const input = pill.querySelector('input.soft-size-check');
+        if (input && input.checked) {
+          pill.classList.add('selected');
+        } else {
+          pill.classList.remove('selected');
+        }
+      });
+      if (softSizeCountLabel) {
+        softSizeCountLabel.textContent = '(' + selected.length + ' size' + (selected.length === 1 ? '' : 's') + ' selected)';
+      }
+      if (stickySizeBadge) {
+        stickySizeBadge.textContent = 'Size: ' + (selected.length > 0 ? selected.join(', ') : 'None');
+      }
+      recalculateTotals();
+    }
+
+    softPills.forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        const input = pill.querySelector('input.soft-size-check');
+        if (input?.disabled) return;
+        if (input) input.checked = !input.checked;
+        updateSoftSizePillStates();
+      });
+    });
+
+    btnSelectAllSoft?.addEventListener('click', () => {
+      softPills.forEach(pill => {
+        const input = pill.querySelector('input.soft-size-check');
+        if (input) input.checked = true;
+      });
+      updateSoftSizePillStates();
+    });
+
+    btnClearSoft?.addEventListener('click', () => {
+      softPills.forEach(pill => {
+        const input = pill.querySelector('input.soft-size-check');
+        if (input) input.checked = false;
+      });
+      updateSoftSizePillStates();
+    });
+
+    // 5. STEP 1 — Choose Digital File Formats
+    const formatConfigs = [
+      { card: 'formatCardDxf', input: 'formatInputDxf', cb: 'formatCbDxf' },
+      { card: 'formatCardHpgl', input: 'formatInputHpgl', cb: 'formatCbHpgl' },
+      { card: 'formatCardPlt', input: 'formatInputPlt', cb: 'formatCbPlt' },
+      { card: 'formatCardPdf', input: 'formatInputPdf', cb: 'formatCbPdf' }
+    ];
+
+    // Default select DXF, HPGL, PLT if present
+    ['formatCardDxf', 'formatCardHpgl', 'formatCardPlt'].forEach(id => {
+      const el = document.getElementById(id);
+      const inp = el ? el.querySelector('input') : null;
+      const mark = el ? el.querySelector('.format-checkbox-custom span') : null;
+      if (inp) inp.checked = true;
+      if (el) el.classList.add('checked');
+      if (mark) mark.style.display = 'inline';
+    });
+
+    formatConfigs.forEach(item => {
+      const cardEl = document.getElementById(item.card);
+      const inputEl = document.getElementById(item.input);
+      const cbEl = document.getElementById(item.cb);
+      cardEl?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!inputEl) return;
+        inputEl.checked = !inputEl.checked;
+        const mark = cbEl?.querySelector('span');
+        if (inputEl.checked) {
+          cardEl.classList.add('checked');
+          if (mark) mark.style.display = 'inline';
+        } else {
+          cardEl.classList.remove('checked');
+          if (mark) mark.style.display = 'none';
+        }
+        syncDigitalSizeAvailability();
+      });
+    });
+
+    function getSelectedDigitalFormats() {
+      return formatConfigs
+        .map(item => document.getElementById(item.input))
+        .filter(inp => inp && inp.checked)
+        .map(inp => inp.value);
+    }
+
+    function syncDigitalSizeAvailability() {
+      const enabled = getSelectedDigitalFormats().length > 0;
+      const selection = document.getElementById('digitalSizeSelection');
+      if (selection) {
+        selection.classList.toggle('is-disabled', !enabled);
+        selection.setAttribute('aria-disabled', String(!enabled));
+      }
+      softPills.forEach(pill => {
+        const input = pill.querySelector('input.soft-size-check');
+        if (input) {
+          input.disabled = !enabled;
+          if (!enabled) input.checked = false;
+        }
+      });
+      if (btnSelectAllSoft) btnSelectAllSoft.disabled = !enabled;
+      if (btnClearSoft) btnClearSoft.disabled = !enabled;
+      updateSoftSizePillStates();
+    }
+
+    // 6. STEP 2 — Tech Pack (Separate Optional Card)
+    const techPackCard = document.getElementById('techPackCard');
+    const techPackInput = document.getElementById('techPackInput');
+    const techPackCheckMark = document.getElementById('techPackCheckMark');
+    const sumTechPackRow = document.getElementById('sumTechPackRow');
+    const sumTechPackPrice = document.getElementById('sumTechPackPrice');
+
+    techPackCard?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (techPackInput?.disabled) return;
+      techPackInput.checked = !techPackInput.checked;
+      const mark = techPackCheckMark?.querySelector('span');
+      if (techPackInput.checked) {
+        techPackCard.classList.add('checked');
+        if (mark) mark.style.display = 'inline';
+        if (sumTechPackRow) sumTechPackRow.style.display = 'flex';
+        const price = Number(techPackInput.dataset.price || 0);
+        if (sumTechPackPrice) sumTechPackPrice.textContent = '₹' + price.toLocaleString('en-IN');
+      } else {
+        techPackCard.classList.remove('checked');
+        if (mark) mark.style.display = 'none';
+        if (sumTechPackRow) sumTechPackRow.style.display = 'none';
+      }
+      recalculateTotals();
+    });
+
+    // 7. STEP 3 — Physical Printout & Independent Physical Sizes
+    const physicalCard = document.getElementById('physicalPrintoutCard');
+    const physicalInput = document.getElementById('physical-option');
+    const physicalCheckMark = document.getElementById('physicalPrintoutCheckMark');
+    const physicalSizesContainer = document.getElementById('physicalSizesContainer');
+    const physPills = document.querySelectorAll('.ref-size-pill[data-phys-size]');
+    const btnSelectAllPhys = document.getElementById('btnSelectAllPhysSizes');
+    const btnClearPhys = document.getElementById('btnClearPhysSizes');
+    const physSizeCountLabel = document.getElementById('physSizeCountLabel');
+    const sumPhysicalRow = document.getElementById('sumPhysicalRow');
+    const sumPhysicalLabel = document.getElementById('sumPhysicalLabel');
+    const sumPhysicalPrice = document.getElementById('sumPhysicalPrice');
+
+    function getSelectedPhysSizes() {
+      const selected = [];
+      physPills.forEach(pill => {
+        const input = pill.querySelector('input.phys-size-check');
+        if (input && input.checked) selected.push(pill.dataset.physSize);
+      });
+      return selected;
+    }
+
+    function updatePhysSizePillStates() {
+      const selected = getSelectedPhysSizes();
+      physPills.forEach(pill => {
+        const input = pill.querySelector('input.phys-size-check');
+        if (input && input.checked) {
+          pill.classList.add('selected');
+        } else {
+          pill.classList.remove('selected');
+        }
+      });
+      if (physSizeCountLabel) {
+        physSizeCountLabel.textContent = '(' + selected.length + ' size' + (selected.length === 1 ? '' : 's') + ' selected)';
+      }
+      recalculateTotals();
+    }
+
+    physicalCard?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (physicalInput?.disabled) return;
+      physicalInput.checked = !physicalInput.checked;
+      const mark = physicalCheckMark?.querySelector('span');
+      if (physicalInput.checked) {
+        physicalCard.classList.add('checked');
+        if (mark) mark.style.display = 'inline';
+        if (physicalSizesContainer) {
+          physicalSizesContainer.style.opacity = '1';
+          physicalSizesContainer.style.pointerEvents = 'auto';
+        }
+        // If no physical sizes are selected yet, auto-select the chosen soft sizes or first size
+        const currentPhys = getSelectedPhysSizes();
+        if (currentPhys.length === 0) {
+          const softSizes = getSelectedSoftSizes();
+          const targetSizes = softSizes.length > 0 ? softSizes : [physPills[0]?.dataset.physSize].filter(Boolean);
+          physPills.forEach(pill => {
+            const input = pill.querySelector('input.phys-size-check');
+            if (input && targetSizes.includes(pill.dataset.physSize)) input.checked = true;
+          });
+          updatePhysSizePillStates();
+        }
+      } else {
+        physicalCard.classList.remove('checked');
+        if (mark) mark.style.display = 'none';
+        if (physicalSizesContainer) {
+          physicalSizesContainer.style.opacity = '0.45';
+          physicalSizesContainer.style.pointerEvents = 'none';
+        }
+      }
+      recalculateTotals();
+    });
+
+    physPills.forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        const input = pill.querySelector('input.phys-size-check');
+        if (input) input.checked = !input.checked;
+        updatePhysSizePillStates();
+      });
+    });
+
+    btnSelectAllPhys?.addEventListener('click', () => {
+      physPills.forEach(pill => {
+        const input = pill.querySelector('input.phys-size-check');
+        if (input) input.checked = true;
+      });
+      updatePhysSizePillStates();
+    });
+
+    btnClearPhys?.addEventListener('click', () => {
+      physPills.forEach(pill => {
+        const input = pill.querySelector('input.phys-size-check');
+        if (input) input.checked = false;
+      });
+      updatePhysSizePillStates();
+    });
+
+    // 7b. STEP 6 — Customize Markers Tabs & Numeric Validation
+    const tabBtnStripes = document.getElementById('tabBtnStripes');
+    const tabBtnChecks = document.getElementById('tabBtnChecks');
+    const panelStripes = document.getElementById('panelStripes');
+    const panelChecks = document.getElementById('panelChecks');
+
+    tabBtnStripes?.addEventListener('click', () => {
+      tabBtnStripes.classList.add('active');
+      tabBtnStripes.setAttribute('aria-selected', 'true');
+      tabBtnChecks?.classList.remove('active');
+      tabBtnChecks?.setAttribute('aria-selected', 'false');
+      panelStripes?.classList.add('active');
+      panelChecks?.classList.remove('active');
+    });
+
+    tabBtnChecks?.addEventListener('click', () => {
+      tabBtnChecks.classList.add('active');
+      tabBtnChecks.setAttribute('aria-selected', 'true');
+      tabBtnStripes?.classList.remove('active');
+      tabBtnStripes?.setAttribute('aria-selected', 'false');
+      panelChecks?.classList.add('active');
+      panelStripes?.classList.remove('active');
+    });
+
+    function validateMarkerNumber(input, errEl, minVal) {
+      if (!input) return true;
+      const val = input.value.trim();
+      if (!val) {
+        input.classList.remove('input-invalid');
+        if (errEl) errEl.style.display = 'none';
+        return true;
+      }
+      const num = Number(val);
+      if (!Number.isFinite(num) || num <= 0 || (minVal && num < minVal)) {
+        input.classList.add('input-invalid');
+        if (errEl) {
+          errEl.textContent = 'Enter a valid positive number in cm';
+          errEl.style.display = 'block';
+        }
+        return false;
+      }
+      input.classList.remove('input-invalid');
+      if (errEl) errEl.style.display = 'none';
+      return true;
+    }
+
+    const inpStripesRep = document.getElementById('inputStripesRepeat');
+    const errStripesRep = document.getElementById('errStripesRepeat');
+    const inpStripesCut = document.getElementById('inputStripesCuttable');
+    const errStripesCut = document.getElementById('errStripesCuttable');
+
+    const inpChecksWarp = document.getElementById('inputChecksWarp');
+    const errChecksWarp = document.getElementById('errChecksWarp');
+    const inpChecksWeft = document.getElementById('inputChecksWeft');
+    const errChecksWeft = document.getElementById('errChecksWeft');
+    const inpChecksCut = document.getElementById('inputChecksCuttable');
+    const errChecksCut = document.getElementById('errChecksCuttable');
+
+    [
+      { inp: inpStripesRep, err: errStripesRep, min: 0.1 },
+      { inp: inpStripesCut, err: errStripesCut, min: 1 },
+      { inp: inpChecksWarp, err: errChecksWarp, min: 0.1 },
+      { inp: inpChecksWeft, err: errChecksWeft, min: 0.1 },
+      { inp: inpChecksCut, err: errChecksCut, min: 1 }
+    ].forEach(({ inp, err, min }) => {
+      if (!inp) return;
+      inp.addEventListener('input', () => {
+        validateMarkerNumber(inp, err, min);
+        updateMarkerSummary();
+      });
+      inp.addEventListener('blur', () => {
+        validateMarkerNumber(inp, err, min);
+        updateMarkerSummary();
+      });
+    });
+
+    function updateMarkerSummary() {
+      const sumMarker = document.getElementById('sumMarkerStatus');
+      if (!sumMarker) return;
+      const sRep = inpStripesRep?.value.trim();
+      const sCut = inpStripesCut?.value.trim();
+      const cWarp = inpChecksWarp?.value.trim();
+      const cWeft = inpChecksWeft?.value.trim();
+      const cCut = inpChecksCut?.value.trim();
+
+      if (sRep && sCut && Number(sRep) > 0 && Number(sCut) > 0) {
+        sumMarker.textContent = `Stripes custom repeat: ${sRep}cm (${sCut}cm width) — Enquiry request`;
+      } else if (cWarp && cWeft && cCut && Number(cWarp) > 0 && Number(cWeft) > 0 && Number(cCut) > 0) {
+        sumMarker.textContent = `Checks custom repeat: ${cWarp}×${cWeft}cm (${cCut}cm width) — Enquiry request`;
+      } else {
+        sumMarker.textContent = 'Solid mini marker included';
+      }
+    }
+
+    // 8. Dynamic Subtotal, Tax (18% GST), and Total Calculation
+    const basePrice = <%= basePrice %>;
+    const physicalPrice = <%= physicalPrice %>;
+    const gstRate = <%= gstRate %>;
+    const sumSubtotal = document.getElementById('sumSubtotal');
+    const sumTaxAmount = document.getElementById('sumTaxAmount');
+    const pdTotal = document.getElementById('pdTotal');
+    const stickyTotal = document.getElementById('stickyTotal');
+    const patternSubtotal = document.getElementById('pattern-subtotal');
+    const patternTax = document.getElementById('pattern-tax');
+
+    function recalculateTotals() {
+      const config = JSON.parse(document.getElementById('pattern-config').textContent || '{}');
+      const selectedFormats = getSelectedDigitalFormats();
+      const selectedSoftSizes = getSelectedSoftSizes();
+      const hasDigital = selectedFormats.length > 0 && selectedSoftSizes.length > 0;
+      const isPhysical = Boolean(physicalInput && physicalInput.checked);
+      const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
+      const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
+      const hasTechPack = Boolean(techPackInput && techPackInput.checked);
+
+      // 1. Soft Copy Calculation
+      let softCopyCost = 0;
+      if (hasDigital) {
+        const fp = config.formatPricing || {};
+        let perSizeRate = 0;
+        const isBundle = config.isBundleActive && (selectedFormats.length >= 3 || (selectedFormats.includes('dxf') && selectedFormats.includes('hpgl') && selectedFormats.includes('plt')));
+        if (isBundle && config.bundlePrice > 0) {
+          perSizeRate = config.bundlePrice;
+        } else {
+          for (const fmt of selectedFormats) {
+            const fmtRate = fp[fmt] || config['price' + fmt.charAt(0).toUpperCase() + fmt.slice(1)] || basePrice;
+            perSizeRate += fmtRate;
+          }
+        }
+        softCopyCost = perSizeRate * selectedSoftSizes.length;
+      }
+
+      const sumSoftCopyRow = document.getElementById('sumSoftCopyRow');
+      const sumSoftCopyLabel = document.getElementById('sumSoftCopyLabel');
+      const sumSoftCopyPrice = document.getElementById('sumSoftCopyPrice');
+      if (sumSoftCopyRow) {
+        if (hasDigital) {
+          sumSoftCopyRow.style.display = 'flex';
+          if (sumSoftCopyLabel) sumSoftCopyLabel.textContent = 'Soft Copy (' + selectedSoftSizes.length + ' size' + (selectedSoftSizes.length === 1 ? '' : 's') + ' × ' + selectedFormats.length + ' format' + (selectedFormats.length === 1 ? '' : 's') + ')';
+          if (sumSoftCopyPrice) sumSoftCopyPrice.textContent = '₹' + softCopyCost.toLocaleString('en-IN');
+        } else {
+          if (sumSoftCopyLabel) sumSoftCopyLabel.textContent = 'Soft Copy (0 sizes selected)';
+          if (sumSoftCopyPrice) sumSoftCopyPrice.textContent = '₹0';
+        }
+      }
+
+      // 2. Physical Pattern Calculation (Independent of soft copy)
+      let physicalCost = 0;
+      if (hasPhysical) {
+        physicalCost = selectedPhysSizes.reduce((sum, size) => {
+          const input = Array.from(document.querySelectorAll('.phys-size-check')).find(candidate => candidate.value === size);
+          return sum + Number(input?.dataset.price ?? physicalPrice);
+        }, 0);
+      }
+      if (sumPhysicalRow) {
+        if (hasPhysical) {
+          sumPhysicalRow.style.display = 'flex';
+          if (sumPhysicalLabel) sumPhysicalLabel.textContent = 'Hard Copy (' + selectedPhysSizes.length + ' size' + (selectedPhysSizes.length === 1 ? '' : 's') + ')';
+          if (sumPhysicalPrice) sumPhysicalPrice.textContent = '₹' + physicalCost.toLocaleString('en-IN');
+        } else {
+          sumPhysicalRow.style.display = 'none';
+        }
+      }
+
+      // 3. Tech Pack Calculation
+      let techPackCost = 0;
+      if (hasTechPack) {
+        techPackCost = Number(techPackInput.dataset.price || config.techPackPrice || 0);
+      }
+
+      // Subtotal calculation
+      const subtotal = softCopyCost + physicalCost + techPackCost;
+
+      // 18% GST calculation
+      const tax = Math.round(subtotal * gstRate) / 100;
+      const grandTotal = subtotal + tax;
+
+      if (sumSubtotal) sumSubtotal.textContent = '₹' + subtotal.toLocaleString('en-IN');
+      if (sumTaxAmount) sumTaxAmount.textContent = '₹' + tax.toLocaleString('en-IN');
+      if (pdTotal) pdTotal.textContent = '₹' + grandTotal.toLocaleString('en-IN');
+      if (stickyTotal) stickyTotal.textContent = '₹' + grandTotal.toLocaleString('en-IN');
+      if (patternSubtotal) patternSubtotal.textContent = '₹' + subtotal.toLocaleString('en-IN');
+      if (patternTax) patternTax.textContent = '₹' + tax.toLocaleString('en-IN');
+    }
+
+    syncDigitalSizeAvailability();
+
+    // 9. Sticky Buy Bar Scroll Trigger
+    const stickyBar = document.getElementById('sticky-buy-bar');
+    const actionsRow = document.querySelector('.ref-actions-row');
+    if (stickyBar && actionsRow) {
+      window.addEventListener('scroll', () => {
+        const rect = actionsRow.getBoundingClientRect();
+        if (rect.bottom < 0) {
+          stickyBar.classList.add('is-visible');
+        } else {
+          stickyBar.classList.remove('is-visible');
+        }
+      }, { passive: true });
+    }
+
+    document.getElementById('stickyAddToCart')?.addEventListener('click', () => {
+      document.getElementById('pdAddToCart')?.click();
+    });
+    document.getElementById('stickyBuyNow')?.addEventListener('click', () => {
+      document.getElementById('pdBuyNow')?.click();
+    });
+
+    // 10. Add to Cart & Place Order Handler
+    const form = document.getElementById('pattern-purchase');
+    const btnAdd = document.getElementById('pdAddToCart');
+    const btnBuy = document.getElementById('pdBuyNow');
+    const errBanner = document.getElementById('pattern-error');
+    const config = JSON.parse(document.getElementById('pattern-config').textContent);
+
+    async function handlePurchase(destination) {
+      if (errBanner) {
+        errBanner.style.display = 'none';
+        errBanner.textContent = '';
+      }
+
+      // Validate custom marker fields if entered
+      const sRepVal = inpStripesRep?.value.trim();
+      const sCutVal = inpStripesCut?.value.trim();
+      if ((sRepVal || sCutVal) && (!validateMarkerNumber(inpStripesRep, errStripesRep, 0.1) || !validateMarkerNumber(inpStripesCut, errStripesCut, 1))) {
+        if (errBanner) {
+          errBanner.textContent = 'Please enter valid positive centimeter values for custom stripes marker.';
+          errBanner.style.display = 'block';
+        }
+        return;
+      }
+
+      const cWarpVal = inpChecksWarp?.value.trim();
+      const cWeftVal = inpChecksWeft?.value.trim();
+      const cCutVal = inpChecksCut?.value.trim();
+      if ((cWarpVal || cWeftVal || cCutVal) && (!validateMarkerNumber(inpChecksWarp, errChecksWarp, 0.1) || !validateMarkerNumber(inpChecksWeft, errChecksWeft, 0.1) || !validateMarkerNumber(inpChecksCut, errChecksCut, 1))) {
+        if (errBanner) {
+          errBanner.textContent = 'Please enter valid positive centimeter values for custom checks marker.';
+          errBanner.style.display = 'block';
+        }
+        return;
+      }
+
+      const selectedFormats = getSelectedDigitalFormats();
+      const selectedSoftSizes = getSelectedSoftSizes();
+      const hasDigital = selectedFormats.length > 0 && selectedSoftSizes.length > 0;
+      const isPhysical = Boolean(physicalInput && physicalInput.checked);
+      const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
+      const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
+      const hasTechPack = Boolean(techPackInput && techPackInput.checked);
+
+      if (!hasDigital && !hasPhysical && !hasTechPack) {
+        if (errBanner) {
+          errBanner.textContent = 'Please select at least one format and size, or physical pattern option to proceed.';
+          errBanner.style.display = 'block';
+        }
+        return;
+      }
+
+      if (btnAdd) btnAdd.disabled = true;
+      if (btnBuy) btnBuy.disabled = true;
+
+      const filesPayload = [];
+      if (hasTechPack && techPackInput.value) {
+        filesPayload.push(techPackInput.value);
+      }
+
+      const payload = {
+        product_id: config.id,
+        selected_sizes: selectedSoftSizes,
+        physical_sizes: selectedPhysSizes,
+        printable_selected: hasDigital,
+        selected_formats: selectedFormats,
+        quantity: hasDigital || hasTechPack ? 1 : 0,
+        physical_quantity: selectedPhysSizes.length,
+        trial_quantity: 0,
+        files: filesPayload,
+        addons: []
+      };
+
+      try {
+        const res = await fetch('/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.error || 'Unable to add pattern to order.');
+        }
+        window.location.href = destination;
+      } catch (err) {
+        if (errBanner) {
+          errBanner.textContent = err.message;
+          errBanner.style.display = 'block';
+        }
+        if (btnAdd) btnAdd.disabled = false;
+        if (btnBuy) btnBuy.disabled = false;
+      }
+    }
+
+    // 11. Custom Marker Enquiry Submission
+    const btnSubmitMarker = document.getElementById('btnSubmitMarkerEnquiry');
+    const markerStatus = document.getElementById('markerSubmitStatus');
+    const leadNameInp = document.getElementById('markerLeadName');
+    const leadEmailInp = document.getElementById('markerLeadEmail');
+    const leadWhatsappInp = document.getElementById('markerLeadWhatsapp');
+
+    btnSubmitMarker?.addEventListener('click', async () => {
+      markerStatus.style.display = 'inline-block';
+      markerStatus.style.color = '#B45309';
+      markerStatus.textContent = 'Submitting specifications...';
+
+      const activeTabIsStripes = tabBtnStripes && tabBtnStripes.classList.contains('active');
+      let specDetails = '';
+
+      if (activeTabIsStripes) {
+        const repVal = inpStripesRep?.value.trim();
+        const cutVal = inpStripesCut?.value.trim();
+        if (!validateMarkerNumber(inpStripesRep, errStripesRep, 0.1) || !validateMarkerNumber(inpStripesCut, errStripesCut, 1)) {
+          markerStatus.style.color = '#DC2626';
+          markerStatus.textContent = 'Please enter valid positive cm numbers for stripes repeat and cuttable width.';
+          return;
+        }
+        specDetails = `Stripes Marker: Repeat Width = ${repVal} cm, Fabric Cuttable Width = ${cutVal} cm`;
+      } else {
+        const warpVal = inpChecksWarp?.value.trim();
+        const weftVal = inpChecksWeft?.value.trim();
+        const cutVal = inpChecksCut?.value.trim();
+        if (!validateMarkerNumber(inpChecksWarp, errChecksWarp, 0.1) || !validateMarkerNumber(inpChecksWeft, errChecksWeft, 0.1) || !validateMarkerNumber(inpChecksCut, errChecksCut, 1)) {
+          markerStatus.style.color = '#DC2626';
+          markerStatus.textContent = 'Please enter valid positive cm numbers for checks warp, weft, and cuttable width.';
+          return;
+        }
+        specDetails = `Checks Marker: Warp Repeat = ${warpVal} cm, Weft Repeat = ${weftVal} cm, Fabric Cuttable Width = ${cutVal} cm`;
+      }
+
+      const name = leadNameInp?.value.trim();
+      const email = leadEmailInp?.value.trim();
+      const whatsapp = leadWhatsappInp?.value.trim();
+
+      if (!name || !email || !whatsapp) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Please fill in Name, Email and WhatsApp number.';
+        return;
+      }
+
+      btnSubmitMarker.disabled = true;
+
+      try {
+        const csrfToken = "<%= typeof csrf !== 'undefined' ? csrf : '' %>";
+        const messageBody = `Product: <%= product.name %> (Selected Size: ${currentSelectedSize})\n${specDetails}\nRequested via Customer Product Details Page.`;
+
+        const res = await fetch('/enquiries', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new URLSearchParams({
+            _csrf: csrfToken,
+            name: name,
+            email: email,
+            whatsapp: whatsapp,
+            interest: 'Fit Blocks',
+            source: `/products/<%= product.slug %>#custom-marker`,
+            message: messageBody
+          })
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || 'Failed to submit specifications. Please try again.');
+        }
+
+        markerStatus.style.color = '#16A34A';
+        markerStatus.innerHTML = '&#10003; ' + (result.message || 'Custom marker specifications saved to studio enquiries.');
+      } catch (err) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = err.message || 'Submission error.';
+      } finally {
+        btnSubmitMarker.disabled = false;
+      }
+    });
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handlePurchase('/cart');
+    });
+
+    btnBuy?.addEventListener('click', (e) => {
+      e.preventDefault();
+      handlePurchase('/checkout');
+    });
+  })();
+  </script>
+</body>
+</html>

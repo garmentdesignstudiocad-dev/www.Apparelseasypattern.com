@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your pattern downloads</title><link rel="stylesheet" href="/css/styles.css"></head><body><main class="container section"><h1>Your Pattern Downloads</h1><p>This private link expires <%= new Date(expires).toLocaleDateString('en-IN') %>. Keep it private.</p><ul><% assets.forEach((asset,index)=>{ %><li><a href="/downloads/<%= token %>/<%= index %>"><%= asset.name %></a></li><% }) %></ul></main></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Pattern Downloads — Apparel Easy Patterns</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/storefront-theme.css">
+</head>
+<body class="downloads-portal-body">
+  <header class="downloads-portal-header">
+    <div class="downloads-portal-brand">
+      <span class="downloads-portal-logo">AEP</span>
+      <div class="downloads-portal-title">
+        <strong>Apparel Easy Patterns</strong>
+        <small>Private Digital Delivery Portal</small>
+      </div>
+    </div>
+  </header>
+
+  <main class="downloads-portal-container">
+    <section class="downloads-portal-card">
+      <div class="downloads-portal-icon">📥</div>
+      <h1>Your Pattern Downloads</h1>
+      <p class="downloads-portal-expiry">
+        This private download link expires on <strong><%= new Date(expires).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) %></strong>. Keep this link confidential.
+      </p>
+
+      <div class="downloads-assets-grid">
+        <% assets.forEach(function (asset, index) { %>
+          <div class="download-asset-card">
+            <div class="download-asset-info">
+              <span class="download-asset-badge"><%= asset.watermark_pdf ? 'Protected PDF' : 'Master Vector' %></span>
+              <strong class="download-asset-name"><%= asset.name %></strong>
+            </div>
+            <a href="/downloads/<%= token %>/<%= index %>" class="fashion-button download-asset-btn">
+              Download File &darr;
+            </a>
+          </div>
+        <% }); %>
+      </div>
+
+      <div class="downloads-portal-notice">
+        <span>🔒 256-bit secure delivery directly from Apparel Easy Patterns studio vaults.</span>
+        <span>📐 Files are formatted for immediate CAD editing or 1:1 scale plotter printing.</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,1 +1,289 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= title %></title><link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/customer-experience.css"><%- include('partials/theme') %></head><body><%- include('partials/header') %><main class="container section"><section class="form-surface"><h1><%= title %></h1><% if(error){ %><p role="alert"><%= error %></p><% } %><form method="post" action="/account/<%= mode %>"><input type="hidden" name="_csrf" value="<%= csrf %>"><% if(mode==='register'){ %><label>Full Name<input name="name" autocomplete="name" maxlength="200" required></label><label>Phone Number<input name="phone" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" required></label><% } %><label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label><label>Password<input name="password" type="password" autocomplete="<%= mode==='register'?'new-password':'current-password' %>" minlength="8" maxlength="128" required></label><% if(mode==='register'){ %><label>Confirm Password<input name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label><p>Use at least 8 characters.</p><% } %><button class="fashion-button" type="submit"><%= title %></button></form><p><a href="/login">Sign In</a> ? <a href="/account/register">Create Account</a></p><p>Sign in to checkout and access your orders.</p></section></main><%- include('partials/footer') %></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title><%= title %> — <%= siteSettings?.store_name || 'Apparel Easy Patterns' %></title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/customer-experience.css">
+  <link rel="stylesheet" href="/css/storefront-theme.css">
+  <%- include('partials/theme') %>
+
+  <style>
+    :root {
+      --navy-900: #0B192C;
+      --navy-800: #132742;
+      --gold-600: #B45309;
+      --gold-500: #D97706;
+      --gold-400: #F59E0B;
+      --gold-50: #FFFBEB;
+      --slate-900: #0F172A;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748B;
+      --slate-300: #CBD5E1;
+      --slate-200: #E2E8F0;
+      --slate-100: #F1F5F9;
+      --slate-50: #F8FAFC;
+      --white: #FFFFFF;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(11, 25, 44, 0.06);
+      --shadow-md: 0 8px 24px -4px rgba(11, 25, 44, 0.09);
+    }
+
+    body {
+      margin: 0;
+      background: var(--slate-50);
+      color: var(--slate-900);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .auth-page {
+      min-height: 75vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px 80px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .auth-mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: var(--slate-100);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .auth-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--slate-600);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .auth-tab.active {
+      background: var(--navy-900);
+      color: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-card h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--navy-900);
+      margin: 0 0 8px;
+      text-align: center;
+    }
+
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--slate-500);
+      text-align: center;
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+
+    .auth-error {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #991B1B;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .auth-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy-900);
+      letter-spacing: 0.02em;
+    }
+
+    .auth-field input {
+      padding: 12px 14px;
+      border: 1.5px solid var(--slate-300);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--slate-900);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-field input:focus {
+      border-color: var(--gold-500);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+    }
+
+    .auth-field small {
+      font-size: 11px;
+      color: var(--slate-500);
+    }
+
+    .auth-btn-submit {
+      margin-top: 8px;
+      padding: 14px 20px;
+      background: var(--navy-900);
+      color: var(--white);
+      border: 0;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(11, 25, 44, 0.15);
+    }
+
+    .auth-btn-submit:hover {
+      background: var(--gold-500);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.25);
+    }
+
+    .auth-footer-links {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--slate-200);
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--slate-500);
+    }
+
+    .auth-footer-links a {
+      color: var(--gold-500);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .auth-footer-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <%- include('partials/header') %>
+
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="auth-mode-tabs">
+        <a href="/login" class="auth-tab <%= mode === 'login' ? 'active' : '' %>">Sign In</a>
+        <a href="/account/register" class="auth-tab <%= mode === 'register' ? 'active' : '' %>">Create Account</a>
+      </div>
+
+      <h1><%= title %></h1>
+      <p class="auth-subtitle">
+        <%= mode === 'register' ? 'Register to manage orders and download your verified pattern files.' : 'Sign in to access your orders, downloads, and seamless checkout.' %>
+      </p>
+
+      <% if (error) { %>
+        <div class="auth-error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <form method="post" action="/account/<%= mode %>" class="auth-form">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+        <% if (mode === 'register') { %>
+          <div class="auth-field">
+            <label for="name">Full Name</label>
+            <input id="name" name="name" autocomplete="name" maxlength="200" required placeholder="e.g. S. S. Ganesh">
+          </div>
+
+          <div class="auth-field">
+            <label for="phone">Mobile Phone (10 digits)</label>
+            <input id="phone" name="phone" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" required placeholder="9876543210">
+          </div>
+        <% } %>
+
+        <div class="auth-field">
+          <label for="email">Email Address</label>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="name@example.com">
+        </div>
+
+        <div class="auth-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="<%= mode === 'register' ? 'new-password' : 'current-password' %>" minlength="8" maxlength="128" required placeholder="••••••••">
+          <% if (mode === 'register') { %>
+            <small>Must be between 8 and 128 characters.</small>
+          <% } %>
+        </div>
+
+        <% if (mode === 'register') { %>
+          <div class="auth-field">
+            <label for="confirm_password">Confirm Password</label>
+            <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="••••••••">
+          </div>
+        <% } %>
+
+        <button class="fashion-button auth-btn-submit" type="submit"><%= title %></button>
+      </form>
+
+      <div class="auth-footer-links">
+        <% if (mode === 'register') { %>
+          Already have an account? <a href="/login">Sign In</a>
+        <% } else { %>
+          Need an account? <a href="/account/register">Create Account</a>
+        <% } %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

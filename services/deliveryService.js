@@ -1,16 +1,42 @@
 const Zone=require('../models/mongo/DeliveryZone');
-const normalize=value=>typeof value==='string'?value.trim().replace(/\s+/g,' ').toLowerCase():'';
+
+const stateHubs=new Map();
+for(const state of ['tamil nadu','karnataka','kerala','andhra pradesh','telangana','puducherry']){
+  stateHubs.set(state,{region_id:'south',region:'South India',dispatch_location:'Bengaluru Hub'});
+}
+for(const state of ['delhi','chandigarh','haryana','himachal pradesh','jammu and kashmir','ladakh','punjab','rajasthan','uttar pradesh','uttarakhand']){
+  stateHubs.set(state,{region_id:'north',region:'North India',dispatch_location:'Mumbai Hub'});
+}
+
+function normalizeState(value){
+  return typeof value==='string'?value.trim().toLowerCase().replace(/&/g,'and').replace(/\s+/g,' '):'';
+}
+
 async function configureRegions(){
- for(const row of [{_id:'south',name:'South',dispatch_location:'Bengaluru',states:['tamil nadu']},{_id:'north',name:'North',dispatch_location:'Mumbai',states:[]}])await Zone.updateOne({_id:row._id},{$setOnInsert:row},{upsert:true});
+  const defaults=[
+    {_id:'south',name:'South India',dispatch_location:'Bengaluru',states:['tamil nadu','karnataka'],active:true},
+    {_id:'north',name:'North India',dispatch_location:'Mumbai',states:[],active:true}
+  ];
+  for(const item of defaults){
+    await Zone.updateOne({_id:item._id},{$setOnInsert:item},{upsert:true});
+  }
 }
-async function destination(state,city=''){
- const state_key=normalize(state),city_key=normalize(city);
- if(!state_key || state_key.length>100 || typeof city!=='string' || city_key.length>100)throw Object.assign(new Error('Enter a valid state and city/town.'),{statusCode:400});
- await configureRegions();
- const configured=await Zone.find({_id:{$in:['south','north']}}).lean();
- const zones=configured.filter(zone=>(zone.states || []).some(value=>normalize(value)===state_key));
- // Ambiguous or disabled mappings must never fall back to another hub.
- const zone=zones.length===1 && zones[0].active?zones[0]:null;
- return {district:city.trim(),city:city.trim(),state:state.trim(),region_id:zone?._id || '',region:zone?._id==='south'?'South':zone?._id==='north'?'North':'',dispatch_location:zone?.dispatch_location || '',partner_ids:zone?.partner_ids || []};
+
+async function destination(input={},legacyCity){
+  const state=typeof input==='string'?input:input.state;
+  const city=typeof input==='string'?legacyCity:input.city;
+  const normalizedState=normalizeState(state);
+  const hub=stateHubs.get(normalizedState);
+  const cityName=typeof city==='string'?city.trim():'';
+  return {
+    city:cityName,
+    district:cityName,
+    state:typeof state==='string'?state.trim():'',
+    region_id:hub?.region_id || '',
+    region:hub?.region || 'Pending Manual Assignment',
+    dispatch_location:hub?.dispatch_location || 'Pending Manual Assignment',
+    hub_assignment_status:hub?'assigned':'pending_manual'
+  };
 }
-module.exports={configureRegions,destination,normalize};
+
+module.exports={configureRegions,destination,normalizeState,normalize:normalizeState};

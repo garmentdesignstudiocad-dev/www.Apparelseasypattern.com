@@ -1,1 +1,138 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= title %></title><link rel="stylesheet" href="/css/styles.css"></head><body><%- include('../partials/admin_header') %><main class="container admin-dashboard-main"><section class="admin-hero"><div><p class="eyebrow">Operations</p><h1>Orders</h1></div><a class="btn ghost" href="/admin/orders-export.csv">Export CSV</a></section><form class="card card-body admin-settings-grid" method="get"><label>Search<input name="search" value="<%= filters.search %>" placeholder="Order, customer or email"></label><label>Order Status<select name="status"><option value="">All</option><% ['pending','confirmed','processing','shipped','delivered','cancelled'].forEach(s=>{ %><option value="<%= s %>" <%= filters.status===s?'selected':'' %>><%= s %></option><% }) %></select></label><label>Payment Status<select name="payment"><option value="">All</option><% ['paid','pending','failed','unpaid'].forEach(s=>{ %><option value="<%= s %>" <%= filters.payment===s?'selected':'' %>><%= s %></option><% }) %></select></label><button class="btn primary">Apply Filters</button></form><section class="card"><div class="card-body admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Payment</th><th>Total</th><th></th></tr></thead><tbody><% if(orders.length){orders.forEach(o=>{ %><tr><td>#<%= o.id %></td><td><%= o.customer_name %><br><a href="mailto:<%= o.customer_email %>"><%= o.customer_email %></a><br><a href="tel:<%= (o.customer_phone || '').replace(/[^+0-9]/g,'') %>"><%= o.customer_phone || '' %></a><br><%= o.customer_address || '' %><br>Courier: <%= o.courier_name || '' %><br>Dispatch Hub: <%= o.dispatch_location || '' %></td><td><span class="status-badge <%= o.order_status %>"><%= o.order_status %></span></td><td><span class="status-badge <%= o.payment_status %>"><%= o.payment_status %></span></td><td><%= formatCurrency(o.grand_total) %></td><td><a class="btn small" href="/admin/orders/<%= o.id %>">View</a></td></tr><% })}else{ %><tr><td colspan="6">No matching orders.</td></tr><% } %></tbody></table></div></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-orders-page">
+  <%- include('../partials/admin_header') %>
+
+  <main class="container admin-dashboard-main">
+    <header class="admin-hero">
+      <div>
+        <p class="eyebrow">Commerce Operations</p>
+        <h1>Orders</h1>
+        <p class="muted">Manage customer pattern orders, monitor gateway payments, and dispatch physical paper shipments.</p>
+      </div>
+      <a class="btn ghost" href="/admin/orders-export.csv" style="display:inline-flex;align-items:center;gap:6px">
+        <span>&#128229;</span>
+        <span>Export CSV</span>
+      </a>
+    </header>
+
+    <!-- Search & Filters -->
+    <section class="card" style="margin-bottom:24px">
+      <div class="card-body" style="padding:20px 24px">
+        <form class="admin-settings-grid" method="get" action="/admin/orders">
+          <label>
+            <span>Search Orders</span>
+            <input name="search" value="<%= filters.search || '' %>" placeholder="Search by Order ID, customer name, email or phone...">
+          </label>
+
+          <label>
+            <span>Order Fulfilment Status</span>
+            <select name="status">
+              <option value="">All Fulfilment Statuses</option>
+              <% ['pending','confirmed','processing','shipped','delivered','cancelled'].forEach(s => { %>
+                <option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <label>
+            <span>Payment Status</span>
+            <select name="payment">
+              <option value="">All Payment Statuses</option>
+              <% ['paid','pending','failed','unpaid'].forEach(s => { %>
+                <option value="<%= s %>" <%= filters.payment === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <div style="display:flex;align-items:flex-end;gap:10px">
+            <button class="btn primary" type="submit" style="height:42px;width:100%">Filter Orders</button>
+            <% if (filters.search || filters.status || filters.payment) { %>
+              <a class="btn ghost" href="/admin/orders" style="height:42px;display:flex;align-items:center">Reset</a>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Orders Table -->
+    <section class="card">
+      <div class="card-body" style="padding:0">
+        <div class="admin-table-wrap" style="border:none">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer &amp; Shipping Details</th>
+                <th>Fulfilment</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th style="text-align:right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (orders && orders.length) { %>
+                <% orders.forEach(o => { %>
+                  <tr>
+                    <td style="white-space:nowrap">
+                      <strong style="color:#0B192C">#<%= o.id %></strong>
+                    </td>
+                    <td>
+                      <strong style="font-size:14px;color:#0B192C"><%= o.customer_name %></strong><br>
+                      <% if (o.customer_email) { %>
+                        <a href="mailto:<%= o.customer_email %>" style="color:#1E3E62;font-size:12.5px;text-decoration:none"><%= o.customer_email %></a><br>
+                      <% } %>
+                      <% if (o.customer_phone) { %>
+                        <a href="tel:<%= (o.customer_phone || '').replace(/[^+0-9]/g,'') %>" style="color:#64748B;font-size:12px;text-decoration:none"><%= o.customer_phone %></a><br>
+                      <% } %>
+                      <% if (o.customer_address) { %>
+                        <small style="color:#64748B;font-size:12px"><%= o.customer_address %></small><br>
+                      <% } %>
+                      <% if (o.has_physical) { %>
+                        <span style="display:inline-block;margin-top:4px;font-size:11.5px;color:#D97706;font-weight:600">
+                          Dispatch Hub: <%= o.dispatch_location || 'Pending Manual Assignment' %><br>
+                          <% if (o.delivery_flow_version === 3) { %>
+                            Courier charges: Pay separately &middot; Shipping payment: <%= o.shipping_payment_status === 'not_collected' ? 'Not collected' : o.shipping_payment_status %> &middot; Booking: <%= o.courier_booking_status === 'not_booked' ? 'Not booked' : o.courier_booking_status %>
+                          <% } else { %>
+                            Courier: <%= o.courier_name || 'Not recorded' %>
+                          <% } %>
+                        </span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <span class="status-badge <%= o.order_status %>"><%= o.order_status %></span>
+                    </td>
+                    <td>
+                      <span class="status-badge <%= o.payment_status %>"><%= o.payment_status %></span>
+                    </td>
+                    <td>
+                      <strong style="font-size:14.5px;color:#0B192C"><%= formatCurrency(o.grand_total) %></strong>
+                    </td>
+                    <td style="text-align:right">
+                      <a class="btn small ghost" href="/admin/orders/<%= o.id %>">View Details</a>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" style="text-align:center;padding:40px 20px;color:#64748B">
+                    <p style="font-size:15px;margin:0 0 6px">No orders match your filter criteria.</p>
+                    <a class="btn small ghost" href="/admin/orders">View All Orders</a>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

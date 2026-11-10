@@ -1,213 +1,1020 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title><%= typeof seoTitle !== 'undefined' && seoTitle
     ? seoTitle
     : typeof title !== 'undefined' && title
       ? title
-      : 'Available Patterns | Apparel Easy Patterns' %></title>
+      : 'Explore Available Patterns | Apparel Easy Patterns' %></title>
   <% if(typeof description === 'string' && description){ %><meta name="description" content="<%= description %>"><% } %>
 
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/customer-experience.css">
+  <link rel="stylesheet" href="/css/storefront-theme.css">
   <%- include('partials/theme') %>
+
+  <style>
+    /* Premium Catalog Styles */
+    .catalog-wrapper {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    .catalog-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #64748B;
+      margin-bottom: 24px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .catalog-breadcrumb a {
+      color: #0B192C;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .catalog-breadcrumb a:hover {
+      color: #D97706;
+    }
+    .catalog-hero-block {
+      margin-bottom: 36px;
+    }
+    .catalog-hero-block .eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #D97706;
+      margin-bottom: 10px;
+    }
+    .catalog-hero-block h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2rem, 3.4vw, 3rem);
+      font-weight: 700;
+      color: #0B192C;
+      margin: 0 0 14px;
+      line-height: 1.15;
+    }
+    .catalog-hero-block p {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: #475569;
+      max-width: 720px;
+      margin: 0;
+    }
+
+    /* Department Navigation Tabs */
+    .dept-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #E2E8F0;
+      margin-bottom: 28px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .dept-tab-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748B;
+      text-decoration: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .dept-tab-item:hover {
+      color: #0B192C;
+    }
+    .dept-tab-item.active {
+      color: #0B192C;
+      border-bottom-color: #D97706;
+    }
+
+    /* Sub-Filter Controls */
+    .catalog-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(11, 25, 44, 0.04);
+    }
+    .filter-group-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .filter-select {
+      height: 38px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      color: #0B192C;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .filter-select:focus {
+      border-color: #D97706;
+    }
+    .filter-reset-link {
+      font-size: 12px;
+      font-weight: 700;
+      color: #D97706;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #FFFBEB;
+      transition: all 0.2s ease;
+    }
+    .filter-reset-link:hover {
+      background: #FDE68A;
+      color: #B45309;
+    }
+    .filter-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    /* Product Grid & Luxury Cards */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 28px;
+    }
+    .pattern-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(11, 25, 44, 0.04);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .pattern-card:hover {
+      transform: translateY(-5px);
+      border-color: #D97706;
+      box-shadow: 0 16px 36px rgba(11, 25, 44, 0.1);
+    }
+    .pattern-card__media {
+      position: relative;
+      height: 280px;
+      background: #F1F5F9;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pattern-card__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .pattern-card:hover .pattern-card__img {
+      transform: scale(1.05);
+    }
+    .pattern-card__placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #1E3E62 0%, #0B192C 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+    .pattern-card__badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(11, 25, 44, 0.88);
+      color: #FFFFFF;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .pattern-card__badge--coming-soon {
+      background: #D97706;
+      color: #FFFFFF;
+    }
+
+    .pattern-card__body {
+      padding: 22px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .pattern-kicker {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #D97706;
+      margin-bottom: 6px;
+    }
+    .pattern-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.32rem;
+      font-weight: 700;
+      color: #0B192C;
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+    .pattern-desc {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #64748B;
+      margin: 0 0 16px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+    .pattern-meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .pattern-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: #F1F5F9;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .pattern-pill--gold {
+      background: #FFFBEB;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+    .pattern-card__bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid #F1F5F9;
+      margin-top: auto;
+    }
+    .pattern-price {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0B192C;
+      letter-spacing: -0.01em;
+    }
+    .pattern-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #0B192C;
+      color: #FFFFFF;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .pattern-action-btn:hover {
+      background: #D97706;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    /* Empty state */
+    .catalog-empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 64px 20px;
+      background: #FFFFFF;
+      border: 1px dashed #CBD5E1;
+      border-radius: 16px;
+    }
+    .catalog-empty-state h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      color: #0B192C;
+      margin: 0 0 10px;
+    }
+    .catalog-empty-state p {
+      color: #64748B;
+      margin: 0 0 20px;
+    }
+
+    /* Quick View Modal Styles */
+    .pattern-card__media {
+      position: relative;
+    }
+    .pattern-quick-view-btn {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(11, 25, 44, 0.92);
+      color: #FFFFFF;
+      border: 1px solid #D97706;
+      border-radius: 9999px;
+      padding: 6px 16px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.22s ease;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+    }
+    .pattern-card:hover .pattern-quick-view-btn {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .pattern-quick-view-btn:hover {
+      background: #D97706;
+      color: #FFFFFF;
+    }
+
+    .quickview-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 25, 44, 0.65);
+      backdrop-filter: blur(6px);
+      z-index: 99990;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .quickview-backdrop.is-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    .quickview-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -46%) scale(0.97);
+      width: min(92vw, 780px);
+      max-height: 85vh;
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(11, 25, 44, 0.25);
+      border: 1px solid #CBD5E1;
+      z-index: 99995;
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .quickview-modal.is-visible {
+      display: block;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .quickview-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #CBD5E1;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      color: #475569;
+      z-index: 20;
+      transition: all 0.15s ease;
+    }
+    .quickview-close-btn:hover {
+      background: #FEE2E2;
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+
+    .quickview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 480px;
+      max-height: 80vh;
+      overflow: hidden;
+    }
+    .quickview-image-wrap {
+      background: #0B192C;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .quickview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .quickview-info-wrap {
+      padding: 30px 28px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .qv-dept-tag {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #D97706;
+      margin-bottom: 6px;
+    }
+    .qv-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #0B192C;
+      margin: 0 0 6px;
+      line-height: 1.25;
+    }
+    .qv-style-fit {
+      font-size: 13px;
+      color: #64748B;
+      margin-bottom: 16px;
+    }
+    .qv-price-wrap {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .qv-price-from {
+      font-size: 12px;
+      color: #64748B;
+      text-transform: uppercase;
+    }
+    .qv-price {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0B192C;
+    }
+    .qv-section-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #475569;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .qv-sizes-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .qv-size-chip {
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0B192C;
+    }
+    .qv-feature-item {
+      font-size: 12.5px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 650px) {
+      .quickview-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .quickview-image-wrap {
+        height: 220px;
+      }
+      .quickview-info-wrap {
+        padding: 20px;
+      }
+    }
+  </style>
+
 </head>
 
-<body>
+<body class="premium-store">
 
   <%
-    const currentCategory =
-      typeof category !== 'undefined' && typeof category === 'string'
-        ? category
-        : '';
+    const currentCategory = typeof category !== 'undefined' && typeof category === 'string' ? category : '';
+    const currentSubcat = typeof selectedSubcat !== 'undefined' && typeof selectedSubcat === 'string' ? selectedSubcat : '';
+    const currentType = typeof selectedType !== 'undefined' && typeof selectedType === 'string' ? selectedType : '';
+    const currentStyle = typeof selectedStyle !== 'undefined' && typeof selectedStyle === 'string' ? selectedStyle : '';
+    const currentFit = typeof selectedFit !== 'undefined' && typeof selectedFit === 'string' ? selectedFit : '';
+    const currentSize = typeof selectedSize !== 'undefined' && typeof selectedSize === 'string' ? selectedSize : '';
+    const currentFormat = typeof selectedFormat !== 'undefined' && typeof selectedFormat === 'string' ? selectedFormat : '';
+    const catalogProducts = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+    const dbTypes = typeof availableTypes !== 'undefined' && Array.isArray(availableTypes) ? availableTypes : [];
+    const dbStyles = typeof availableStyles !== 'undefined' && Array.isArray(availableStyles) ? availableStyles : [];
+    const dbFits = typeof availableFits !== 'undefined' && Array.isArray(availableFits) ? availableFits : [];
+    const dbSizes = typeof availableSizes !== 'undefined' && Array.isArray(availableSizes) ? availableSizes : [];
+    const showDigital = typeof hasDigital !== 'undefined' ? hasDigital : true;
+    const showPhysical = typeof hasPhysical !== 'undefined' ? hasPhysical : true;
 
-    const availableCategories =
-      typeof categories !== 'undefined' && Array.isArray(categories)
-        ? categories
-        : [];
-
-    const catalogProducts =
-      typeof products !== 'undefined' && Array.isArray(products)
-        ? products
-        : [];
+    function filterLink(overrides) {
+      const q = [];
+      const cat = overrides.category !== undefined ? overrides.category : currentCategory;
+      const sub = overrides.subcat !== undefined ? overrides.subcat : currentSubcat;
+      const typ = overrides.type !== undefined ? overrides.type : currentType;
+      const sty = overrides.style !== undefined ? overrides.style : currentStyle;
+      const fit = overrides.fit !== undefined ? overrides.fit : currentFit;
+      const siz = overrides.size !== undefined ? overrides.size : currentSize;
+      const fmt = overrides.format !== undefined ? overrides.format : currentFormat;
+      if (cat && cat !== 'all') q.push('category=' + encodeURIComponent(cat));
+      if (sub) q.push('subcat=' + encodeURIComponent(sub));
+      if (typ) q.push('type=' + encodeURIComponent(typ));
+      if (sty) q.push('style=' + encodeURIComponent(sty));
+      if (fit) q.push('fit=' + encodeURIComponent(fit));
+      if (siz) q.push('size=' + encodeURIComponent(siz));
+      if (fmt) q.push('format=' + encodeURIComponent(fmt));
+      return '/products' + (q.length ? '?' + q.join('&') : '');
+    }
   %>
 
   <%- include('partials/header') %>
 
-  <main class="fashion-page">
+  <main class="catalog-wrapper" id="main-content">
 
-    <!-- PRODUCT COLLECTION HERO -->
-    <section class="catalog-hero">
+    <!-- BREADCRUMB -->
+    <div class="catalog-breadcrumb" aria-label="Breadcrumb navigation">
+      <a href="/">Home</a>
+      <span>/</span>
+      <a href="/products">Pattern Library</a>
+      <% if (currentCategory && currentCategory !== 'all') { %>
+        <span>/</span>
+        <span style="color:#0B192C;font-weight:700;text-transform:capitalize;"><%= currentCategory.replaceAll('-', ' ') %></span>
+      <% } %>
+      <% if (currentType) { %>
+        <span>/</span>
+        <span style="color:#D97706;font-weight:700;text-transform:capitalize;"><%= currentType.replaceAll('-', ' ') %></span>
+      <% } %>
+    </div>
 
+    <!-- HERO HEADER -->
+    <section class="catalog-hero-block">
       <span class="eyebrow">
         Ready-to-use pattern block library
       </span>
-
       <h1 class="page-title">
-        <%= siteSettings.products_heading ||
-          'READY-TO-USE AVAILABLE PATTERN TEMPLATES' %>
+        <%= siteSettings?.products_heading || 'READY-TO-USE AVAILABLE PATTERN TEMPLATES' %>
       </h1>
-
-      <p class="page-intro">
-        <%= siteSettings.products_description ||
-          'Practical pattern blocks for sampling, stitching and garment development. Choose the printable pattern and optional files or physical services available for each style.' %>
+      <p>
+        <%= siteSettings?.products_description || 'Explore curated pattern blocks engineered for production sampling across Men, Women, and Kids. Choose digital CAD master files (DXF, PDF, HPGL) or physical printed patterns.' %>
       </p>
-
     </section>
 
-    <!-- CATEGORY NAVIGATION -->
-    <nav
-      class="pattern-categories"
-      aria-label="Pattern categories"
-    >
-
+    <!-- DEPARTMENT NAVIGATION TABS -->
+    <nav class="dept-nav-tabs" aria-label="Department Categories">
       <a
         href="/products"
-        <%= !currentCategory ? 'aria-current=page' : '' %>
+        class="dept-tab-item <%= !currentCategory || currentCategory === 'all' ? 'active' : '' %>"
       >
-        All patterns
+        All Patterns
       </a>
-
-      <% availableCategories.forEach(c => { %>
-
-        <a
-          href="/products?category=<%= encodeURIComponent(c) %>"
-          <%= currentCategory === c ? 'aria-current=page' : '' %>
-        >
-          <%= c.replaceAll('-', ' ').toUpperCase() %>
-        </a>
-
-      <% }) %>
-
+      <a
+        href="/products?category=men"
+        class="dept-tab-item <%= currentCategory === 'men' ? 'active' : '' %>"
+      >
+        Men
+      </a>
+      <a
+        href="/products?category=women"
+        class="dept-tab-item <%= currentCategory === 'women' ? 'active' : '' %>"
+      >
+        Women
+      </a>
+      <a
+        href="/products?category=kids"
+        class="dept-tab-item <%= currentCategory === 'kids' ? 'active' : '' %>"
+      >
+        Kids
+      </a>
     </nav>
 
-    <!-- PRODUCT COLLECTION -->
-    <section>
+    <!-- KIDS SUBCATEGORY SELECTION (Boys & Girls) -->
+    <% if (currentCategory === 'kids') { %>
+      <div class="kids-subcat-nav" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:4px 0;">
+        <span style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;">Kids Wardrobe:</span>
+        <a href="<%= filterLink({ subcat: '' }) %>" style="padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= !currentSubcat ? 'background:#0B192C;color:#FFFFFF;' : 'background:#F1F5F9;color:#475569;' %>">All Kids</a>
+        <a href="<%= filterLink({ subcat: 'boys' }) %>" style="padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentSubcat === 'boys' ? 'background:#0B192C;color:#FFFFFF;' : 'background:#F1F5F9;color:#475569;' %>">👦 Boys</a>
+        <a href="<%= filterLink({ subcat: 'girls' }) %>" style="padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentSubcat === 'girls' ? 'background:#0B192C;color:#FFFFFF;' : 'background:#F1F5F9;color:#475569;' %>">👧 Girls</a>
+      </div>
+    <% } %>
 
-      <span class="eyebrow">
-        Browse the collection
-      </span>
+    <!-- SUB-FILTER BAR -->
+    <div class="catalog-filter-bar">
+      <div class="filter-group-left">
+        <span class="filter-label">Filter By:</span>
 
-      <h2
-        style="font-family:'Playfair Display',serif;font-size:30px;margin:8px 0 23px"
-      >
-        <%= currentCategory
-          ? currentCategory.replaceAll('-', ' ').toUpperCase()
-          : 'Find your next pattern' %>
-      </h2>
+        <!-- Product Type Filter -->
+        <select
+          class="filter-select"
+          aria-label="Filter by Product Type"
+          onchange="location.href=this.value"
+        >
+          <option value="<%= filterLink({ type: '' }) %>">
+            All Product Types
+          </option>
+          <% dbTypes.forEach(t => { %>
+            <option
+              value="<%= filterLink({ type: t.toLowerCase() }) %>"
+              <%= currentType === t.toLowerCase() ? 'selected' : '' %>
+            >
+              <%= t.charAt(0).toUpperCase() + t.slice(1) %>
+            </option>
+          <% }) %>
+        </select>
 
-      <div class="product-catalog">
-
-        <% if (catalogProducts.length) { %>
-
-          <% catalogProducts.forEach(function(p) { %>
-
-            <article class="fashion-product">
-
-              <div
-                class="fashion-product__media preview-watermark"
-                data-protected-content
-                data-watermark="Apparel Easy Patterns - Preview"
+        <!-- Style Filter -->
+        <% if (dbStyles.length > 0) { %>
+          <select
+            class="filter-select"
+            aria-label="Filter by Style"
+            onchange="location.href=this.value"
+          >
+            <option value="<%= filterLink({ style: '' }) %>">
+              All Styles
+            </option>
+            <% dbStyles.forEach(st => { %>
+              <% const styleSlug = st.toLowerCase().replace(/\s+/g, '-'); %>
+              <option
+                value="<%= filterLink({ style: styleSlug }) %>"
+                <%= currentStyle === styleSlug ? 'selected' : '' %>
               >
+                <%= st %>
+              </option>
+            <% }) %>
+          </select>
+        <% } %>
 
-                <span class="fashion-product__badge">
-                  PATTERN
-                </span>
+        <!-- Fit Filter -->
+        <% if (dbFits.length > 0) { %>
+          <select
+            class="filter-select"
+            aria-label="Filter by Fit"
+            onchange="location.href=this.value"
+          >
+            <option value="<%= filterLink({ fit: '' }) %>">
+              All Fits
+            </option>
+            <% dbFits.forEach(f => { %>
+              <% const fitSlug = f.toLowerCase().replace(/\s+/g, '-'); %>
+              <option
+                value="<%= filterLink({ fit: fitSlug }) %>"
+                <%= currentFit === fitSlug ? 'selected' : '' %>
+              >
+                <%= f %>
+              </option>
+            <% }) %>
+          </select>
+        <% } %>
 
-                <% if (p.images && p.images.length) { %>
+        <!-- Size Filter (Only sizes supported by published products) -->
+        <% if (dbSizes.length > 0) { %>
+          <select
+            class="filter-select"
+            aria-label="Filter by Size"
+            onchange="location.href=this.value"
+          >
+            <option value="<%= filterLink({ size: '' }) %>">
+              All Sizes
+            </option>
+            <% dbSizes.forEach(s => { %>
+              <option
+                value="<%= filterLink({ size: s }) %>"
+                <%= currentSize === s ? 'selected' : '' %>
+              >
+                Size: <%= s %>
+              </option>
+            <% }) %>
+          </select>
+        <% } %>
 
-                  <img
-                    loading="lazy"
-                    src="<%= p.images[0] %>"
-                    alt="<%= p.name %>"
-                  >
+        <!-- Format Filter (Digital / Physical) -->
+        <% if (showDigital || showPhysical) { %>
+          <select
+            class="filter-select"
+            aria-label="Filter by Pattern Format"
+            onchange="location.href=this.value"
+          >
+            <option value="<%= filterLink({ format: '' }) %>">
+              All Formats
+            </option>
+            <% if (showDigital) { %>
+              <option value="<%= filterLink({ format: 'digital' }) %>" <%= currentFormat === 'digital' ? 'selected' : '' %>>
+                Digital (CAD / PDF)
+              </option>
+            <% } %>
+            <% if (showPhysical) { %>
+              <option value="<%= filterLink({ format: 'physical' }) %>" <%= currentFormat === 'physical' ? 'selected' : '' %>>
+                Physical Paper Pattern
+              </option>
+            <% } %>
+          </select>
+        <% } %>
 
-                <% } else { %>
+        <% if (currentCategory || currentSubcat || currentType || currentStyle || currentFit || currentSize || currentFormat) { %>
+          <a href="/products" class="filter-reset-link">Clear All Filters</a>
+        <% } %>
+      </div>
 
-                  <div
-                    class="fashion-product__placeholder"
-                    aria-hidden="true"
-                  ></div>
+      <div class="filter-count">
+        Showing <strong><%= catalogProducts.length %></strong> <%= catalogProducts.length === 1 ? 'Pattern Block' : 'Pattern Blocks' %>
+      </div>
+    </div>
 
+    <!-- PRODUCT CATALOG GRID -->
+    <section class="catalog-grid" aria-label="Available patterns list">
+
+      <% if (catalogProducts.length) { %>
+
+        <% catalogProducts.forEach(function(p) { %>
+
+          <article class="pattern-card">
+
+            <div
+              class="pattern-card__media preview-watermark"
+              data-protected-content
+              data-watermark="Apparel Easy Patterns - Preview"
+            >
+              <span class="pattern-card__badge <%= p.status === 'coming_soon' ? 'pattern-card__badge--coming-soon' : '' %>">
+                <%= p.status === 'coming_soon' ? 'COMING SOON' : 'PATTERN' %>
+              </span>
+
+
+              <button
+                type="button"
+                class="pattern-quick-view-btn"
+                data-name="<%= p.name %>"
+                data-slug="<%= p.slug %>"
+                data-category="<%= p.category || '' %>"
+                data-department="<%= p.department || '' %>"
+                data-product-type="<%= p.product_type || p.category || '' %>"
+                data-style="<%= p.style || '' %>"
+                data-fit="<%= p.fit || '' %>"
+                data-price="<%= p.base_price || 0 %>"
+                data-image="<%= p.images?.[0] || '/images/reference/blue-shirt-main.jpg' %>"
+                data-sizes="<%= (p.available_sizes || []).join(',') %>"
+                data-digital="<%= p.pattern_options?.printable !== false ? '1' : '0' %>"
+                data-physical="<%= p.pattern_options?.physical === true ? '1' : '0' %>"
+                aria-label="Quick view <%= p.name %>"
+              >
+                Quick View
+              </button>
+  <% if (p.images?.[0]) { %>
+                <img
+                  class="pattern-card__img"
+                  loading="lazy"
+                  src="<%= p.images[0] %>"
+                  alt="<%= p.name %>"
+                >
+              <% } else { %>
+                <div class="pattern-card__placeholder" aria-hidden="true">
+                  <span>AEP</span>
+                </div>
+              <% } %>
+            </div>
+
+            <div class="pattern-card__body">
+
+              <span class="pattern-kicker">
+                <%= (p.department || p.category || 'MEN').toUpperCase() %>
+              </span>
+
+              <h2 class="pattern-title"><%= p.name %></h2>
+
+              <p class="pattern-desc">
+                <%= p.description
+                  ? p.description.substring(0, 110)
+                  : 'View available sizes, digital files and physical ordering options.' %>
+              </p>
+
+              <div class="pattern-meta-tags">
+                <% if (p.available_sizes && p.available_sizes.length) { %>
+                  <span class="pattern-pill">Sizes: <%= p.available_sizes.join(', ') %></span>
+                <% } %>
+                <% if (p.digital_formats) { %>
+                  <span class="pattern-pill pattern-pill--gold"><%= p.digital_formats %></span>
+                <% } else if (p.pattern_options?.printable !== false) { %>
+                  <span class="pattern-pill pattern-pill--gold">DXF · HPGL · PLT</span>
+                <% } %>
+                <% if (p.has_tech_pack) { %>
+                  <span class="pattern-pill">Tech Pack</span>
+                <% } %>
+                <% if (p.pattern_options?.physical || p.physical_price > 0) { %>
+                  <span class="pattern-pill">Physical Print</span>
+                <% } %>
+                <% if (p.has_marker) { %>
+                  <span class="pattern-pill">Marker</span>
+                <% } %>
+              </div>
+
+              <div class="pattern-card__bottom">
+
+                <strong class="pattern-price">
+                  <%= p.status === 'coming_soon' ? 'Coming soon'
+                    : p.base_price != null && String(p.base_price).trim() !== '' && Number.isFinite(Number(p.base_price)) && Number(p.base_price) > 0
+                      ? 'From ₹' + Number(p.base_price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : 'Price on enquiry' %>
+                </strong>
+
+                <% if (canVisit('/product/' + String(p.slug))) { %>
+                  <a class="pattern-action-btn" href="/product/<%= p.slug %>?category=<%= encodeURIComponent(currentCategory) %>&subcat=<%= encodeURIComponent(currentSubcat) %>&type=<%= encodeURIComponent(currentType) %>&style=<%= encodeURIComponent(currentStyle) %>&fit=<%= encodeURIComponent(currentFit) %>">
+                    View Details
+                  </a>
                 <% } %>
 
               </div>
 
-              <div class="fashion-product__body">
+            </div>
 
-                <span class="fashion-product__kicker">
-                  READY-TO-USE PATTERN
-                </span>
+          </article>
 
-                <h2><%= p.name %></h2>
+        <% }) %>
 
-                <p>
-                  <%= p.description
-                    ? p.description.substring(0, 110)
-                    : 'View available sizes, files and ordering options.' %>
-                </p>
+      <% } else { %>
 
-                <div class="fashion-product__bottom">
-
-                  <strong class="fashion-price">
-                    <%= p.status === 'coming_soon' ? 'Coming soon'
-                      : p.base_price != null && String(p.base_price).trim() !== '' && Number.isFinite(Number(p.base_price)) && Number(p.base_price)>0
-                        ? 'From ₹'+Number(p.base_price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})
-                        : 'Price on enquiry' %>
-                  </strong>
-
-                  <% if (canVisit('/product/' + String(p.slug))) { %>
-
-                    <a
-                      class="fashion-button"
-                      href="/product/<%= p.slug %>"
-                    >
-                      View Details
-                    </a>
-
-                  <% } %>
-
-                </div>
-
-              </div>
-
-            </article>
-
-          <% }) %>
-
-        <% } else { %>
-
-          <p class="page-intro">
-            No patterns are available in this category yet.
-            Explore another category or get pattern updates.
+        <div class="catalog-empty-state">
+          <h3>No patterns available in this selection</h3>
+          <p>
+            No patterns match the selected filters. Explore another department or reset all filters.
           </p>
+          <a class="pattern-action-btn" href="/products" style="display:inline-flex;">
+            View All Patterns &rarr;
+          </a>
+        </div>
 
-        <% } %>
-
-      </div>
+      <% } %>
 
     </section>
 
-    <!-- PATTERN UPDATES -->
-    <% if (canVisit('/pattern-updates')) { %>
-
-      <p>
-        <a href="/pattern-updates">
-          Get pattern updates
-        </a>
-      </p>
-
-    <% } %>
-
   </main>
+
+
+  <!-- QUICK VIEW MODAL -->
+  <div id="quickview-backdrop" class="quickview-backdrop" aria-hidden="true"></div>
+  <div id="quickview-modal" class="quickview-modal" role="dialog" aria-modal="true" aria-labelledby="qv-title">
+    <button type="button" id="quickview-close-btn" class="quickview-close-btn" aria-label="Close quick view">&times;</button>
+    <div class="quickview-grid">
+      <div class="quickview-image-wrap">
+        <img id="qv-img" src="/images/reference/blue-shirt-main.jpg" alt="" class="quickview-img">
+      </div>
+      <div class="quickview-info-wrap">
+        <span id="qv-dept" class="qv-dept-tag">APPAREL PATTERN</span>
+        <h2 id="qv-title" class="qv-title">Pattern Block</h2>
+        <div id="qv-style-fit" class="qv-style-fit">Formal · Slim Fit</div>
+        <div class="qv-price-wrap">
+          <span class="qv-price-from">Starting from</span>
+          <strong id="qv-price" class="qv-price">&#8377;0</strong>
+        </div>
+        <div class="qv-sizes-section">
+          <span class="qv-section-label">Available Sizes:</span>
+          <div id="qv-sizes" class="qv-sizes-pills"></div>
+        </div>
+        <div class="qv-features-section" style="margin-bottom:18px">
+          <div class="qv-feature-item"><span style="color:#D97706;font-weight:800">&#10003;</span> Digital Pattern Pack (PDF · DXF · HPGL)</div>
+          <div class="qv-feature-item"><span style="color:#D97706;font-weight:800">&#10003;</span> Tech Pack (BOM &amp; Measurement Guide)</div>
+          <div id="qv-physical-item" class="qv-feature-item"><span style="color:#D97706;font-weight:800">&#10003;</span> Physical Paper Printout (1:1 AO Plot)</div>
+        </div>
+        <div>
+          <a id="qv-details-btn" href="#" class="pattern-action-btn" style="display:block;text-align:center;padding:12px 20px;font-size:13.5px;background:#0B192C;color:#FFFFFF;border-radius:8px;font-weight:700;text-decoration:none">
+            View Full Details &amp; Purchase &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const qvModal = document.getElementById('quickview-modal');
+    const qvBackdrop = document.getElementById('quickview-backdrop');
+    const qvCloseBtn = document.getElementById('quickview-close-btn');
+
+    function closeQuickView() {
+      qvModal?.classList.remove('is-visible');
+      qvBackdrop?.classList.remove('is-visible');
+      document.body.classList.remove('search-modal-open');
+    }
+
+    qvCloseBtn?.addEventListener('click', closeQuickView);
+    qvBackdrop?.addEventListener('click', closeQuickView);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && qvModal?.classList.contains('is-visible')) {
+        closeQuickView();
+      }
+    });
+
+    document.querySelectorAll('.pattern-quick-view-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const name = btn.dataset.name || 'Pattern Block';
+        const slug = btn.dataset.slug || '';
+        const dept = (btn.dataset.department || btn.dataset.category || 'PATTERN').toUpperCase();
+        const ptype = btn.dataset.productType || '';
+        const style = btn.dataset.style || '';
+        const fit = btn.dataset.fit || '';
+        const price = Number(btn.dataset.price || 0);
+        const image = btn.dataset.image || '/images/reference/blue-shirt-main.jpg';
+        const sizes = (btn.dataset.sizes || '').split(',').filter(Boolean);
+
+        document.getElementById('qv-title').textContent = name;
+        document.getElementById('qv-dept').textContent = dept + ' PATTERN';
+        document.getElementById('qv-style-fit').textContent = [ptype, style, fit].filter(Boolean).join(' · ') || 'Production Pattern';
+        document.getElementById('qv-price').textContent = price > 0 ? '₹' + price.toLocaleString('en-IN') : 'Price on enquiry';
+        document.getElementById('qv-img').src = image;
+
+        const sizesContainer = document.getElementById('qv-sizes');
+        if (sizesContainer) {
+          sizesContainer.innerHTML = sizes.length
+            ? sizes.map(s => '<span class="qv-size-chip">' + s + '</span>').join('')
+            : '<span style="font-size:12px;color:#64748B">Standard grading available</span>';
+        }
+
+        const detailsBtn = document.getElementById('qv-details-btn');
+        if (detailsBtn) {
+          detailsBtn.href = '/product/' + slug;
+        }
+
+        qvModal.classList.add('is-visible');
+        qvBackdrop.classList.add('is-visible');
+        document.body.classList.add('search-modal-open');
+      });
+    });
+  })();
+  </script>
 
   <%- include('partials/footer') %>
 

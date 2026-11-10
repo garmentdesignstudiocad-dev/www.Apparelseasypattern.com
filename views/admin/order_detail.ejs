@@ -1,97 +1,336 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body class="admin-order-detail">
-    <%- include('../partials/admin_header') %>
-    <main class="container">
-      <section class="admin-hero">
-        <div>
-          <h1>Order Details</h1>
-          <p class="muted">Order <strong><%= order._id %></strong></p>
-        </div>
-        <div class="admin-quick-actions">
-          <a href="/admin/orders" class="btn ghost">Back to Orders</a>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-order-detail">
+  <%- include('../partials/admin_header') %>
+
+  <main class="container admin-dashboard-main">
+    <header class="admin-hero">
+      <div>
+        <p class="eyebrow">Commerce Operations</p>
+        <h1>Order Details</h1>
+        <p class="muted">Order Reference: <strong><%= order._id %></strong> &middot; Placed on <%= new Date(order.createdAt).toLocaleString() %></p>
+      </div>
+      <div class="admin-quick-actions">
+        <a href="/admin/orders" class="btn ghost">&larr; Back to Orders</a>
+      </div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px;margin-bottom:28px">
+      <!-- Customer Information Card -->
+      <section class="card" style="margin-bottom:0">
+        <div class="card-body">
+          <h3>Customer Details</h3>
+          <% const contact = order.customer_snapshot?.email ? order.customer_snapshot : customer; %>
+          <% if (contact) { %>
+            <p style="margin:0 0 4px;font-size:16px"><strong style="color:#0B192C"><%= contact.name %></strong></p>
+            <p style="margin:0 0 4px">
+              <a href="mailto:<%= contact.email %>" style="color:#1E3E62;font-weight:600;text-decoration:none"><%= contact.email %></a>
+            </p>
+            <p style="margin:0 0 12px">
+              <a href="tel:<%= (contact.phone || '').replace(/[^+0-9]/g,'') %>" style="color:#64748B;text-decoration:none"><%= contact.phone || '' %></a>
+            </p>
+            <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;font-size:13px;color:#334155">
+              <strong style="display:block;margin-bottom:4px;color:#0B192C">Shipping Address:</strong>
+              <%= [order.shipping_address || contact.address, order.shipping_city || contact.city, order.shipping_state || order.delivery_state, order.delivery_pincode].filter(Boolean).join(', ') %>
+            </div>
+          <% } else { %>
+            <p class="muted">Customer details not attached to this record.</p>
+          <% } %>
         </div>
       </section>
 
-<% if(order.items.some(item=>item.physical_quantity>0 || item.trial_quantity>0)){ %><section id="fulfilment" class="card"><div class="card-body"><h2>Manual Courier Fulfilment</h2><p>Contact/book the selected courier manually, then enter its tracking/AWB number below. This store does not automatically book pickups.</p><% if(order.delivery_flow_version===2){ %><p>Region: <%= order.destination_region %></p><p>Dispatch From: <%= order.dispatch_location %></p><% } %><p>Destination: <%= order.shipping_address || customer?.address || '' %>, <%= order.shipping_city || customer?.city || '' %>, <%= order.shipping_state || order.delivery_state || '' %> ? <%= order.delivery_pincode %></p><% if(order.delivery_flow_version===2){ %><p>Courier Charge (included in Razorpay amount): <%= formatCurrency(order.delivery_charge || 0) %></p><% } else if(order.shipping_arranged_separately){ %><p>Courier Charge: <%= formatCurrency(order.delivery_charge || 0) %> ? Pay Separately / Pay on Delivery.</p><% } %><form method="post" action="/admin/orders/<%= order._id %>/fulfilment" class="admin-settings-grid"><input type="hidden" name="_csrf" value="<%= learningCsrf %>"><% if(order.customer_selected_courier){ %><p><strong>Customer Selected Delivery Partner:</strong> <%= order.courier_name %></p><input type="hidden" name="courier_id" value="<%= order.courier_id %>"><% }else{ %><label>Courier Selected<select name="courier_id"><option value="">Select courier</option><% couriers.forEach(courier=>{ %><option value="<%= courier._id %>" <%= order.courier_id===courier._id?'selected':'' %>><%= courier.name %><%= courier.active?'':' (inactive)' %></option><% }) %></select></label><% } %><label>Tracking/AWB Number<input name="tracking_number" maxlength="100" value="<%= order.tracking_number || '' %>"></label><label>Dispatch Date<input type="date" name="dispatch_date" value="<%= order.dispatch_date?new Date(order.dispatch_date).toISOString().slice(0,10):'' %>"></label><label>Tracking URL<input type="url" name="tracking_url" value="<%= order.tracking_url || '' %>" placeholder="Blank uses courier tracking URL"></label><label>Fulfilment Status<select name="shipping_status"><% ['Confirmed','Preparing','Ready to Dispatch','Shipped','Delivered','Cancelled','Pending','Packed','In Transit','Returned'].forEach(status=>{ %><option <%= (order.shipping_status || 'Pending')===status?'selected':'' %>><%= status %></option><% }) %></select></label><button>Save Fulfilment</button><p>Marking Shipped queues email and WhatsApp with courier and tracking details. Repeated saves of the same shipment do not resend.</p></form></div></section><% } %>
-      <section class="card">
+      <!-- Order & Payment Status Card -->
+      <section class="card" style="margin-bottom:0">
         <div class="card-body">
-          <h3>Order Information</h3>
-          <p><strong>Order ID:</strong> <%= order._id %></p>
-          <p><strong>Date:</strong> <%= new Date(order.createdAt).toLocaleString() %></p>
-          <p><strong>Order status:</strong> <%= order.order_status %></p>
-          <p><strong>Payment status:</strong> <%= order.payment_status %></p>
+          <h3>Payment &amp; Status</h3>
+          <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <div>
+              <small style="display:block;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700">Order Status</small>
+              <span class="status-badge <%= order.order_status %>" style="margin-top:4px"><%= order.order_status %></span>
+            </div>
+            <div>
+              <small style="display:block;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700">Payment Status</small>
+              <span class="status-badge <%= order.payment_status %>" style="margin-top:4px"><%= order.payment_status %></span>
+            </div>
+          </div>
 
-          <h4>Customer</h4>
-          <% const contact = order.customer_snapshot?.email ? order.customer_snapshot : customer; %>
-          <% if(contact){ %>
-            <p><strong><%= contact.name %></strong></p>
-            <p><a href="mailto:<%= contact.email %>"><%= contact.email %></a></p>
-            <p><a href="tel:<%= (contact.phone || '').replace(/[^+0-9]/g,'') %>"><%= contact.phone || '' %></a></p>
-            <p><%= [order.shipping_address,order.shipping_city,order.shipping_state,order.delivery_pincode].filter(Boolean).join(', ') %></p>
-          <% }else{ %><p>Customer information not available.</p><% } %>
-
-          <h4>Items</h4>
-          <% if (order.items && order.items.length) { %>
-            <table style="width:100%;border-collapse:collapse">
-              <thead>
-                <tr>
-                  <th style="text-align:left;padding:0.5rem">Product</th>
-                  <th style="padding:0.5rem">Quantity</th><th style="padding:0.5rem">Qty (physical)</th>
-                  <th style="padding:0.5rem">Qty (trial)</th>
-                  <th style="padding:0.5rem">Unit Price</th>
-                  <th style="padding:0.5rem">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% order.items.forEach(function(it){ %>
-                  <tr style="border-top:1px solid rgba(0,0,0,0.06)">
-                    <td style="padding:0.5rem"><%= it.product_id && it.product_id.name ? it.product_id.name : (it.product_id || 'Product') %></td>
-                    <td style="padding:0.5rem;text-align:center"><%= it.quantity ?? 1 %><br>Sizes: <%= (it.selected_sizes || []).join(', ') || 'As ordered' %><br>Formats: <%= (it.selected_files || []).map(f=>f.file_type || f.file_name).join(', ') %><br>Add-ons: <%= (it.selected_addons || []).map(a=>a.name).join(', ') %></td><td style="padding:0.5rem;text-align:center"><%= it.physical_quantity || 0 %></td>
-                    <td style="padding:0.5rem;text-align:center"><%= it.trial_quantity || 0 %></td>
-                    <td style="padding:0.5rem;text-align:center"><%= formatCurrency ? formatCurrency(it.unit_price) : it.unit_price %></td>
-                    <td style="padding:0.5rem;text-align:center"><%= formatCurrency ? formatCurrency(it.total_price) : it.total_price %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          <% } else { %>
-            <p class="muted">No items found for this order.</p>
-          <% } %>
-
-          <h4>Totals</h4>
-          <p><strong>Subtotal:</strong> <%= formatCurrency(order.subtotal || 0) %></p>
-          <p><strong>Add-ons:</strong> <%= formatCurrency(order.addon_total || 0) %></p>
-          <p><strong>Physical Total:</strong> <%= formatCurrency(order.physical_total || 0) %></p>
-          <p><strong>Trial Total:</strong> <%= formatCurrency(order.trial_total || 0) %></p>
-          <% if(order.delivery_flow_version!==2){ %><p><strong>Historical Delivery Charge:</strong> <%= formatCurrency(order.delivery_charge || 0) %></p><% } %>
-          <p><strong><%= order.tax_rate ? 'GST (' + order.tax_rate + '%)' : 'GST' %>:</strong> <%= formatCurrency(order.tax_amount || 0) %></p>
-          <p><strong>Online Payment Total:</strong> <%= formatCurrency(order.grand_total || 0) %></p>
-
-          <h4>Payment</h4>
           <% if (payment) { %>
-            <p><strong>Provider:</strong> <%= payment.payment_provider || '' %></p>
-            <p><strong>Payment ID:</strong> <%= payment.payment_id || payment.payment_reference || '' %></p>
-            <p><strong>Amount:</strong> <%= formatCurrency(payment.amount || 0) %></p>
-            <p><strong>Status:</strong> <%= payment.payment_status %></p>
+            <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;font-size:13px">
+              <p style="margin:0 0 4px"><strong>Provider:</strong> <%= (payment.payment_provider || 'Razorpay').toUpperCase() %></p>
+              <p style="margin:0 0 4px"><strong>Gateway Ref:</strong> <code><%= payment.payment_id || payment.payment_reference || '—' %></code></p>
+              <p style="margin:0"><strong>Reconciled Amount:</strong> <%= formatCurrency(payment.amount || order.grand_total) %></p>
+            </div>
           <% } else { %>
-            <p class="muted">No payment record found.</p>
+            <p class="muted">No direct gateway transaction record found.</p>
           <% } %>
 
-          <h4>Update Order Status</h4>
-          <form method="POST" action="/admin/orders/<%= order._id %>/status">
-            <label>New status<select name="status"><% ['pending','confirmed','processing','completed','shipped','delivered','cancelled'].forEach(function(status){ %><option value="<%= status %>" <%= order.order_status === status ? 'selected' : '' %>><%= status.charAt(0).toUpperCase() + status.slice(1) %></option><% }) %></select></label>
-            <div style="margin-top:0.5rem"><button class="btn primary" type="submit">Update Status</button></div>
+          <form method="POST" action="/admin/orders/<%= order._id %>/status" style="margin-top:16px">
+            <label style="font-size:13px;font-weight:600;color:#0B192C;display:block;margin-bottom:6px">Update Fulfilment State:</label>
+            <div style="display:flex;gap:8px">
+              <select name="status" style="flex:1;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;background:#FFF">
+                <% ['pending','confirmed','processing','completed','shipped','delivered','cancelled'].forEach(status => { %>
+                  <option value="<%= status %>" <%= order.order_status === status ? 'selected' : '' %>>
+                    <%= status.charAt(0).toUpperCase() + status.slice(1) %>
+                  </option>
+                <% }) %>
+              </select>
+              <button class="btn small primary" type="submit">Update</button>
+            </div>
           </form>
         </div>
       </section>
-    </main>
-    <%- include('../partials/footer') %>
-  </body>
+    </div>
+
+    <!-- Manual Courier Fulfilment Section (if physical items exist) -->
+    <% if (order.items && order.items.some(item => (item.physical_quantity > 0) || (item.trial_quantity > 0))) { %>
+      <section id="fulfilment" class="card" style="border: 1px solid #D97706; background: #FFFDF9">
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:22px">&#128230;</span>
+            <h2 style="margin:0;color:#0B192C">Manual Courier Dispatch Fulfilment</h2>
+          </div>
+          <p style="color:#78350F;font-size:13px;margin:0 0 16px">
+            This website does not arrange courier bookings or collect courier charges. Record a courier and tracking details only after they have been arranged separately and the shipment has actually been dispatched.
+          </p>
+
+          <div style="background:#FFFFFF;border:1px solid #FDE68A;border-radius:8px;padding:14px;margin-bottom:18px;font-size:13px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+            <% if (order.delivery_flow_version >= 2) { %>
+              <div><strong>Destination Region:</strong> <%= order.destination_region || 'Standard' %></div>
+              <div><strong>Dispatch Hub:</strong> <%= order.dispatch_location || 'Pending Manual Assignment' %></div>
+            <% } %>
+            <div><strong>Shipping Destination:</strong> <%= [order.shipping_address || customer?.address, order.shipping_city || customer?.city, order.shipping_state || order.delivery_state, order.delivery_pincode].filter(Boolean).join(', ') %></div>
+            <% if (order.delivery_flow_version === 3) { %>
+              <div><strong>Courier charges:</strong> Pay separately; not included in website total</div>
+              <div><strong>Shipping payment status:</strong> <%= order.shipping_payment_status === 'not_collected' ? 'Not collected' : order.shipping_payment_status %></div>
+              <div><strong>Courier booking status:</strong> <%= order.courier_booking_status === 'not_booked' ? 'Not booked' : order.courier_booking_status %></div>
+            <% } else { %>
+              <div><strong>Courier Fee:</strong> <%= formatCurrency(order.delivery_charge || 0) %> <% if (order.delivery_flow_version === 2) { %>(Prepaid online)<% } else if (order.shipping_arranged_separately) { %>(Pay on Delivery)<% } %></div>
+            <% } %>
+          </div>
+
+          <form method="post" action="/admin/orders/<%= order._id %>/fulfilment" class="admin-settings-grid">
+            <input type="hidden" name="_csrf" value="<%= learningCsrf %>">
+
+            <% if (order.customer_selected_courier) { %>
+              <div>
+                <label>
+                  <span>Customer Selected Delivery Partner:</span>
+                  <input type="text" value="<%= order.courier_name %>" readonly style="background:#F1F5F9">
+                  <input type="hidden" name="courier_id" value="<%= order.courier_id %>">
+                </label>
+              </div>
+            <% } else { %>
+              <label>
+                <span>Courier Selected</span>
+                <select name="courier_id">
+                  <option value="">Select courier partner</option>
+                  <% (couriers || []).forEach(courier => { %>
+                    <option value="<%= courier._id %>" <%= order.courier_id === courier._id ? 'selected' : '' %>>
+                      <%= courier.name %><%= courier.active ? '' : ' (inactive)' %>
+                    </option>
+                  <% }) %>
+                </select>
+              </label>
+            <% } %>
+
+            <label>
+              <span>Tracking / AWB Number *</span>
+              <input name="tracking_number" maxlength="100" value="<%= order.tracking_number || '' %>" placeholder="e.g. BLU123456789">
+            </label>
+
+            <label>
+              <span>Dispatch Date</span>
+              <input type="date" name="dispatch_date" value="<%= order.dispatch_date ? new Date(order.dispatch_date).toISOString().slice(0, 10) : '' %>">
+            </label>
+
+            <label>
+              <span>Tracking URL</span>
+              <input type="url" name="tracking_url" value="<%= order.tracking_url || '' %>" placeholder="Optional URL; blank defaults to courier portal">
+            </label>
+
+            <label>
+              <span>Courier Shipment Status</span>
+              <select name="shipping_status">
+                <% ['Confirmed','Preparing','Ready to Dispatch','Shipped','Delivered','Cancelled','Pending','Packed','In Transit','Returned'].forEach(status => { %>
+                  <option <%= (order.shipping_status || 'Pending') === status ? 'selected' : '' %>><%= status %></option>
+                <% }) %>
+              </select>
+            </label>
+
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn primary" type="submit" style="height:42px;width:100%">Save Fulfilment</button>
+            </div>
+          </form>
+          <p style="margin:12px 0 0;font-size:12px;color:#92400E">
+            Marking status as <strong>Shipped</strong> queues automated email notification with tracking number. Repeated updates to the same shipment do not re-trigger notifications.
+          </p>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Purchased Pattern Items Table -->
+    <section class="card">
+      <div class="card-body" style="padding:0">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #E2E8F0">
+          <h3 style="margin:0">Purchased Pattern Items</h3>
+        </div>
+        <div class="admin-table-wrap" style="border:none">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Product Block</th>
+                <th>Configuration &amp; Formats</th>
+                <th style="text-align:center">Digital Qty</th>
+                <th style="text-align:center">Physical Qty</th>
+                <th style="text-align:center">Trial Qty</th>
+                <th style="text-align:right">Unit Price</th>
+                <th style="text-align:right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (order.items && order.items.length) { %>
+                <% order.items.forEach(function(it) { %>
+                  <tr>
+                    <td>
+                      <strong style="color:#0B192C"><%= it.product_id && it.product_id.name ? it.product_id.name : (it.product_id || 'Pattern Block') %></strong>
+                    </td>
+                    <td>
+                      <small style="display:block;color:#64748B"><strong>Sizes:</strong> <%= (it.selected_sizes || []).join(', ') || 'Standard size' %></small>
+                      <% if (it.selected_files && it.selected_files.length) { %>
+                        <small style="display:block;color:#64748B"><strong>Formats:</strong> <%= it.selected_files.map(f => f.file_type || f.file_name).join(', ') %></small>
+                      <% } %>
+                      <% if (it.selected_addons && it.selected_addons.length) { %>
+                        <small style="display:block;color:#D97706"><strong>Add-ons:</strong> <%= it.selected_addons.map(a => a.name).join(', ') %></small>
+                      <% } %>
+                    </td>
+                    <td style="text-align:center"><%= it.quantity ?? 1 %></td>
+                    <td style="text-align:center"><%= it.physical_quantity || 0 %></td>
+                    <td style="text-align:center"><%= it.trial_quantity || 0 %></td>
+                    <td style="text-align:right"><%= formatCurrency ? formatCurrency(it.unit_price) : it.unit_price %></td>
+                    <td style="text-align:right"><strong style="color:#0B192C"><%= formatCurrency ? formatCurrency(it.total_price) : it.total_price %></strong></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:24px;color:#64748B">No items found for this order.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Digital Pattern Delivery (24-Hour Validity) Card -->
+    <% if (order.items && order.items.some(it => (it.quantity ?? 1) > 0)) { %>
+      <section class="card" style="margin-bottom:28px">
+        <div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+            <h3 style="margin:0">Digital Delivery Fulfillment (24-Hour Validity)</h3>
+            <%
+              const now = new Date();
+              const isExpired = order.download_expires_at && new Date(order.download_expires_at) < now;
+              const hasToken = Boolean(order.download_token);
+            %>
+            <div>
+              <% if (!hasToken) { %>
+                <span class="badge" style="background:#FEF3C7;color:#92400E">Preparation Pending</span>
+              <% } else if (isExpired) { %>
+                <span class="badge" style="background:#FEE2E2;color:#991B1B">Expired (24h limit reached)</span>
+              <% } else { %>
+                <span class="badge" style="background:#DCFCE7;color:#166534">Active (Valid for 24 Hours)</span>
+              <% } %>
+            </div>
+          </div>
+
+          <p style="font-size:13px;color:#475569;margin:0 0 14px">
+            Secure digital downloads expire 24 hours after being issued. The customer receives access only to their purchased product, sizes, and file formats.
+          </p>
+
+          <% if (hasToken) { %>
+            <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:14px;margin-bottom:14px;font-size:13.5px">
+              <div style="margin-bottom:6px">
+                <strong>Secure Download Link:</strong>
+                <a href="/downloads/<%= order.download_token %>" target="_blank" style="color:#1E3E62;word-break:break-all">
+                  /downloads/<%= order.download_token %>
+                </a>
+              </div>
+              <div style="color:#64748B;font-size:12.5px">
+                <strong>Link Expires At:</strong> <%= new Date(order.download_expires_at).toLocaleString('en-IN') %>
+                <% if (isExpired) { %> &mdash; <strong style="color:#DC2626">Access Blocked</strong><% } %>
+              </div>
+            </div>
+          <% } %>
+
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <form method="post" action="/admin/orders/<%= order._id %>/reissue-download"><input type="hidden" name="_csrf" value="<%= typeof downloadCsrf === 'string' ? downloadCsrf : '' %>">
+              <button type="submit" class="btn primary small" style="background:#0B192C">
+                &#8634; <%= hasToken ? 'Reissue 24-Hour Download Link' : 'Generate &amp; Issue 24-Hour Link' %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Financial Breakdown Card -->
+    <section class="card">
+      <div class="card-body">
+        <h3 style="margin:0 0 16px">Order Financial Summary</h3>
+        <div style="max-width:440px;margin-left:auto;display:grid;gap:8px;font-size:14px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:#64748B">Digital Base Subtotal:</span>
+            <strong><%= formatCurrency(order.subtotal || 0) %></strong>
+          </div>
+          <% if (order.addon_total) { %>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#64748B">Add-ons Subtotal:</span>
+              <strong><%= formatCurrency(order.addon_total || 0) %></strong>
+            </div>
+          <% } %>
+          <% if (order.physical_total) { %>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#64748B">Physical Paper Patterns:</span>
+              <strong><%= formatCurrency(order.physical_total || 0) %></strong>
+            </div>
+          <% } %>
+          <% if (order.trial_total) { %>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#64748B">Trial Garment Samples:</span>
+              <strong><%= formatCurrency(order.trial_total || 0) %></strong>
+            </div>
+          <% } %>
+          <% if (order.delivery_flow_version === 2 && order.delivery_charge) { %>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#64748B">Courier Charge (included in Razorpay amount):</span>
+              <strong><%= formatCurrency(order.delivery_charge || 0) %></strong>
+            </div>
+          <% } else if (order.delivery_charge) { %>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:#64748B">Courier Shipping:</span>
+              <strong><%= formatCurrency(order.delivery_charge || 0) %></strong>
+            </div>
+          <% } %>
+          <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid #F1F5F9">
+            <span style="color:#64748B"><%= order.tax_rate ? 'GST (' + order.tax_rate + '% Integrated)' : 'GST (18% Integrated)' %>:</span>
+            <strong><%= formatCurrency(order.tax_amount || 0) %></strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid #0B192C;font-size:18px;color:#0B192C">
+            <strong>Online Payment Total:</strong>
+            <strong style="color:#0B192C"><%= formatCurrency(order.grand_total || 0) %></strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
 </html>

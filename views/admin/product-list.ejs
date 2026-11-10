@@ -2,19 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <link rel="stylesheet" href="/css/admin-products.css">
 </head>
 <body class="admin-products-dashboard">
   <%- include('../partials/admin_header') %>
+
   <main class="admin-products-main">
     <header class="admin-products-heading">
       <div>
-        <p class="eyebrow">Admin Portal</p>
+        <p class="eyebrow">Inventory &amp; Pattern Catalog</p>
         <h1>Products / Patterns</h1>
-        <p>Manage pattern products, pricing, files and publishing.</p>
+        <p>Manage studio pattern products, specifications, multi-size pricing, and digital/physical distribution.</p>
       </div>
       <a class="btn primary" href="/admin/products/new">+ Add Product</a>
     </header>
@@ -23,58 +25,118 @@
       <div class="alert <%= messageType === 'error' ? 'alert-error' : '' %>" role="status"><%= message %></div>
     <% } %>
 
+    <!-- Status Overview Metrics -->
     <section class="admin-product-stats" aria-label="Product overview">
-      <article class="admin-product-stat"><span>Total Products</span><strong><%= totalProducts %></strong></article>
-      <article class="admin-product-stat"><span>Active / Published Products</span><strong><%= activeProducts %></strong></article>
-      <article class="admin-product-stat"><span>Draft Products</span><strong><%= draftProducts %></strong></article>
-      <article class="admin-product-stat"><span>Inactive Products</span><strong><%= inactiveProducts %></strong></article>
-      <article class="admin-product-stat"><span>Products Requiring Setup</span><strong><%= setupRequired %></strong></article>
+      <article class="admin-product-stat">
+        <span>Total Products</span>
+        <strong><%= totalProducts %></strong>
+      </article>
+      <article class="admin-product-stat">
+        <span>Active / Published</span>
+        <strong style="color:#059669"><%= activeProducts %></strong>
+      </article>
+      <article class="admin-product-stat">
+        <span>Draft Products</span>
+        <strong style="color:#475569"><%= draftProducts %></strong>
+      </article>
+      <article class="admin-product-stat">
+        <span>Inactive Products</span>
+        <strong style="color:#64748B"><%= inactiveProducts %></strong>
+      </article>
+      <article class="admin-product-stat">
+        <span>Setup Required</span>
+        <strong style="color:#D97706"><%= setupRequired %></strong>
+      </article>
     </section>
 
-    <a class="admin-file-review-summary" href="/admin/products?review=1#product-list">
-      <span><strong><%= reviewCount %> <%= reviewCount === 1 ? 'File' : 'Files' %> Need Review</strong><small>Review unconfirmed file purposes product by product. No purpose is assigned automatically.</small></span>
-      <span aria-hidden="true">&rarr;</span>
-    </a>
+    <% if (reviewCount > 0) { %>
+      <a class="admin-file-review-summary" href="/admin/products?review=1#product-list">
+        <span>
+          <strong><%= reviewCount %> <%= reviewCount === 1 ? 'File' : 'Files' %> Need Purpose Confirmation</strong>
+          <small>Review unconfirmed file purposes product by product. No purpose is assigned automatically.</small>
+        </span>
+        <span aria-hidden="true">&rarr;</span>
+      </a>
+    <% } %>
 
+    <!-- Product Catalog List -->
     <section class="admin-product-list" id="product-list">
       <div class="admin-product-list__heading">
         <div>
           <h2><%= reviewFilter ? 'Products with files to review' : 'Existing Products' %></h2>
-          <p>Showing <%= products.length %> of <%= totalProducts %> products. <%= reviewFilter ? 'File-review filter applied. Show all products to include records without files to review.' : 'All statuses included: draft, inactive and active / published. Choose Edit to review a product.' %></p>
+          <p>Showing <%= products.length %> of <%= totalProducts %> products. <%= reviewFilter ? 'File-review filter applied. Show all products to include records without files to review.' : 'All statuses included: draft, inactive and active / published. Choose Edit to review or adjust a pattern.' %></p>
         </div>
-        <% if (reviewFilter) { %><a class="btn ghost" href="/admin/products#product-list">Show all products</a><% } %>
+        <% if (reviewFilter) { %>
+          <a class="btn ghost" href="/admin/products#product-list">Show all products</a>
+        <% } %>
+      </div>
+
+      <!-- Quick Search & Filter Controls -->
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <input type="text" id="admin-product-search" placeholder="Quick search product name or category..." style="flex:1;min-width:240px;padding:9px 14px;border:1px solid #E2E8F0;border-radius:8px;font-size:13.5px">
+        <select id="admin-status-filter" style="padding:9px 14px;border:1px solid #E2E8F0;border-radius:8px;font-size:13.5px;background:#FFF">
+          <option value="">All Statuses</option>
+          <option value="active">Active / Published</option>
+          <option value="draft">Draft</option>
+          <option value="coming_soon">Coming Soon</option>
+        </select>
       </div>
 
       <% if (products.length) { %>
         <div class="admin-product-table-wrap">
-          <table class="admin-product-table">
-            <thead><tr><th>Product</th><th>Category</th><th>Base Price</th><th>Files</th><th>Status</th><th>Actions</th></tr></thead>
+          <table class="admin-product-table" id="admin-product-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Base Price</th>
+                <th>Files</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
             <tbody>
               <% products.forEach(product => {
                 const setup = setupByProduct.get(String(product._id));
                 const files = filesByProduct.get(String(product._id)) || [];
                 const live = product.active === true && (!product.status || product.status === 'active');
                 const draft = product.status === 'draft';
+                const comingSoon = product.status === 'coming_soon';
                 const inactive = !live && product.active !== true && !draft;
                 const priceSet = product.base_price !== null && product.base_price !== undefined && product.base_price !== '';
+                const reviewFiles = files.filter(file => file.purpose === 'other' && (product.import_source_key || file.import_source_key));
+                const statusData = live ? 'active' : draft ? 'draft' : comingSoon ? 'coming_soon' : 'inactive';
               %>
-                <tr>
+                <tr data-product-row data-status="<%= statusData %>" data-keywords="<%= (product.name + ' ' + (product.category || '') + ' ' + product.slug).toLowerCase() %>">
                   <td data-label="Product">
                     <strong><%= product.name %></strong>
                     <small class="admin-product-slug"><%= product.slug %></small>
                     <span class="admin-product-badges">
-                      <% if (product.import_source_key) { %><span class="admin-badge admin-badge--imported">Imported</span><% } %>
-                      <% if (!setup.steps.at(-1).complete) { %><span class="admin-badge admin-badge--setup">Setup Required</span><% } %>
+                      <% if (product.import_source_key) { %>
+                        <span class="admin-badge admin-badge--imported">Imported</span>
+                      <% } %>
+                      <% if (setup && setup.steps && !setup.steps.at(-1).complete) { %>
+                        <span class="admin-badge admin-badge--setup">Setup Required</span>
+                      <% } %>
                     </span>
                   </td>
-                  <td data-label="Category"><%= product.category ? product.category.replaceAll('-', ' ') : 'Not set' %></td>
-                  <td data-label="Base Price"><%= priceSet && formatCurrency ? formatCurrency(product.base_price) : 'Price not set' %></td>
-                  <td data-label="Files"><%= files.length %> <%= files.length === 1 ? 'file' : 'files' %><% const reviewFiles=files.filter(file=>file.purpose==='other'&&(product.import_source_key||file.import_source_key)); if(reviewFiles.length){ %><small class="admin-product-slug"><%= reviewFiles.length %> need review</small><% } %></td>
+                  <td data-label="Category" style="text-transform:capitalize">
+                    <%= product.category ? product.category.replaceAll('-', ' ') : 'Not set' %>
+                  </td>
+                  <td data-label="Base Price">
+                    <strong style="color:#0B192C"><%= priceSet && formatCurrency ? formatCurrency(product.base_price) : 'Price not set' %></strong>
+                  </td>
+                  <td data-label="Files">
+                    <%= files.length %> <%= files.length === 1 ? 'file' : 'files' %>
+                    <% if (reviewFiles.length) { %>
+                      <small class="admin-product-slug" style="color:#D97706;font-weight:600"><%= reviewFiles.length %> need review</small>
+                    <% } %>
+                  </td>
                   <td data-label="Status">
                     <% if (draft) { %>
                       <span class="admin-badge admin-badge--draft">DRAFT</span>
-                    <% } else if (product.status === 'coming_soon') { %>
-                      <span class="admin-badge admin-badge--draft">COMING SOON</span>
+                    <% } else if (comingSoon) { %>
+                      <span class="admin-badge admin-badge--setup">COMING SOON</span>
                     <% } else if (inactive) { %>
                       <span class="admin-badge admin-badge--draft">INACTIVE</span>
                     <% } else if (live) { %>
@@ -84,14 +146,20 @@
                   <td data-label="Actions">
                     <div class="admin-product-actions">
                       <a class="btn small primary" href="/admin/products/<%= product._id %>/edit" aria-label="Edit <%= product.name %>">Edit</a>
-                      <a class="btn small ghost" href="/admin/products/<%= product._id %>/files" aria-label="Review files for <%= product.name %>">Files<% if(reviewFiles.length){ %> · Review<% } %></a>
+                      <a class="btn small ghost" href="/admin/products/<%= product._id %>/files" aria-label="Review files for <%= product.name %>">Files<% if (reviewFiles.length) { %> · Review<% } %></a>
                       <a class="btn small ghost" href="/admin/products/<%= product._id %>/addons" aria-label="Manage optional add-ons for <%= product.name %>">Add-ons</a>
                       <% if (live) { %>
-                        <form method="POST" action="/admin/products/<%= product._id %>/toggle"><button class="btn small ghost" type="submit" aria-label="Deactivate <%= product.name %>">Deactivate</button></form>
+                        <form method="POST" action="/admin/products/<%= product._id %>/toggle" style="margin:0">
+                          <button class="btn small ghost" type="submit" aria-label="Deactivate <%= product.name %>">Deactivate</button>
+                        </form>
                       <% } else { %>
-                        <a class="btn small primary" href="/admin/products/<%= product._id %>/edit" aria-label="Review and activate <%= product.name %>">Review &amp; Activate</a>
+                        <a class="btn small ghost" href="/admin/products/<%= product._id %>/edit" aria-label="Review and activate <%= product.name %>">Review &amp; Activate</a>
                       <% } %>
-                      <% if (!product.active) { %><form method="POST" action="/admin/products/<%= product._id %>/delete" onsubmit="return confirm('Delete this inactive product? Products linked to orders cannot be deleted.');"><button class="btn small ghost" type="submit" aria-label="Delete inactive product <%= product.name %>">Delete</button></form><% } %>
+                      <% if (!product.active) { %>
+                        <form method="POST" action="/admin/products/<%= product._id %>/delete" onsubmit="return confirm('Delete this inactive product? Products linked to orders cannot be deleted.');" style="margin:0">
+                          <button class="btn small ghost" type="submit" aria-label="Delete inactive product <%= product.name %>" style="color:#DC2626">Delete</button>
+                        </form>
+                      <% } %>
                     </div>
                   </td>
                 </tr>
@@ -100,10 +168,41 @@
           </table>
         </div>
       <% } else { %>
-        <p class="admin-product-empty"><%= reviewFilter ? 'No products currently have unconfirmed file purposes.' : 'No products yet. Add a product to get started.' %></p>
+        <p class="admin-product-empty">No products found matching your current filter.</p>
       <% } %>
     </section>
   </main>
+
   <%- include('../partials/footer') %>
+
+  <script>
+  // Quick Table Search & Filter
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('admin-product-search');
+    const statusFilter = document.getElementById('admin-status-filter');
+    const rows = document.querySelectorAll('[data-product-row]');
+
+    function filterProducts() {
+      const q = (searchInput?.value || '').trim().toLowerCase();
+      const status = statusFilter?.value || '';
+
+      rows.forEach(row => {
+        const keywords = row.getAttribute('data-keywords') || '';
+        const rowStatus = row.getAttribute('data-status') || '';
+        const matchesQuery = !q || keywords.includes(q);
+        const matchesStatus = !status || rowStatus === status;
+
+        if (matchesQuery && matchesStatus) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterProducts);
+    if (statusFilter) statusFilter.addEventListener('change', filterProducts);
+  });
+  </script>
 </body>
 </html>

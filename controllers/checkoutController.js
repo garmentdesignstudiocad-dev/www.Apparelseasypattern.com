@@ -21,12 +21,16 @@ RAZORPAY CONFIGURATION
 =========================================================
 */
 
-const razorpay = razorpayConfigured
-  ? new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    })
-  : null;
+function getRazorpayClient() {
+  const { configured } = require('../config/payment').validate();
+  if (!configured) return null;
+  const client = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+  if (client.api?.rq?.defaults) client.api.rq.defaults.timeout = 15000;
+  return client;
+}
 
 
 /*
@@ -35,7 +39,7 @@ GST CONFIGURATION
 =========================================================
 */
 
-async function getGstRate() { return 18; }
+async function getGstRate() { return pricing.taxRate(); }
 
 /*
 =========================================================
@@ -120,10 +124,11 @@ async function getDeliveryCharge(
     -------------------------------------------------------
     */
 
-    const deliveryInfo=await require('../services/deliveryService').destination(req.query.state,req.query.city);
-    const service=require('../services/courierService');
-    const couriers=(await service.available(deliveryInfo)).map(service.option);
-    return res.json({ok:true,...deliveryInfo,available:couriers.length>0,couriers});
+    const deliveryInfo=await require('../services/deliveryService').destination({
+      state:req.query.state,
+      city:req.query.city,
+    });
+    return res.json({ok:true,...deliveryInfo});
 
   } catch (error) {
 
@@ -162,6 +167,12 @@ async function postCheckout(
     } = req.body;
     const accountCustomer=req.session?.customerId ? await Customer.findById(req.session.customerId).lean() : null;
     if(!accountCustomer)return res.status(401).json({error:'Please sign in again.'});
+    if(req.body.customer && typeof req.body.customer === 'object' && req.body.customer.email !== undefined) {
+      const candidateEmail = String(req.body.customer.email).trim().toLowerCase();
+      if (!candidateEmail || candidateEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateEmail)) {
+        return res.status(400).json({ error: 'Please provide a valid email address' });
+      }
+    }
     const customerPayload={name:accountCustomer.name,email:accountCustomer.email,phone:accountCustomer.phone};
 
 
@@ -195,15 +206,12 @@ async function postCheckout(
     =======================================================
     */
 
-    if (!razorpayConfigured || !razorpay) {
-
+    const razorpayClient = getRazorpayClient();
+    if (req.createRazorpayOrder && !razorpayClient) {
       return res.status(503).json({
-
         error:
           'Razorpay is not configured. Please contact the store administrator.',
-
       });
-
     }
 
 
@@ -820,7 +828,9 @@ async function postCheckout(
       orderItems.push({
         product_name: product.name,
         printable_selected: item.printable_selected !== false,
+        selected_formats: Array.isArray(item.selected_formats) ? [...new Set(item.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [],
         selected_sizes: item.selected_sizes || [],
+        physical_sizes: item.physical_sizes || [],
         additional_size_price: Number(product.additional_size_price || 0),
 
         product_id:
@@ -893,30 +903,11 @@ async function postCheckout(
       physical_total +
       trial_total;
 
-    const destination=deliveryRequired?await require('../services/deliveryService').destination(state,city):{};
-    if(deliveryRequired && !destination.region_id)return res.status(400).json({error:'Delivery service is not currently configured for this state.'});
-    const courierId=typeof shippingData.courier_id==='string'?shippingData.courier_id:'';
-    let selectedCourier=null;
-    const courierOptions = deliveryRequired ? await require('../services/courierService').available(destination) : [];
-    if(deliveryRequired && !courierOptions.length)return res.status(400).json({error:'Delivery service is not currently configured for this state.'});
-    if(deliveryRequired && !courierId) return res.status(400).json({error:'Choose a delivery partner for this dispatch hub.'});
-    if(deliveryRequired && courierId){
-      selectedCourier=courierOptions.find(row=>row._id===courierId);
-      if(!selectedCourier)return res.status(400).json({error:'The selected delivery partner is unavailable for this dispatch hub. Refresh delivery options.'});
-    }
-    const courierChargePaise=deliveryRequired?require('../services/courierService').chargePaise(selectedCourier):0;
-    if(deliveryRequired && courierChargePaise===null)return res.status(400).json({error:'This courier has no approved delivery charge yet. Please contact the studio before placing a physical order.'});
-    if(req.createRazorpayOrder && Number.isSafeInteger(shippingData.courier_charge_snapshot_paise) && shippingData.courier_charge_snapshot_paise!==courierChargePaise)return res.status(409).json({error:'The courier charge changed. Return to checkout to review the updated total before paying.'});
-    const courierCharge=courierChargePaise/100;
-
-
-    /*
-    =======================================================
-    DELIVERY CHARGE FROM MONGODB
-    =======================================================
-    */
-
-    const deliveryInfo={...destination,zone:destination.region || '',...(selectedCourier?require('../services/courierService').option(selectedCourier):{})};
+    const destination=deliveryRequired
+      ? await require('../services/deliveryService').destination({state,city})
+      : {};
+    const courierCharge=0;
+    const deliveryInfo={...destination,zone:destination.region || ''};
 
     /*
     =======================================================
@@ -933,7 +924,7 @@ async function postCheckout(
     =======================================================
     */
 
-    const totals=pricing.totals(taxableAmount,courierCharge);
+    const totals=pricing.totals(taxableAmount,courierCharge,GST_RATE);
     const taxAmount = totals.tax;
 
 
@@ -944,6 +935,7 @@ async function postCheckout(
     */
 
     const grandTotal = totals.total;
+    if (req.createRazorpayOrder && req.session?.paymentDraft?.summary?.grand_total != null && Math.round(Number(req.session.paymentDraft.summary.grand_total)*100) !== totals.amount) return res.status(409).json({error:'Prices or tax changed. Return to checkout to review the current total.'});
 
 
     /*
@@ -976,20 +968,20 @@ async function postCheckout(
 
     if (!req.createRazorpayOrder) {
       req.session.paymentDraft = {
+        customer_id: String(accountCustomer._id),
+        created_at: Date.now(),
         customer: { name: customerPayload.name, email, phone: customerPhone },
         items,
-        shipping: deliveryRequired ? { address, city, state, pincode, courier_id:courierId, courier_charge_snapshot_paise:courierChargePaise } : {},
+        shipping: deliveryRequired ? { address, city, state, pincode } : {},
         summary: {
           destination: destination,
           product_total: Number(productSubtotal.toFixed(2)),
-          courier_name: selectedCourier?.name || '',
           courier_charge: courierCharge,
           tax_rate: GST_RATE,
           tax_amount: Number(taxAmount.toFixed(2)),
           grand_total: Number(grandTotal.toFixed(2)),
           delivery_required: deliveryRequired,
-          estimated_delivery: deliveryInfo.estimated_delivery || 'Not configured',
-          shipping_arranged_separately:false,
+          shipping_arranged_separately:deliveryRequired,
         },
       };
 
@@ -1007,16 +999,18 @@ async function postCheckout(
     const order =
       await Order.create({
         shipping_address:deliveryRequired?address:'',shipping_city:deliveryRequired?city:'',shipping_state:deliveryRequired?state:'',
-        courier_id:selectedCourier?._id || '',courier_name:selectedCourier?.name || '',
+        courier_id:'',courier_name:'',
         delivery_charge:courierCharge,
-        customer_selected_courier:deliveryRequired,
-        delivery_flow_version:2,
+        customer_selected_courier:false,
+        delivery_flow_version:3,
         destination_region_id:destination.region_id, destination_region:destination.region,dispatch_location:destination.dispatch_location,
-        shipping_arranged_separately:false,
+        shipping_arranged_separately:deliveryRequired,
+        shipping_payment_status:deliveryRequired?'not_collected':'not_applicable',
+        courier_booking_status:deliveryRequired?'not_booked':'not_required',
 
         account_customer_id:accountCustomer?._id,
         customer_snapshot: {name:customerPayload.name,email,phone:customerPhone},
-        courier_payment_separate: false,
+        courier_payment_separate: deliveryRequired,
         customer_id:
           customer._id,
 
@@ -1104,7 +1098,7 @@ async function postCheckout(
     */
 
     const razorpayOrder =
-      await razorpay.orders.create({
+      await razorpayClient.orders.create({
 
         amount: totals.amount,
 
@@ -1298,6 +1292,7 @@ async function getPaymentMethodPage(req, res) {
     title: 'Secure Payment',
     summary: draft.summary,
     customer: draft.customer,
+    shipping: draft.shipping,
   });
 }
 
@@ -1310,9 +1305,16 @@ async function postPaymentMethodProceed(req, res, next) {
   finally { pendingCheckouts.delete(key); }
 }
 async function proceedWithPayment(req, res, next) {
-  await new Promise((resolve,reject)=>req.session.reload(error=>error?reject(error):resolve()));
+  const customerId = String(req.session?.customerId || '');
+  if (!customerId || typeof req.session?.reload !== 'function') return res.status(401).json({error:'Please sign in again.',login_url:'/account/login'});
+  try {
+    await new Promise((resolve, reject) => req.session.reload(error => error ? reject(error) : resolve()));
+  } catch (error) {
+    return res.status(401).json({error:'Your session could not be verified. Please sign in again.',login_url:'/account/login'});
+  }
+  if (String(req.session?.customerId || '') !== customerId) return res.status(401).json({error:'Please sign in again.',login_url:'/account/login'});
   const draft = req.session && req.session.paymentDraft;
-  if (!draft || !draft.summary) return res.status(400).json({ error: 'Your checkout session has expired. Please return to checkout.' });
+  if (!draft || !draft.summary || draft.customer_id !== customerId || !Number.isFinite(draft.created_at) || Date.now()-draft.created_at > 30*60*1000) return res.status(400).json({ error: 'Your checkout session has expired. Please return to checkout.' });
   if (draft.paymentResponse && draft.paymentResponse.razorpay_order_id) {
     return res.json(draft.paymentResponse);
   }
@@ -1354,9 +1356,10 @@ async function postRazorpayWebhook(req, res) {
     if(!payment || !/^pay_[a-zA-Z0-9]+$/.test(payment.id || '') || !/^order_[a-zA-Z0-9]+$/.test(payment.order_id || ''))return res.sendStatus(400);
     const order=await Order.findOne({razorpay_order_id:payment.order_id});
     if(!order)return res.sendStatus(200); // Other checkout modules may use the same gateway account.
-    if(!razorpay)return res.sendStatus(503);
-    const verified=await razorpay.payments.fetch(payment.id);
-    if(verified.order_id!==order.razorpay_order_id || verified.amount!==Math.round(order.grand_total*100) || verified.currency!=='INR' || verified.status!=='captured' || verified.captured!==true || Number(verified.amount_refunded || 0)>0)return res.sendStatus(409);
+    const rzpClient=getRazorpayClient();
+    if(!rzpClient)return res.sendStatus(503);
+    const verified=await rzpClient.payments.fetch(payment.id);
+    if(verified.id!==payment.id || verified.order_id!==order.razorpay_order_id || verified.amount!==Math.round(order.grand_total*100) || verified.currency!=='INR' || verified.status!=='captured' || verified.captured!==true || Number(verified.amount_refunded || 0)>0)return res.sendStatus(409);
     await completeVerifiedPayment(order,order.razorpay_order_id,payment.id);
     return res.sendStatus(200);
   } catch(error) { logError('Payment webhook deferred:',error);return res.sendStatus(error.status === 409 ? 409 : 500); }
@@ -1373,9 +1376,10 @@ async function postRazorpayCallback(req, res) {
     const savedOrderId=order.razorpay_order_id || order.payment_reference;
     const expected=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update(savedOrderId+'|'+paymentId).digest('hex');
     if(!crypto.timingSafeEqual(Buffer.from(expected,'hex'),Buffer.from(signature,'hex'))) return res.status(400).send('Payment verification failed. Please try again.');
-    if(!razorpay)return res.status(503).send('Payment verification is temporarily unavailable.');
-    const captured=await razorpay.payments.fetch(paymentId);
-    if(captured.order_id!==savedOrderId || captured.amount!==Math.round(Number(order.grand_total)*100) || captured.currency!=='INR')return res.status(400).send('Payment details do not match this order.');
+    const rzpClient=getRazorpayClient();
+    if(!rzpClient)return res.status(503).send('Payment verification is temporarily unavailable.');
+    const captured=await rzpClient.payments.fetch(paymentId);
+    if(captured.id!==paymentId || captured.order_id!==savedOrderId || captured.amount!==Math.round(Number(order.grand_total)*100) || captured.currency!=='INR')return res.status(400).send('Payment details do not match this order.');
     if(captured.status!=='captured' || captured.captured!==true || Number(captured.amount_refunded || 0)>0)return res.status(409).send('Payment is not captured or has been refunded. Contact the studio with your reference before paying again.');
     await completeVerifiedPayment(order, savedOrderId, paymentId);
     if(req.session && (!order.account_customer_id || String(order.account_customer_id)===String(req.session.customerId))) {

@@ -1,138 +1,116 @@
-// Targeted delivery regression: temporary MongoDB, mocked gateway and notifications.
-const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-process.env.RAZORPAY_KEY_ID = 'rzp_test_delivery_zones';
-process.env.RAZORPAY_KEY_SECRET = 'delivery-zone-test-only';
-const gatewayOrders = [];
+// Focused physical checkout regression with temporary MongoDB and a mocked gateway.
+const assert=require('node:assert/strict');
+const mongoose=require('mongoose');
+const {MongoMemoryServer}=require('mongodb-memory-server');
+
+process.env.RAZORPAY_KEY_ID='rzp_test_dispatch_hubs';
+process.env.RAZORPAY_KEY_SECRET='dispatch-hubs-test-only';
+const gatewayOrders=[];
 require('razorpay');
-require.cache[require.resolve('razorpay')].exports = class {
-  constructor() { this.orders = { create: async data => {
-    const row = { ...data, id: `order_zone_${gatewayOrders.length}` };
-    gatewayOrders.push(row); return row;
-  } }; }
+require.cache[require.resolve('razorpay')].exports=class{
+  constructor(){
+    this.orders={create:async data=>{
+      const row={...data,id:`order_hub_${gatewayOrders.length+1}`};
+      gatewayOrders.push(row);
+      return row;
+    }};
+  }
 };
-require('../services/notificationService').safeFlush = async () => {};
-const delivery = require('../services/deliveryService');
-const controller = require('../controllers/checkoutController');
-const Zone = require('../models/mongo/DeliveryZone');
-const Courier = require('../models/mongo/Courier');
-const Product = require('../models/mongo/Product');
-const Order = require('../models/mongo/Order');
-async function invoke(handler, req) {
-  const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } };
-  await handler(req, res, error => { throw error; }); return res;
+require('../services/notificationService').safeFlush=async()=>{};
+
+const delivery=require('../services/deliveryService');
+const checkout=require('../controllers/checkoutController');
+const Customer=require('../models/mongo/Customer');
+const Order=require('../models/mongo/Order');
+const Product=require('../models/mongo/Product');
+const TaxSettings=require('../models/mongo/TaxSettings');
+
+async function invoke(handler,req){
+  const res={statusCode:200,status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;}};
+  await handler(req,res,error=>{throw error;});
+  return res;
 }
-async function run() {
-  const mongo = await MongoMemoryServer.create({ binary: { version: '7.0.14' } });
-  try {
-    await mongoose.connect(mongo.getUri(), { dbName: 'delivery_zone_targeted' });
-    const initial = await invoke(controller.getDeliveryCharge, { query: { state: 'Tamil Nadu', city: 'Tiruppur', pincode: '638751' } });
-    assert.equal(initial.body.region, 'South'); assert.equal(initial.body.dispatch_location, 'Bengaluru');
-    assert.deepEqual(initial.body.couriers, []);
-    assert.equal(await Courier.countDocuments(), 0, 'No invented partners');
-    await Courier.create([
-      { _id: 'test-south', name: 'South test fixture', active: true, charge: 999, charge_approved: true },
-      { _id: 'test-north', name: 'North test fixture', active: true, charge: 888, charge_approved: true },
-      { _id: 'test-inactive', name: 'Inactive test fixture', active: false }
-    ]);
-    await Zone.updateOne({ _id: 'south' }, { $set: { states: [' Tamil  Nadu '], partner_ids: ['test-south', 'test-inactive'] } });
-    await Zone.updateOne({ _id: 'north' }, { $set: { states: ['punjab'], partner_ids: ['test-north'] } });
-    for (const [state, zone, hub, partner] of [
-      [' Tamil   Nadu ', 'south', 'Bengaluru', 'test-south'], ['Punjab', 'north', 'Mumbai', 'test-north']
-    ]) {
-      const route = await invoke(controller.getDeliveryCharge, { query: { state } });
-      assert.equal(route.statusCode, 200);
-      assert.equal(route.body.region_id, zone); assert.equal(route.body.dispatch_location, hub);
-      assert.deepEqual(route.body.couriers.map(row => row._id), [partner]);
-      const otherCity = await delivery.destination(state, 'Any city without a mapping');
-      assert.equal(otherCity.dispatch_location, hub);
+
+async function run(){
+  const mongo=await MongoMemoryServer.create({binary:{version:'7.0.14'}});
+  try{
+    await mongoose.connect(mongo.getUri(),{dbName:'dispatch_hubs_test'});
+    await TaxSettings.create({key:'default',enabled:true,percentage:18});
+
+    const south=['Tamil Nadu','Karnataka','Kerala','Andhra Pradesh','Telangana','Puducherry'];
+    const north=['Delhi','Chandigarh','Haryana','Himachal Pradesh','Jammu and Kashmir','Ladakh','Punjab','Rajasthan','Uttar Pradesh','Uttarakhand'];
+    for(const state of south){
+      const response=await invoke(checkout.getDeliveryCharge,{query:{state,city:'A city',pincode:'000000'}});
+      assert.equal(response.statusCode,200,state);
+      assert.equal(response.body.dispatch_location,'Bengaluru Hub',state);
     }
-    console.log('PASS 1-4: South/Bengaluru and North/Mumbai; only active hub partners, independent of city/pincode.');
-    const admin = require('../routes/adminFulfilment');
-    const save = admin.stack.find(layer => layer.route?.path === '/settings/couriers' && layer.route.methods.post).route.stack[0].handle;
-    const savePartner = async hub_ids => {
-      const res = { status(code) { throw new Error('Admin save failed: '+code); }, redirect(code) { assert.equal(code,303); } };
-      await save({ body: { courier_id:'test-admin', name:'Admin test fixture', priority:'100', enabled:'on', hub_ids, charge:'125.50', charge_approved:'on' } }, res);
-    };
-    await savePartner('south');
-    let api = await invoke(controller.getDeliveryCharge, { query: { state:'tamil nadu' } });
-    assert.ok(api.body.couriers.some(row=>row._id==='test-admin'&&row.charge===125.5&&row.charge_approved));
-    await savePartner('north');
-    api = await invoke(controller.getDeliveryCharge, { query: { state:'Tamil Nadu' } });
-    assert.ok(!api.body.couriers.some(row=>row._id==='test-admin'));
-    api = await invoke(controller.getDeliveryCharge, { query: { state:'Punjab' } });
-    assert.ok(api.body.couriers.some(row=>row._id==='test-admin'));
-    console.log('PASS: Admin hub assignment and reassignment immediately visible to checkout.');
-    await savePartner(['south','north']);
-    const RealDate=global.Date;
-    try {
-      for(const time of ['2026-10-02T01:00:00+05:30','2026-10-02T12:00:00+05:30']) {
-        global.Date=class extends RealDate {
-          constructor(...args){super(...(args.length?args:[time]));}
-          static now(){return new RealDate(time).getTime();}
-        };
-        for(const state of ['Tamil Nadu','Punjab']) {
-          const result=await invoke(controller.getDeliveryCharge,{query:{state}});
-          assert.ok(result.body.couriers.some(row=>row._id==='test-admin'));
-        }
-      }
-    } finally {global.Date=RealDate;}
-    console.log('PASS: Both-hub enabled partner selectable at 1 AM and noon India time.');
-    const product = await Product.create({ name: 'Test pattern', slug: 'test-pattern', base_price: 100, physical_price: 50, trial_price: 50 });
-    const testCustomer = await require('../models/mongo/Customer').create({name:'Delivery Test Customer',email:'delivery-test@example.test',phone:'9876543210'});
-    const checkout = (state, courier_id, quantities = { physical_quantity: 1 }, extra = {}) => invoke(controller.postCheckout, {
-      createRazorpayOrder: true, session: {customerId:testCustomer._id}, body: {
-        customer: { name: 'Test customer', email: 'delivery@example.test', phone: '9876543210' },
-        items: [{ product_id: String(product._id), quantity: 1, ...quantities }],
-        shipping: { address: 'Test address', city: 'Unmapped city', state, pincode: '638751', courier_id, ...extra }
+    for(const state of north){
+      const response=await invoke(checkout.getDeliveryCharge,{query:{state,city:'A city',pincode:'000000'}});
+      assert.equal(response.statusCode,200,state);
+      assert.equal(response.body.dispatch_location,'Mumbai Hub',state);
+    }
+    const manual=await invoke(checkout.getDeliveryCharge,{query:{state:'Other Region',city:'Unknown'}});
+    assert.equal(manual.statusCode,200);
+    assert.equal(manual.body.dispatch_location,'Pending Manual Assignment');
+    assert.equal(manual.body.hub_assignment_status,'pending_manual');
+
+    const customer=await Customer.create({name:'Dispatch Test Customer',email:'dispatch-test@example.test',phone:'9876543210'});
+    const product=await Product.create({name:'Dispatch test pattern',slug:'dispatch-test-pattern',base_price:100,physical_price:50,trial_price:60,active:true});
+    const checkoutRequest=(shipping,physical=true)=>({
+      createRazorpayOrder:true,
+      session:{customerId:String(customer._id)},
+      body:{
+        customer:{name:customer.name,email:customer.email,phone:customer.phone},
+        items:[{product_id:String(product._id),quantity:physical?0:1,physical_quantity:physical?1:0,selected_sizes:[]}],
+        shipping
       }
     });
-    for (const id of ['test-north', 'test-inactive', 'unknown', '']) {
-      assert.equal((await checkout('Tamil Nadu', id, undefined, { region_id: 'north', dispatch_location: 'Mumbai', partner_ids: [id] })).statusCode, 400);
+
+    const validShipping={address:'12 Test Road',city:'Test City',state:'Tamil Nadu',pincode:'560001'};
+    for(const field of ['address','city','state','pincode']){
+      const invalid={...validShipping,[field]:''};
+      assert.equal((await invoke(checkout.postCheckout,checkoutRequest(invalid))).statusCode,400,`still requires ${field}`);
     }
-    assert.equal(gatewayOrders.length, 0);
-    assert.equal((await checkout('Unknown state', 'test-south')).statusCode, 400);
-    console.log('PASS 5: wrong-hub, inactive, unknown, missing partners and unmapped states rejected.');
-    const digital = await checkout('', 'unknown', { physical_quantity: 0 }, { address: '', city: '', pincode: '' });
-    assert.equal(digital.statusCode, 200); assert.equal(digital.body.amount, 11800);
-    const digitalOrder = await Order.findOne({ razorpay_order_id: digital.body.razorpay_order_id }).lean();
-    assert.equal(digitalOrder.customer_selected_courier, false); assert.equal(digitalOrder.courier_id, '');assert.equal(digitalOrder.delivery_charge,0);
-    console.log('PASS 6: digital-only checkout bypasses delivery.');
-    for (const [state, partner, hub, quantities] of [
-      ['Tamil Nadu', 'test-south', 'Bengaluru', { physical_quantity: 1 }],
-      ['Punjab', 'test-north', 'Mumbai', { trial_quantity: 1 }]
-    ]) {
-      const result = await checkout(state, partner, quantities, { region_id: 'forged', dispatch_location: 'forged', delivery_charge: 5000 });
-      const courierCharge=partner==='test-south'?999:888;
-      assert.equal(result.statusCode, 200); assert.equal(result.body.amount, 17700+courierCharge*100);
-      const order = await Order.findOne({ razorpay_order_id: result.body.razorpay_order_id }).lean();
-      assert.equal(order.dispatch_location, hub); assert.equal(order.courier_id, partner);
-      assert.equal(order.courier_name, partner==='test-south'?'South test fixture':'North test fixture');
-      assert.equal(order.destination_region, hub==='Bengaluru'?'South':'North');
-      assert.equal(order.shipping_address, 'Test address'); assert.equal(order.shipping_city, 'Unmapped city');
-      assert.equal(order.shipping_state, state); assert.equal(order.delivery_pincode, '638751');
-      assert.equal(order.subtotal, 150); assert.equal(order.tax_amount, 27); assert.equal(order.grand_total, 177+courierCharge);
-      assert.equal(order.delivery_charge, courierCharge); assert.equal(order.courier_payment_separate, false);
-      assert.equal(gatewayOrders.at(-1).amount, 17700+courierCharge*100);
+    assert.equal(gatewayOrders.length,0,'invalid addresses do not create gateway orders');
+
+    async function placePhysical(shipping){
+      const response=await invoke(checkout.postCheckout,checkoutRequest(shipping));
+      assert.equal(response.statusCode,200);
+      return Order.findOne({razorpay_order_id:response.body.razorpay_order_id}).lean();
     }
-    console.log('PASS 7: physical pattern/trial sample subtotal + one approved courier charge + product GST equals mocked Razorpay amount; forged client charge ignored.');
-    const {seed,catalog}=require('./seedCourierCatalog');
-    await seed();const count=await Courier.countDocuments();await seed();
-    assert.equal(await Courier.countDocuments(),count,'Repeat seeding creates no duplicates');
-    await require('./verifyCourierCatalog')();
-    await Courier.updateMany({_id:{$in:catalog.map(row=>row._id)}},{$set:{charge:12.34,charge_approved:true}});
-    for(const state of ['Tamil Nadu','Punjab'])for(const partner of catalog){
-      const result=await checkout(state,partner._id);
-      assert.equal(result.statusCode,200);
-      const saved=await Order.findOne({razorpay_order_id:result.body.razorpay_order_id}).lean();
-      assert.equal(saved.courier_id,partner._id);assert.equal(saved.courier_name,partner.name);
-      assert.equal(saved.dispatch_location,state==='Tamil Nadu'?'Bengaluru':'Mumbai');
-      assert.equal(saved.destination_region,state==='Tamil Nadu'?'South':'North');
-      assert.equal(saved.shipping_address,'Test address');assert.equal(saved.delivery_charge,12.34);assert.equal(saved.grand_total,189.34);assert.equal(gatewayOrders.at(-1).amount,18934);
-    }
-    console.log('PASS: every researched courier selection saved for both hubs in isolated orders; gateway mocked.');
-    require('./testCourierUI');
-  } finally { await mongoose.disconnect(); await mongo.stop(); }
+    const southOrder=await placePhysical(validShipping);
+    assert.equal(southOrder.dispatch_location,'Bengaluru Hub');
+    assert.equal(southOrder.delivery_charge,0);
+    assert.equal(southOrder.grand_total,59);
+    assert.equal(southOrder.shipping_payment_status,'not_collected');
+    assert.equal(southOrder.courier_booking_status,'not_booked');
+    assert.equal(southOrder.courier_payment_separate,true);
+    assert.equal(southOrder.shipping_arranged_separately,true);
+    assert.equal(southOrder.courier_id,'');
+    assert.equal(southOrder.courier_name,'');
+    assert.equal(gatewayOrders.at(-1).amount,5900);
+
+    const northOrder=await placePhysical({...validShipping,state:'Punjab'});
+    assert.equal(northOrder.dispatch_location,'Mumbai Hub');
+    assert.equal(northOrder.grand_total,59);
+    const manualOrder=await placePhysical({...validShipping,state:'Other Region'});
+    assert.equal(manualOrder.dispatch_location,'Pending Manual Assignment');
+    assert.equal(manualOrder.grand_total,59);
+
+    const digital=await invoke(checkout.postCheckout,checkoutRequest({},false));
+    assert.equal(digital.statusCode,200);
+    const digitalOrder=await Order.findOne({razorpay_order_id:digital.body.razorpay_order_id}).lean();
+    assert.equal(digitalOrder.grand_total,118);
+    assert.equal(digitalOrder.delivery_charge,0);
+    assert.equal(digitalOrder.shipping_address,'');
+    assert.equal(digitalOrder.shipping_payment_status,'not_applicable');
+    assert.equal(digitalOrder.courier_booking_status,'not_required');
+
+    console.log('PASS: hub routing, manual fallback, address validation, physical checkout without courier, zero online shipping, and digital-only checkout.');
+  }finally{
+    await mongoose.disconnect();
+    await mongo.stop();
+  }
 }
-run().catch(error => { console.error(error); process.exitCode = 1; });
+
+run().catch(error=>{console.error(error);process.exitCode=1;});

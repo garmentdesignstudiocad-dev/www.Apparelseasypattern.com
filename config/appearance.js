@@ -1,15 +1,15 @@
 
 const colors = {
-  primary_color: '#62392d',
-  secondary_color: '#171313',
-  accent_color: '#c58b62',
-  background_color: '#f5f0e9',
-  header_background_color: '#fffdfa',
-  header_text_color: '#201b1a',
-  button_color: '#171313',
-  button_text_color: '#ffffff',
-  footer_background_color: '#171313',
-  footer_text_color: '#eadfd5',
+  primary_color: '#0B192C',
+  secondary_color: '#1E3E62',
+  accent_color: '#D97706',
+  background_color: '#F8FAFC',
+  header_background_color: '#FFFFFF',
+  header_text_color: '#0F172A',
+  button_color: '#0B192C',
+  button_text_color: '#FFFFFF',
+  footer_background_color: '#0B192C',
+  footer_text_color: '#F1F5F9',
 };
 
 const fonts = {
@@ -31,6 +31,7 @@ const options = {
   button_style: ['rounded', 'slightly-rounded', 'square'],
   card_style: ['flat', 'border', 'soft-shadow'],
   layout_density: ['compact', 'comfortable'],
+  header_home_enabled: ['enabled', 'disabled'],
 };
 
 const defaults = {
@@ -42,63 +43,70 @@ const defaults = {
   button_style: 'slightly-rounded',
   card_style: 'border',
   layout_density: 'comfortable',
+  header_home_enabled: 'enabled',
 };
 
 const homepage = {
-  home_eyebrow: 'Fashion Pattern Studio',
-  homepage_heading: 'Ready-to-Use Apparel Blocks for Better Fit & Faster Development',
-  homepage_subheading: 'Built for the professional fashion industry, combining apparel technology, pattern development and practical garment knowledge with the experience of fashion industry experts.',
+  home_eyebrow: 'BY GARMENT DESIGN STUDIO',
+  homepage_heading: 'Pick a Proven Fit. Stitch Straight Away.',
+  homepage_subheading: 'Body-trialled patterns that shorten your timeline and effort, with no starting from scratch.',
 
-  home_primary_button: 'Explore Available Patterns',
-  home_secondary_button: 'Speak with the Studio',
+  home_primary_button: 'Browse Collection',
+  home_secondary_button: 'Request a Custom Block',
 
   home_trust_1: 'Fit Blocks',
   home_trust_2: 'Fit Trials',
   home_trust_3: 'Industry Technical Expertise',
 
   home_image_path: '/images/basic-shirt-pattern.svg',
-  home_image_alt: 'Technical illustration of a shirt and garment pattern pieces',
-  home_floating_label: 'Professional Fit Development',
-  home_floating_text: 'Fit Blocks • Fit Trials • Pattern Development',
+  home_image_alt: 'Basic Shirt Block Technical Illustration',
+  home_video_path: '',
+  home_showcase_image_path: '/images/basic-shirt-pattern.svg',
+  home_men_image_path: '',
+  home_women_image_path: '',
+  home_kids_image_path: '',
 
-  home_available_eyebrow: 'Ready-to-Sew Available Patterns',
-  home_available_heading: 'Ready-to-use patterns for practical apparel development.',
-  home_available_description: 'Explore ready-to-use pattern files designed to support sampling, garment creation and professional apparel development without starting every pattern from scratch.',
-  home_available_button: 'Explore Patterns',
+  home_floating_label: 'Block Library · Digital Files',
+  home_floating_text: 'Basic Shirt Block',
 
-  home_focus_eyebrow: 'Start with the Right Block',
-  home_focus_heading: 'A Strong Technical Foundation for Better Garment Development',
-  home_focus_description: "Different garments require the right starting block for their intended fit, silhouette and construction. Our apparel blocks support practical development across men's, women's, kids', formal, casual and denim garment categories.",
-  home_focus_secondary_description: 'Our fit blocks and fit trials are reviewed and validated with the practical expertise of fashion industry technical experts.',
+  home_available_eyebrow: 'HOW IT WORKS',
+  home_available_heading: 'Select, Cut, Sew. Done.',
+  home_available_description: 'Order the silhouette you need, cut it in your own fabric and check results on a form. Proportions come pre-balanced, so samples progress faster with less rework.',
+  home_available_button: 'View All Styles',
 
-  home_card_1_title: 'Fit Blocks',
-  home_card_1_description: 'Practical pattern foundations developed to support fit, proportion and efficient garment development.',
+  home_focus_eyebrow: 'ONE LIBRARY, THREE WARDROBES',
+  home_focus_heading: 'One Library, Three Wardrobes',
+  home_focus_description: 'Explore curated blocks engineered for production across Men, Women, and Kids.',
+  home_focus_secondary_description: 'All patterns are developed with 20+ years of industrial garment technology and body-trialled on physical forms before digitisation.',
 
-  home_card_2_title: 'Fit Trial',
-  home_card_2_description: 'Fit trials support the technical review of garment balance, proportion and practical fit before further development.',
+  home_card_1_title: 'Balanced Foundations',
+  home_card_1_description: 'Proportions and ease pre-calibrated across critical balance points so your first toile hangs cleanly without guesswork.',
 
-  home_card_3_title: 'Technical Validation',
-  home_card_3_description: 'Pattern and fit development is reviewed with practical fashion industry technical expertise.',
+  home_card_2_title: 'Wear-Tested',
+  home_card_2_description: 'Every block is pattern-trialled on physical forms and live fittings before conversion to digital master files.',
 
-  home_card_4_title: 'Garment Development',
-  home_card_4_description: 'From the starting block through pattern development, supporting a more structured professional apparel workflow.',
+  home_card_3_title: 'Expert Validated',
+  home_card_3_description: 'Developed with 20+ years of industrial garment technology and pattern engineering expertise.',
 
-  home_expertise_eyebrow: 'Fashion Industry Technical Expertise',
-  home_expertise_heading: 'Verified and Validated with Fashion Industry Technical Expertise',
-  home_expertise_description: 'Our approach combines practical apparel industry knowledge, fit evaluation and technical experience to support professional pattern and garment development.',
+  home_card_4_title: 'Quicker Approvals',
+  home_card_4_description: 'Shorten sample iterations from weeks to days with production-friendly blocks your sampling team trusts.',
+
+  home_expertise_eyebrow: 'FOUNDER & MASTER PATTERN MAKER',
+  home_expertise_heading: 'Two Decades of Garment Technology in Every File',
+  home_expertise_description: 'Created by S.S. Ganesh, NIFT alumnus and founder of Garment Design Studio. Bringing over 20 years of apparel industry expertise, fit engineering, and master pattern making to production-grade digital CAD blocks for fashion brands and manufacturers worldwide.',
 
   home_books_status: 'Coming Soon',
-  home_books_heading: 'Build Your Garment Technology Knowledge',
-  home_books_description: 'Learn from materials prepared with practical apparel industry knowledge and experience by fashion industry experts.',
+  home_books_heading: 'Learning Hub',
+  home_books_description: 'Comprehensive reference guides, Point of Measurement (POM) charts, and garment technology handbooks for design and sampling teams.',
 
   home_classes_status: 'Coming Soon',
-  home_classes_heading: 'Learn Professional Pattern Making',
-  home_classes_description: 'Develop practical apparel pattern-making knowledge through learning materials and guidance shaped by fashion industry knowledge and professional experience.',
+  home_classes_heading: 'Pattern-Making Course',
+  home_classes_description: 'Master professional CAD pattern making, grading, fit correction, and industrial block construction online under expert mentorship.',
 };
 
 const headerFooter = {
-  "header_announcement": "Ready-to-Use Apparel Patterns",
-  "header_tagline": "READY-TO-USE PATTERN LIBRARY",
+  "header_announcement": "PRODUCTION-FRIENDLY BLOCKS FOR MEN · WOMEN · KIDS",
+  "header_tagline": "BY GARMENT DESIGN STUDIO",
   "header_home_label": "Home",
   "header_patterns_label": "Available Patterns",
   "header_contact_label": "Contact",
@@ -113,7 +121,7 @@ const headerFooter = {
   "header_register_label": "Create Account",
   "header_cart_label": "Shopping cart",
   "header_navigation_label": "Open navigation",
-  "footer_tagline": "ORDERING PORTAL",
+  "footer_tagline": "BY GARMENT DESIGN STUDIO",
   "footer_ordering_label": "Ordering",
   "footer_patterns_label": "Available Patterns",
   "footer_cart_label": "Shopping Cart",
@@ -239,7 +247,15 @@ function valid(key, value) {
       Number(value) <= 20;
   }
 
-  if (key === 'home_image_path') {
+    const mediaFields = [
+    'home_image_path',
+    'home_video_path',
+    'home_showcase_image_path',
+    'home_men_image_path',
+    'home_women_image_path',
+    'home_kids_image_path'
+  ];
+  if (mediaFields.includes(key)) {
     return typeof value === 'string' &&
       value.length <= 2048 &&
       safeImagePath(value);
@@ -332,6 +348,7 @@ function normalize(input = {}) {
   for (const [key, fallback] of Object.entries({
     ...defaults,
     ...content,
+    ...headerFooter
   })) {
     result[key] = valid(key, stored[key]) ? stored[key] : fallback;
   }
@@ -346,6 +363,7 @@ function parse(body) {
   for (const key of Object.keys({
     ...defaults,
     ...content,
+    ...headerFooter
   })) {
     const value = typeof body[key] === 'string'
       ? body[key].trim()

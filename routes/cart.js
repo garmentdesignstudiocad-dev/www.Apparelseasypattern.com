@@ -21,13 +21,15 @@ function ensureCart(req) {
 // CART PAGE
 // =====================================================
 
-router.get('/cart', (req, res) => {
+router.get('/cart', async (req, res, next) => {
+  try {
   const cart = ensureCart(req);
 
   res.render('cart', {
     title: 'Cart',
-    cart
+    cart, gstRate: await pricing.taxRate()
   });
+  } catch(error) { next(error); }
 });
 
 router.get('/cart/count', (req, res) => {
@@ -145,7 +147,9 @@ router.post('/cart/add', async (req, res) => {
 
       name:
         product.name,
+      selected_formats: Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [],
       selected_sizes: req.body.selected_sizes || [],
+      physical_sizes: req.body.physical_sizes || [],
       printable_selected: req.body.printable_selected !== false,
       additional_size_price: Number(product.additional_size_price || 0),
 

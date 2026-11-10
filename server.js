@@ -54,6 +54,8 @@ if (process.env.AEP_ISOLATED_MEDIA_TEST === '1') {
   );
 }
 
+// Legacy technical pattern-piece PNGs stay on disk, but are not public assets.
+app.use('/images/gallery', (req, res) => res.sendStatus(404));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Verify the exact signed bytes before JSON parsing or session middleware.
@@ -105,6 +107,7 @@ app.use((req, res, next) => {
   const seo=require('./services/seoService'), origin=seo.siteOrigin();
   const noindex=noindexPath.test(req.path);
   if(noindex)res.set('X-Robots-Tag','noindex, nofollow');
+  res.locals.currentPath = req.path;
   res.locals.canonicalUrl = origin&&!noindex ? origin + (req.path==='/patterns'?'/products':req.path) : '';
   res.locals.organizationData=seo.organization(res.locals.siteSettings);
   const section=req.path.slice(1);

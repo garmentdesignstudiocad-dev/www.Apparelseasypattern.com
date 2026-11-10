@@ -60,7 +60,7 @@ router.post('/access-records/:kind/:id/:action',wrap(async(req,res)=>{
     else if(action==='recover-order'){await payments.recoverOrder(id,req.body.order_id);notice='Order recovered. Check payment status.';}
     else if(action==='reset-order'){await payments.resetOrder(id,req.body.no_order_acknowledged==='on');notice='Payment setup unlocked.';}
     else if(action==='status' && kind==='consulting'){
-      if(row.scheduling_status)return res.status(409).send('Use the scheduling approval actions for this booking.');
+      if(row.scheduling_status && !['Approved','Accepted'].includes(row.scheduling_status))return res.status(409).send('Use the scheduling approval actions for this booking.');
       if(!['New','Contacted','Confirmed','Completed'].includes(req.body.status))return res.sendStatus(400);
       const filter={_id:id,registration_status:{$ne:'Cancelled'}};
       if(['Confirmed','Completed'].includes(req.body.status)){filter.registration_status='Confirmed';filter.payment_status={$in:['Paid','Not Required']};}

@@ -18,7 +18,8 @@ module.exports = async function confirmProductPayment(order, savedOrderId, payme
     razorpay_order_id: savedOrderId, payment_verified_at: new Date(),
     order_status: { $cond: [{ $eq: ['$order_status', 'pending'] }, 'confirmed', '$order_status'] },
     shipping_status: { $cond: [{ $eq: ['$shipping_status', 'Pending'] },
-      { $cond: [{ $eq: ['$order_status', 'cancelled'] }, 'Cancelled', 'Confirmed'] }, '$shipping_status'] },
+      { $cond: [{ $eq: ['$order_status', 'cancelled'] }, 'Cancelled',
+        { $cond: [{ $eq: ['$delivery_flow_version', 3] }, 'Pending', 'Confirmed'] }] }, '$shipping_status'] },
     notification_jobs: { $setUnion: [{ $ifNull: ['$notification_jobs', []] },
       [{ key: 'paid', event: 'payment_success', status: 'Paid' }]] },
   } }]);

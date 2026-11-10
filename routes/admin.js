@@ -1,6 +1,8 @@
+const path = require('path');
 const { collectMediaUpdate } = require('../services/productMediaIntegration');
 const { logError } = require('../services/safeLog');
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
 for(const param of ['id','productId','fileId','addonId']) router.param(param,(req,res,next,value)=>/^[a-f\d]{24}$/i.test(value)?next():res.status(404).render('error',{title:'Not Found',message:'The requested record was not found.'}));
@@ -27,7 +29,7 @@ const {
 } = require('../middleware/productMediaUpload');
 
 router.use((req, res, next) => {
-  if (req.method === 'GET' && /^\/products\/[a-f\d]{24}\/edit$/i.test(req.path) && req.session?.isAdmin) {
+  if (req.method === 'GET' && /^\/products\/(?:new|[a-f\d]{24}\/edit)$/i.test(req.path) && req.session?.isAdmin) {
     req.session.productMediaCsrf ||= require('node:crypto').randomBytes(32).toString('hex');
   }
   res.locals.productMediaCsrf = req.session?.productMediaCsrf || '';
@@ -41,7 +43,7 @@ router.use((req, res, next) => {
 
   adminAuth(req, res, () => {
     const productEdit =
-      /^\/products\/[a-f\d]{24}\/edit$/i.test(req.path);
+      (/^\/products\/[a-f\d]{24}\/edit$/i.test(req.path) || req.path === '/products');
 
     if (productEdit && !req.is('multipart/form-data') &&
         (!req.session.productMediaCsrf || req.body?._csrf !== req.session.productMediaCsrf)) {
@@ -61,7 +63,7 @@ router.use((req, res, next) => {
     });
 
     uploadProductMedia(req, res, error => {
-      if (error) return next(error);
+      if (error) return res.status(400).send('Upload failed. Use JPG, PNG or WebP photos, MP4/WebM video, or a PDF size chart. Reload the editor to try again.');
 
       if (!req.session.productMediaCsrf || typeof req.body._csrf !== 'string' ||
           req.body._csrf !== req.session.productMediaCsrf) {
@@ -69,7 +71,7 @@ router.use((req, res, next) => {
       }
 
       validateProductMedia(req, res, error => {
-        if (error) return next(error);
+        if (error) return res.status(400).send('Invalid media content or size. Existing photos were preserved. Reload the editor to try again.');
 
         require('../middleware/adminInputValidation')(
           req, res, next
@@ -105,7 +107,30 @@ function parseStringArray(value) {
 
 function parseProductPayload(body) {
   const name = String(body?.name || '').trim();
+  const department = String(body?.department || '').trim();
+  const kids_subcategory = String(body?.kids_subcategory || '').trim();
+  const product_type = String(body?.product_type || '').trim();
+  const style = String(body?.style || '').trim();
+  const fit = String(body?.fit || '').trim();
+  let category = String(body?.category || '').trim();
+  if (!category) {
+    if (department && product_type) {
+      category = department + "'s Pattern";
+    } else if (department) {
+      category = department + "'s Collection";
+    } else if (product_type) {
+      category = product_type.toLowerCase();
+    }
+  }
+
   return {
+    name,
+    category,
+    department,
+    kids_subcategory,
+    product_type,
+    style,
+    fit,
     name,
     ...require('../services/productMetadata').parse(body),
     ...require('../services/patternOptions').parse(body),
@@ -115,6 +140,23 @@ function parseProductPayload(body) {
     additional_size_price: Number(body?.additional_size_price || 0),
     physical_price: Number(body?.physical_price || 0),
     trial_price: Number(body?.trial_price || 0),
+    format_pricing: {
+      dxf: Number(body?.format_dxf_price !== undefined && body?.format_dxf_price !== '' ? body.format_dxf_price : (Number(body?.base_price) || 399)),
+      hpgl: Number(body?.format_hpgl_price !== undefined && body?.format_hpgl_price !== '' ? body.format_hpgl_price : (Number(body?.base_price) || 399)),
+      plt: Number(body?.format_plt_price !== undefined && body?.format_plt_price !== '' ? body.format_plt_price : (Number(body?.base_price) || 399)),
+      pdf: Number(body?.format_pdf_price !== undefined && body?.format_pdf_price !== '' ? body.format_pdf_price : (Number(body?.base_price) || 399)),
+      bundle_price: Number(body?.format_bundle_price !== undefined && body?.format_bundle_price !== '' ? body.format_bundle_price : (Number(body?.base_price) || 399)),
+      active_bundle: body?.active_bundle !== 'off' && body?.active_bundle !== false
+    },
+    tech_pack_price: Number(body?.tech_pack_price || 0),
+    marker_service_price: Number(body?.marker_service_price || 0),
+    size_chart_image: String(body?.size_chart_image || '').trim(),
+    size_chart_url: String(body?.size_chart_url || '').trim(),
+    size_chart_visible: body?.pattern_configuration === '1'
+      ? body.size_chart_visible === 'on' || body.size_chart_visible === true || body.size_chart_visible === '1'
+      : body?.size_chart_visible === undefined
+        ? true
+        : body.size_chart_visible === 'on' || body.size_chart_visible === true || body.size_chart_visible === '1',
     images: body?.main_image_url !== undefined || body?.gallery_image_urls !== undefined
       ? [...(String(body?.main_image_url || '').trim() ? [String(body.main_image_url).trim()] : []), ...parseStringArray(body?.gallery_image_urls)]
       : parseStringArray(body?.images),
@@ -480,10 +522,16 @@ router.post('/products', adminAuth, async (req, res) => {
   const productForm = parseProductPayload(req.body);
 
   try {
+    Object.assign(productForm, collectMediaUpdate({}, req.body, req.files));
+    await publishProductMedia(req);
     await Product.create(productForm);
+    req.aepMediaCommitted = true;
     res.redirect(buildRedirectUrl('/admin/products', 'Product created successfully.'));
   } catch (err) {
     logError('Admin product create error:', err);
+    productForm.images = [];
+    productForm.sample_image_url = '';
+    productForm.video_url = '';
     res.status(400).render('admin/product-editor', {
       title: 'Add Product',
       editingProduct: null,
@@ -499,12 +547,14 @@ router.post('/products', adminAuth, async (req, res) => {
 
 router.get('/products/:id/edit', adminAuth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).select('+digital_file').lean();
+    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map').lean();
 
     if (!product) {
       return res.redirect('/admin/products');
     }
     const productFiles = await ProductFile.find({ product_id: product._id }).sort({ createdAt: -1 }).select('+digital_file').lean();
+    product.mappedFiles=(product.digital_file_map || []).map(({format,size})=>({format,size}));
+    delete product.digital_file_map;
     product.hasPrivateBaseFile = Boolean(product.digital_file);
     delete product.digital_file;
     for (const file of productFiles) {
@@ -613,7 +663,7 @@ Object.assign(product, productForm, collectMediaUpdate(product, req.body, req.fi
       editingProduct: product,
       productFiles,
       productSetup: productSetup(product || productForm, productFiles),
-      productForm: { ...product, ...productForm },
+      productForm: { ...product, ...productForm, images: product?.images || [], sample_image_url: product?.sample_image_url || '', video_url: product?.video_url || '' },
       message: 'Could not update product.',
       messageType: 'error',
       formatCurrency,
@@ -707,6 +757,135 @@ router.post('/products/:productId/files', adminAuth, async (req, res) => {
   } catch (err) {
     logError('Admin product file create error:', err);
     res.redirect(buildRedirectUrl(`/admin/products/${req.params.productId}/files`, 'Could not add pattern file.', 'error'));
+  }
+});
+
+// Direct pattern file upload endpoint (DXF, HPGL, PLT, PDF, Tech Pack, Markers)
+const directPatternUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+router.post('/products/:productId/direct-file', adminAuth, directPatternUpload.single('file'), async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.productId);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (!req.file || !req.file.buffer || !req.file.buffer.length) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    if(req.body.purpose==='pattern'){
+      if(!req.session.productMediaCsrf || req.body._csrf!==req.session.productMediaCsrf)return res.status(403).json({error:'Reload the product editor and try again.'});
+      try{return res.json(await require('../services/digitalDeliveryService').uploadSizeFile(product._id,req.body.format,req.body.size,req.file.originalname,req.file.buffer));}
+      catch(error){return res.status(error.status || 500).json({error:error.status?error.message:'Private file upload failed.'});}
+    }
+    const originalName = req.file.originalname || 'pattern-file';
+    const ext = path.extname(originalName).toLowerCase();
+    const allowedExts = ['.dxf', '.hpgl', '.plt', '.pdf', '.zip', '.aama', '.astm'];
+    if (!allowedExts.includes(ext)) {
+      return res.status(400).json({ error: 'Unsupported pattern format. Allowed: DXF, HPGL, PLT, PDF, ZIP.' });
+    }
+
+    // PDF magic bytes validation
+    if (ext === '.pdf') {
+      if (req.file.buffer.length < 4 || req.file.buffer.subarray(0, 4).toString('ascii') !== '%PDF') {
+        return res.status(400).json({ error: 'Invalid PDF file content: %PDF header missing.' });
+      }
+    }
+
+    // Save to private storage (never public!)
+    const delivery = require('../services/digitalDeliveryService');
+    const privateRoot = await delivery.privateRoot();
+    await fs.promises.mkdir(privateRoot, { recursive: true });
+    const safeStorageName = crypto.randomBytes(24).toString('hex') + ext;
+    const destPath = path.join(privateRoot, safeStorageName);
+    await fs.promises.writeFile(destPath, req.file.buffer, { flag: 'wx', mode: 0o600 });
+
+    const rawFormat = String(req.body.format || '').toLowerCase();
+    const rawPurpose = String(req.body.purpose || '').toLowerCase();
+    const extType = ext.replace('.', '').toLowerCase();
+
+    // Accurately set file_type without mislabeling PDF
+    const file_type = extType;
+
+    // Determine purpose
+    let purpose = 'other';
+    if (rawPurpose === 'tech_pack' || rawFormat === 'techpack' || originalName.toLowerCase().includes('techpack') || originalName.toLowerCase().includes('pom')) {
+      purpose = 'tech_pack';
+    } else if (rawFormat === 'marker' || originalName.toLowerCase().includes('marker')) {
+      purpose = 'specs';
+    } else if (extType === 'dxf') {
+      purpose = 'dxf';
+    } else if (extType === 'pdf' && rawPurpose !== 'pattern') {
+      purpose = 'specs';
+    }
+
+    // Check for replacement: same product and same file_type and purpose, or same file_name
+    let existingFile = await ProductFile.findOne({
+      product_id: product._id,
+      $or: [
+        { file_type, purpose },
+        { file_name: originalName }
+      ]
+    });
+
+    let doc;
+    if (existingFile) {
+      existingFile.file_name = originalName;
+      existingFile.file_type = file_type;
+      existingFile.purpose = purpose;
+      existingFile.digital_file = safeStorageName;
+      existingFile.active = true;
+      await existingFile.save();
+      doc = existingFile;
+    } else {
+      doc = await ProductFile.create({
+        product_id: product._id,
+        file_name: originalName,
+        file_type,
+        purpose,
+        digital_file: safeStorageName,
+        file_price: purpose === 'tech_pack' ? Number(product.tech_pack_price || 0) : 0,
+        active: true
+      });
+    }
+
+    if (rawPurpose === 'pattern' && ['dxf', 'hpgl', 'plt', 'pdf'].includes(file_type) && !product.digital_file) {
+      product.digital_file = safeStorageName;
+      await product.save();
+    }
+
+    const badgeText = purpose === 'tech_pack' ? 'TECH PACK'
+      : (purpose === 'specs' && (rawFormat === 'marker' || originalName.toLowerCase().includes('marker'))) ? 'MARKER'
+      : file_type.toUpperCase();
+
+    const badgeClass = file_type === 'pdf' ? 'file-badge--pdf'
+      : file_type === 'dxf' ? 'file-badge--dxf'
+      : (file_type === 'hpgl' || file_type === 'plt') ? 'file-badge--hpgl'
+      : 'file-badge--zip';
+
+    return res.json({
+      success: true,
+      fileId: doc._id.toString(),
+      fileName: doc.file_name,
+      fileType: doc.file_type,
+      purpose: doc.purpose,
+      badgeText,
+      badgeClass,
+      isReplacement: Boolean(existingFile)
+    });
+  } catch (err) {
+    console.error('Direct file upload error:', err);
+    return res.status(500).json({ error: 'Direct file upload failed' });
+  }
+});
+
+router.post('/products/:productId/direct-file/:fileId/delete', adminAuth, async (req, res) => {
+  try {
+    await ProductFile.deleteOne({ _id: req.params.fileId, product_id: req.params.productId });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'Delete failed' });
   }
 });
 
@@ -912,6 +1091,10 @@ router.get('/orders', adminAuth, async (req, res) => {
         customer_phone: o.customer_snapshot?.phone || customer?.phone || '',
         customer_address: [o.shipping_address,o.shipping_city,o.shipping_state,o.delivery_pincode].filter(Boolean).join(', '),
         courier_name: o.courier_name || '',dispatch_location:o.dispatch_location || '',
+        has_physical:o.items?.some(item=>Number(item.physical_quantity || 0)>0 || Number(item.trial_quantity || 0)>0),
+        delivery_flow_version:o.delivery_flow_version,
+        shipping_payment_status:o.shipping_payment_status || 'not_applicable',
+        courier_booking_status:o.courier_booking_status || 'not_required',
         order_status: o.order_status,
         payment_status: o.payment_status || (payment && payment.payment_status) || 'unpaid',
         grand_total: o.grand_total || 0,
@@ -982,6 +1165,7 @@ router.get('/orders/:id', adminAuth, async (req, res) => {
     const payment = await Payment.findOne({ order_id: order._id }).lean().catch(() => null);
     require('../middleware/learningForms').fresh(req,res);
 
+    res.locals.downloadCsrf = require('../services/sessionFormTokens').issue(req,'download-reissue');
     res.render('admin/order_detail', {
       title: `Order ${order._id}`,
       order,
@@ -1017,6 +1201,18 @@ router.post('/orders/:id/status', adminAuth, async (req, res) => {
     logError('Admin order status update error:', err);
     res.status(500).render('error', { title: 'Admin Error', message: 'Unable to update order status.' });
   }
+});
+
+
+// Reissue 24-hour download link
+router.post('/orders/:id/reissue-download', adminAuth, async (req, res, next) => {
+  if (!require('../services/sessionFormTokens').valid(req,'download-reissue',req.body?._csrf)) return res.status(403).send('Reload the order page and try again.');
+  try {
+    const delivery = require('../services/digitalDeliveryService');
+    const updated = await delivery.reissue(req.params.id);
+    if (!updated) return res.status(400).redirect(`/admin/orders/${req.params.id}`);
+    res.redirect(303, `/admin/orders/${req.params.id}`);
+  } catch(e) { next(e); }
 });
 
 router.get('/payments', adminAuth, async (req, res) => {

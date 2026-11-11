@@ -227,15 +227,21 @@ async function reminders(now=new Date()){
   }
 }
 async function tick(){
-  await require('./leadNotifications').reconcile();
-  await require('./digitalDeliveryService').reconcile();
+  // Preparation failures must not starve notifications already in the queue.
+  const prepare=async(stage,task)=>{try{await task();}catch(error){require('./safeLog').logError(`Notification worker ${stage} deferred:`,error);}};
+  await prepare('lead reconciliation',()=>require('./leadNotifications').reconcile());
+  await prepare('digital delivery reconciliation',()=>require('./digitalDeliveryService').reconcile());
   for(const [type,name] of Object.entries(receiptService.types)){
-    const Model=require('../models/mongo/'+name);
-    for await(const row of Model.find({'notification_jobs.0':{$exists:true}}).select('_id').limit(100).lean().cursor())await safeFlush(type,row._id);
+    await prepare(`embedded jobs (${type})`,async()=>{
+      const Model=require('../models/mongo/'+name);
+      for await(const row of Model.find({'notification_jobs.0':{$exists:true}}).select('_id').limit(100).lean().cursor())await safeFlush(type,row._id);
+    });
   }
-  await reminders();
-  for await(const row of Log.find({status:{$in:['failed','uncertain']},event:{$not:/^admin_/},failure_alert_recorded:{$ne:true}}).limit(100).lean().cursor())await safeFailureAlert(row);
-  await Log.updateMany({status:'sending',locked_at:{$lt:new Date(Date.now()-5*60000)}},{$set:{status:'uncertain',error_message:'Worker stopped before recording the provider response. Check provider logs before retrying.'}});
+  await prepare('reminders',()=>reminders());
+  await prepare('failure alerts',async()=>{
+    for await(const row of Log.find({status:{$in:['failed','uncertain']},event:{$not:/^admin_/},failure_alert_recorded:{$ne:true}}).limit(100).lean().cursor())await safeFailureAlert(row);
+  });
+  await prepare('stale send recovery',()=>Log.updateMany({status:'sending',locked_at:{$lt:new Date(Date.now()-5*60000)}},{$set:{status:'uncertain',error_message:'Worker stopped before recording the provider response. Check provider logs before retrying.'}}));
   const dispatch=createDispatcher();
   for await(const row of Log.find({status:{$in:['queued','pending']}}).sort({createdAt:1}).limit(100).select('_id').lean().cursor())await dispatch(row._id);
 }

@@ -180,6 +180,72 @@ async function run(){
   await leadService.enqueue(forged);const forgedLog=await Log.findOne({reference_id:forged._id});
   await dispatch(forgedLog._id);assert.equal(sent.at(-1).replyTo,'verified-contact@example.test');assert.ok(!sent.at(-1).html.includes('<script>'));assert.ok(sent.at(-1).html.includes('&lt;script&gt;unsafe&lt;/script&gt;'));assert.ok(sent.at(-1).html.includes('mailto:verified-contact@example.test'));
 
+  // Execute the actual rendered marker handler with a small DOM fixture, then
+  // send its real payload through HTTP/MongoDB and the existing mocked SMTP.
+  const vm=require('node:vm'),Product=require('../models/mongo/Product');
+  const markerProduct=await Product.create({name:'Marker `shirt` ${notCode}',slug:'marker-enquiry-fixture',active:true,status:'active',base_price:321,available_sizes:['M','L'],size_prices:[{size:'M',price:321},{size:'L',price:432}],pattern_options:{printable:true,physical:true},physical_price:50});
+  const originalPricing=await Product.findById(markerProduct._id).lean();
+  async function markerFixture(){
+    await freshContact();
+    const page=await request('/product/'+markerProduct.slug);assert.equal(page.status,200);
+    const rendered=await page.text();assert.ok(rendered.includes('id="markerCustomMeasurements"'));
+    const nodes={};const element=id=>nodes[id] ||= {value:'',style:{},disabled:false,textContent:'',classList:{add(){},remove(){}},addEventListener(type,fn){this[type]=fn;}};
+    const soft=[{size:'M',checked:true},{size:'L',checked:false}],phys=[{size:'M',checked:false},{size:'L',checked:false}];
+    const pills=(rows,key)=>rows.map(row=>({dataset:{[key]:row.size},querySelector:()=>row}));
+    let stripes=true,calls=0,lastBody='',mockResponse=null;
+    const context={document:{getElementById:element},URLSearchParams,Set,console,
+      softPills:pills(soft,'softSize'),physPills:pills(phys,'physSize'),physicalInput:{checked:false},
+      tabBtnStripes:{classList:{contains:()=>stripes}},
+      fetch:async(url,options)=>{calls++;lastBody=options.body;assert.equal(url,'/enquiries');if(mockResponse)return mockResponse();return fetch(origin+url,{...options,headers:{...options.headers,cookie,'X-Forwarded-For':testIp}});}};
+    for(const [variable,id]of Object.entries({inpStripesRep:'inputStripesRepeat',inpStripesCut:'inputStripesCuttable',inpChecksWarp:'inputChecksWarp',inpChecksWeft:'inputChecksWeft',inpChecksCut:'inputChecksCuttable',errStripesRep:'errStripesRepeat',errStripesCut:'errStripesCuttable',errChecksWarp:'errChecksWarp',errChecksWeft:'errChecksWeft',errChecksCut:'errChecksCuttable'}))context[variable]=element(id);
+    const extract=(start,end)=>rendered.slice(rendered.indexOf(start),rendered.indexOf(end,rendered.indexOf(start)));
+    const script=extract('function getSelectedSoftSizes()', 'function updateSoftSizePillStates()')+extract('function getSelectedPhysSizes()', 'function updatePhysSizePillStates()')+extract('function validateMarkerNumber(', 'const inpStripesRep =')+extract('// 11. Custom Marker Enquiry Submission','form?.addEventListener');
+    vm.runInNewContext(script,context);
+    element('markerLeadName').value='Marker Customer';element('markerLeadEmail').value='marker'+client+'@example.test';element('markerLeadWhatsapp').value='+91 98765 43210';
+    element('inputStripesRepeat').value='2.75';element('inputStripesCuttable').value='147.5';
+    element('inputChecksWarp').value='3.25';element('inputChecksWeft').value='4.50';element('inputChecksCuttable').value='149.25';
+    return {element,soft,phys,context,checks(){stripes=false;},submit:()=>element('btnSubmitMarkerEnquiry').click(),calls:()=>calls,body:()=>new URLSearchParams(lastBody),mock(fn){mockResponse=fn;}};
+  }
+  for(const mode of ['single','multiple','custom']){
+    const f=await markerFixture();
+    if(mode==='multiple'){f.soft[1].checked=true;f.context.physicalInput.checked=true;f.phys[0].checked=true;f.checks();}
+    if(mode==='custom'){f.soft[0].checked=false;f.element('markerCustomMeasurements').value='Chest 101.25 cm; waist 87.50 cm; length 72 cm\nMatch checks at centre front.';f.checks();}
+    const beforeCount=await Lead.countDocuments(),sentBefore=sent.length;
+    await f.submit();assert.equal(f.calls(),1);assert.match(f.element('markerSubmitStatus').textContent,/saved/);
+    const payload=Object.fromEntries(f.body());assert.equal(payload.source,'/product/marker-enquiry-fixture#custom-marker');
+    assert.ok(payload.message.includes(markerProduct.name),'Product name must remain data, not JavaScript');
+    assert.match(payload.message,mode==='single'?/Selected Sizes: M\n/:mode==='multiple'?/Selected Sizes: M, L\n/:/Selected Sizes: Custom\n/);
+    assert.ok(payload.message.includes(mode==='single'?'Repeat Width = 2.75 cm, Fabric Cuttable Width = 147.5 cm':'Warp Repeat = 3.25 cm, Weft Repeat = 4.50 cm, Fabric Cuttable Width = 149.25 cm'));
+    if(mode==='custom')assert.ok(payload.message.includes(f.element('markerCustomMeasurements').value));
+    const saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.equal(saved.message,payload.message);assert.equal(await Lead.countDocuments(),beforeCount+1);
+    const queued=await Log.findOne({reference_id:saved._id,event:leadService.event});assert.ok(queued);assert.equal(queued.status,'queued');
+    await Promise.all([dispatch(queued._id),dispatch(queued._id)]);assert.equal(sent.length,sentBefore+1);assert.ok(sent.at(-1).text.includes(payload.message));assert.equal(sent.at(-1).replyTo,payload.email);
+    await f.submit();assert.equal(f.calls(),1,'Identical successful submission is not resent');
+    const retry=(await freshContact()).token;assert.equal((await request('/enquiries',{...payload,_csrf:retry})).status,303);assert.equal(await Lead.countDocuments(),beforeCount+1);assert.equal(await Log.countDocuments({reference_id:saved._id,event:leadService.event}),1);
+  }
+  for(const [measurements,notes]of [['Chest 101.25 cm; waist 87.50 cm',''],['','Match checks at centre front.'],['Chest 101.25 cm','Match stripes at shoulder.'],['','']]){
+    const f=await markerFixture();f.soft[0].checked=false;
+    for(const id of ['inputStripesRepeat','inputStripesCuttable','inputChecksWarp','inputChecksWeft','inputChecksCuttable'])f.element(id).value='';
+    f.element('markerCustomMeasurements').value=measurements;f.element('markerSpecifications').value=notes;
+    const count=await Lead.countDocuments(),logs=await Log.countDocuments(),mailCount=sent.length;
+    await f.submit();
+    if(!measurements&&!notes){assert.equal(f.calls(),0);assert.match(f.element('markerSubmitStatus').textContent,/At least one is required/);assert.equal(await Lead.countDocuments(),count);assert.equal(await Log.countDocuments(),logs);assert.equal(sent.length,mailCount);continue;}
+    assert.equal(f.calls(),1);assert.match(f.element('markerSubmitStatus').textContent,/saved/);
+    const payload=Object.fromEntries(f.body()),saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.equal(saved.message,payload.message);assert.equal(await Lead.countDocuments(),count+1);
+    if(measurements)assert.ok(saved.message.includes('Custom measurements (cm): '+measurements));
+    if(notes)assert.ok(saved.message.includes('Custom marker specifications / notes: '+notes));
+    assert.ok(!saved.message.includes('undefined'));
+    const log=await Log.findOne({reference_id:saved._id,event:leadService.event});assert.ok(log);await dispatch(log._id);assert.equal(sent.length,mailCount+1);assert.ok(sent.at(-1).text.includes(saved.message));assert.equal((await Log.findById(log._id)).status,'sent');
+  }
+  console.log('PASS: measurements only, marker notes only, both, neither; three accurate saved enquiries/mock emails, no save/email for empty inputs.');
+  const invalidMarker=await markerFixture();
+  for(const [field,value]of [['inputStripesRepeat','-1'],['inputStripesCuttable','0'],['markerLeadName',''],['markerLeadEmail','invalid'],['markerLeadWhatsapp','abc']]){const previous=invalidMarker.element(field).value;invalidMarker.element(field).value=value;await invalidMarker.submit();assert.equal(invalidMarker.calls(),0);invalidMarker.element(field).value=previous;}
+  invalidMarker.soft[0].checked=false;invalidMarker.element('inputStripesRepeat').value='';invalidMarker.element('inputStripesCuttable').value='';await invalidMarker.submit();assert.equal(invalidMarker.calls(),0);assert.match(invalidMarker.element('markerSubmitStatus').textContent,/At least one is required/);invalidMarker.soft[0].checked=true;invalidMarker.element('inputStripesRepeat').value='2.75';invalidMarker.element('inputStripesCuttable').value='147.5';
+  let resolveResponse;invalidMarker.mock(()=>new Promise(resolve=>{resolveResponse=resolve;}));const markerPending=invalidMarker.submit();await invalidMarker.submit();assert.equal(invalidMarker.calls(),1);assert.equal(invalidMarker.element('btnSubmitMarkerEnquiry').disabled,true);assert.doesNotMatch(invalidMarker.element('markerSubmitStatus').textContent,/saved/);
+  resolveResponse({ok:false,status:400,json:async()=>({success:false,error:'Enter valid measurements.'})});await markerPending;assert.equal(invalidMarker.element('markerSubmitStatus').textContent,'Enter valid measurements.');assert.equal(invalidMarker.element('btnSubmitMarkerEnquiry').disabled,false);
+  invalidMarker.mock(()=>({ok:false,status:429,json:async()=>{throw Error('not JSON');}}));await invalidMarker.submit();assert.match(invalidMarker.element('markerSubmitStatus').textContent,/wait/);
+  const afterPricing=await Product.findById(markerProduct._id).lean();for(const key of ['base_price','physical_price','size_prices','format_pricing'])assert.deepEqual(afterPricing[key],originalPricing[key]);
+  console.log('PASS: rendered EJS marker handler: single/multiple/custom sizes, cm measurements, stripes/checks/width, required fields, in-flight and persisted dedupe, server errors, real disposable Mongo persistence, one mocked admin email, unchanged pricing; no ReferenceError. DOM fixture, not browser verification.');
   console.log('PASS: isolated HTTP lead validation, spam, durable save, duplicate submission/concurrent dispatch, mock SMTP, missing SMTP, failure/retry, uncertain-send protection, admin visibility and Razorpay configuration.');
  }finally{if(server)await new Promise(resolve=>server.close(resolve));await mongoose.disconnect();await mongo.stop();}
 }

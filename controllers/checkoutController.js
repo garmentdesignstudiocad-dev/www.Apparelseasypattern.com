@@ -556,7 +556,7 @@ async function postCheckout(
       const product =
         await Product.findById(
           productId
-        ).lean();
+        ).select('+digital_file +digital_file_map').lean();
 
 
       if (!product || product.active === false) {
@@ -663,7 +663,7 @@ async function postCheckout(
                 product._id,
               active: { $ne: false },
 
-            }).lean()
+              }).select('+digital_file').lean()
           : [];
 
 
@@ -709,6 +709,10 @@ async function postCheckout(
         });
 
       }
+
+      const digitalSelectionError=await require('../services/digitalDeliveryService')
+        .validateSelection(product,selectedFiles,item);
+      if(digitalSelectionError)return res.status(400).json({error:digitalSelectionError});
 
 
       /*

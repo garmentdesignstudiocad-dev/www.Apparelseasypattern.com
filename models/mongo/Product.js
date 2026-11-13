@@ -20,7 +20,7 @@ const ProductSchema = new Schema({
   sample_image_url: {type:String,default:''},
   video_url: {type:String,default:''},
   digital_file:{type:String,select:false},
-  digital_file_map:{type:[new Schema({format:{type:String,enum:['dxf','hpgl','plt','pdf'],required:true},size:{type:String,required:true},file:{type:String,required:true}},{_id:false})],default:[],select:false},
+  digital_file_map:{type:[new Schema({format:{type:String,enum:['dxf','hpgl','plt','pdf'],required:true},size:{type:String,required:true},file:{type:String,required:true},original_name:String},{_id:false})],default:[],select:false},
   size_information: {type:String,maxlength:3000,default:''},
   file_formats: {type:String,maxlength:500,default:''},
   delivery_information: {type:String,maxlength:3000,default:''},

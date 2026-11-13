@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/customer-experience.css">
   <link rel="stylesheet" href="/css/storefront-theme.css">
-  <%- include('partials/theme') %>
+  <%- include('partials/theme', {skipSharedSeo:true}) %>
 
   <style>
     /* ==========================================================================
@@ -1451,8 +1451,16 @@
                 Submit Custom Marker Specifications to Pattern Studio
               </div>
               <p style="font-size:12px;color:var(--ref-text-muted);margin:0 0 10px;">
-                Enter your fabric repeat dimensions above and contact details below. Our CAD pattern engineering team will review and prepare your custom marker.
+                Provide custom size measurements or marker specifications / notes (at least one), and your contact details. Our CAD pattern engineering team will review and prepare your custom marker.
               </p>
+              <div class="marker-field-group" style="margin-bottom:10px;">
+                <label for="markerCustomMeasurements">Custom Size Measurements (cm)</label>
+                <textarea id="markerCustomMeasurements" rows="3" maxlength="2000" placeholder="Enter measurement names and values in centimetres. Optional when marker specifications or notes are provided."></textarea>
+              </div>
+              <div class="marker-field-group" style="margin-bottom:10px;">
+                <label for="markerSpecifications">Custom Marker Specifications / Notes</label>
+                <textarea id="markerSpecifications" rows="3" maxlength="2000" placeholder="Describe your marker requirements. Optional when custom measurements are provided."></textarea>
+              </div>
               <div class="marker-field-row" style="margin-bottom:10px;">
                 <div class="marker-field-group">
                   <label for="markerLeadName" style="font-size:11.5px;">Your Name *</label>
@@ -2277,8 +2285,13 @@
     const leadNameInp = document.getElementById('markerLeadName');
     const leadEmailInp = document.getElementById('markerLeadEmail');
     const leadWhatsappInp = document.getElementById('markerLeadWhatsapp');
+    const customMeasurementsInp = document.getElementById('markerCustomMeasurements');
+    const markerSpecificationsInp = document.getElementById('markerSpecifications');
+    let markerSubmitting = false;
+    let submittedMarkerPayload = '';
 
     btnSubmitMarker?.addEventListener('click', async () => {
+      if (markerSubmitting) return;
       markerStatus.style.display = 'inline-block';
       markerStatus.style.color = '#B45309';
       markerStatus.textContent = 'Submitting specifications...';
@@ -2286,42 +2299,51 @@
       const activeTabIsStripes = tabBtnStripes && tabBtnStripes.classList.contains('active');
       let specDetails = '';
 
-      if (activeTabIsStripes) {
-        const repVal = inpStripesRep?.value.trim();
-        const cutVal = inpStripesCut?.value.trim();
-        if (!validateMarkerNumber(inpStripesRep, errStripesRep, 0.1) || !validateMarkerNumber(inpStripesCut, errStripesCut, 1)) {
-          markerStatus.style.color = '#DC2626';
-          markerStatus.textContent = 'Please enter valid positive cm numbers for stripes repeat and cuttable width.';
-          return;
-        }
-        specDetails = `Stripes Marker: Repeat Width = ${repVal} cm, Fabric Cuttable Width = ${cutVal} cm`;
-      } else {
-        const warpVal = inpChecksWarp?.value.trim();
-        const weftVal = inpChecksWeft?.value.trim();
-        const cutVal = inpChecksCut?.value.trim();
-        if (!validateMarkerNumber(inpChecksWarp, errChecksWarp, 0.1) || !validateMarkerNumber(inpChecksWeft, errChecksWeft, 0.1) || !validateMarkerNumber(inpChecksCut, errChecksCut, 1)) {
-          markerStatus.style.color = '#DC2626';
-          markerStatus.textContent = 'Please enter valid positive cm numbers for checks warp, weft, and cuttable width.';
-          return;
-        }
-        specDetails = `Checks Marker: Warp Repeat = ${warpVal} cm, Weft Repeat = ${weftVal} cm, Fabric Cuttable Width = ${cutVal} cm`;
+      const dimensions = activeTabIsStripes
+        ? [[inpStripesRep, errStripesRep, 0.1, 'Repeat Width'], [inpStripesCut, errStripesCut, 1, 'Fabric Cuttable Width']]
+        : [[inpChecksWarp, errChecksWarp, 0.1, 'Warp Repeat'], [inpChecksWeft, errChecksWeft, 0.1, 'Weft Repeat'], [inpChecksCut, errChecksCut, 1, 'Fabric Cuttable Width']];
+      const enteredDimensions = dimensions.filter(([input]) => input?.value.trim());
+      if (enteredDimensions.some(([input, error, minimum]) => !validateMarkerNumber(input, error, minimum))) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Enter valid positive centimetre values for any fabric dimensions provided.';
+        return;
+      }
+      if (enteredDimensions.length) {
+        specDetails = (activeTabIsStripes ? 'Stripes Marker: ' : 'Checks Marker: ') + enteredDimensions.map(([input, , , label]) => label + ' = ' + input.value.trim() + ' cm').join(', ');
       }
 
       const name = leadNameInp?.value.trim();
       const email = leadEmailInp?.value.trim();
       const whatsapp = leadWhatsappInp?.value.trim();
 
-      if (!name || !email || !whatsapp) {
+      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '') || !/^[+\d ()-]{7,30}$/.test(whatsapp || '') || whatsapp.replace(/\D/g, '').length < 7) {
         markerStatus.style.color = '#DC2626';
-        markerStatus.textContent = 'Please fill in Name, Email and WhatsApp number.';
+        markerStatus.textContent = 'Enter your name, a valid email address and WhatsApp number with country code.';
         return;
       }
 
+      const selectedSizes = [...new Set([...getSelectedSoftSizes(), ...(physicalInput?.checked ? getSelectedPhysSizes() : [])])];
+      const customMeasurements = customMeasurementsInp?.value.trim() || '';
+      const markerSpecifications = markerSpecificationsInp?.value.trim() || '';
+      if (!customMeasurements && !markerSpecifications && !specDetails) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Enter custom size measurements (cm) or custom marker specifications / notes. At least one is required.';
+        return;
+      }
+      markerSubmitting = true;
       btnSubmitMarker.disabled = true;
 
       try {
         const csrfToken = "<%= typeof csrf !== 'undefined' ? csrf : '' %>";
-        const messageBody = `Product: <%= product.name %> (Selected Size: ${currentSelectedSize})\n${specDetails}\nRequested via Customer Product Details Page.`;
+        const productName = <%- JSON.stringify(product.name).replace(/</g, '\\u003c') %>;
+        const source = <%- JSON.stringify('/product/' + product.slug + '#custom-marker').replace(/</g, '\\u003c') %>;
+        const messageBody = `Product: ${productName}\nSelected Sizes: ${selectedSizes.join(', ') || 'Custom'}\n${customMeasurements ? 'Custom measurements (cm): ' + customMeasurements + '\n' : ''}${markerSpecifications ? 'Custom marker specifications / notes: ' + markerSpecifications + '\n' : ''}${specDetails}\nRequested via Customer Product Details Page.`;
+        const payload = new URLSearchParams({_csrf:csrfToken,name,email,whatsapp,interest:'Fit Blocks',source,message:messageBody}).toString();
+        if (payload === submittedMarkerPayload) {
+          markerStatus.style.color = '#16A34A';
+          markerStatus.textContent = 'These specifications have already been submitted successfully.';
+          return;
+        }
 
         const res = await fetch('/enquiries', {
           method: 'POST',
@@ -2330,28 +2352,23 @@
             'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
           },
-          body: new URLSearchParams({
-            _csrf: csrfToken,
-            name: name,
-            email: email,
-            whatsapp: whatsapp,
-            interest: 'Fit Blocks',
-            source: `/products/<%= product.slug %>#custom-marker`,
-            message: messageBody
-          })
+          body: payload
         });
 
-        const result = await res.json();
+        const result = await res.json().catch(() => null);
+        if (!result) throw new Error(res.status === 429 ? 'Too many enquiries. Please wait before trying again.' : `The server could not confirm your enquiry (HTTP ${res.status}). Please reload and try again.`);
         if (!res.ok || !result.success) {
           throw new Error(result.error || 'Failed to submit specifications. Please try again.');
         }
 
         markerStatus.style.color = '#16A34A';
-        markerStatus.innerHTML = '&#10003; ' + (result.message || 'Custom marker specifications saved to studio enquiries.');
+        submittedMarkerPayload = payload;
+        markerStatus.textContent = '\u2713 ' + (result.message || 'Custom marker specifications saved to studio enquiries.');
       } catch (err) {
         markerStatus.style.color = '#DC2626';
         markerStatus.textContent = err.message || 'Submission error.';
       } finally {
+        markerSubmitting = false;
         btnSubmitMarker.disabled = false;
       }
     });

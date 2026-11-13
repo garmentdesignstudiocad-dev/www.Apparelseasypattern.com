@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),crypto=require('node:crypto'),fs=requ
 const mongoose=require('mongoose'),{MongoMemoryServer}=require('mongodb-memory-server');
 Object.assign(process.env,{NODE_ENV:'development',SESSION_SECRET:'account-test-session-only',RAZORPAY_KEY_ID:'rzp_test_accounts',RAZORPAY_KEY_SECRET:'account-test-secret',NOTIFICATIONS_WORKER_ENABLED:'false',APP_BASE_URL:'https://store.example.test',ADMIN_NOTIFICATION_EMAIL:'owner@example.test',DB_HOST:'127.0.0.1',DB_PORT:'1'});
 const gateway=[];
+process.env.APP_BASE_URL='https://account.example.test';
 require('razorpay');require.cache[require.resolve('razorpay')].exports=class{constructor(){this.orders={create:async data=>{const row={...data,id:'order_account'+gateway.length};gateway.push(row);return row;}};this.payments={fetch:async id=>{const order=gateway[Number(id.replace('pay_account',''))];return {id,order_id:order.id,amount:order.amount,currency:'INR',status:'captured',captured:true};}};}};
 async function run(){
  const mongo=await MongoMemoryServer.create({binary:{version:'7.0.14'}}),dir=fs.mkdtempSync(path.join(os.tmpdir(),'account-download-'));let server;
@@ -40,7 +41,7 @@ async function run(){
   for(const [who,physical] of [['a',false],['b',false],['a',true],['b',true]]){
 
    const payload={customer:{name:'Forged buyer',email:'forged@example.test',phone:'9876543211'},items:[{product_id:String(product._id),quantity:1,physical_quantity:physical?1:0}],shipping:physical?{address:'12 Test Street',city:who==='a'?'Tiruppur':'Ludhiana',state:who==='a'?'Tamil Nadu':'Punjab',pincode:'638751',courier_id:who==='a'?'south-test':'north-test'}:{}};
-   if(physical)assert.equal((await request('/checkout',{...payload,shipping:{...payload.shipping,courier_id:who==='a'?'north-test':'south-test'}},who,true)).status,400);
+   if(physical){const ignoredCourier=await request('/checkout',{...payload,shipping:{...payload.shipping,courier_id:who==='a'?'north-test':'south-test'}},who,true);assert.equal(ignoredCourier.status,200);assert.ok(ignoredCourier.text.includes('payment_method_url'));}
    assert.equal((await request('/checkout',payload,who,true)).status,200);
    const paymentPage=await request('/checkout/payment-method',null,who);assert.equal(paymentPage.status,200);assert.ok(paymentPage.text.includes('data.login_url'));
    const payment=JSON.parse((await request('/checkout/payment-method/proceed',{},who,true)).text);const id=payment.order_id;
@@ -53,7 +54,7 @@ async function run(){
    assert.equal(await Log.countDocuments({reference_id:id,event:'order_digital_ready'}),0);
    assert.equal((await request('/checkout/razorpay-callback',callback,who,true)).status,302);
    order=await Order.findById(id).select('+download_token').lean();orders.push(order);
-   if(physical){assert.equal(order.dispatch_location,who==='a'?'Bengaluru':'Mumbai');assert.equal(order.courier_name,who==='a'?'South Courier':'North Courier');}
+   if(physical){assert.equal(order.dispatch_location,who==='a'?'Bengaluru Hub':'Mumbai Hub');assert.equal(order.courier_id,'');assert.equal(order.courier_name,'');assert.equal(order.shipping_arranged_separately,true);}
    assert.equal(order.grand_total,physical?177:118);assert.equal(order.tax_amount,physical?27:18);assert.equal(payment.amount,physical?17700:11800);
    assert.ok(order.payment_verified_at);assert.equal(order.payment_status,'paid');
    const log=await Log.findOne({reference_id:id,event:'order_digital_ready',channel:'email'}).lean();assert.equal(log.destination,order.customer_snapshot.email);assert.ok(log.message.includes('/downloads/'+order.download_token));

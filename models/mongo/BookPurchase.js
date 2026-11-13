@@ -4,6 +4,7 @@ const schema=new Schema({
   ...require('./accessFields'),
   email:{type:String,required:true,lowercase:true},whatsapp:{type:String,required:true},
   item_id:{type:Schema.Types.ObjectId,ref:'Book',required:true},item_name:String,
+  ebook_file:{type:String,select:false},ebook_file_name:{type:String,select:false},
   purchase_type:{type:String,enum:['direct','free']},
   submission_key:{type:String,required:true,unique:true},
 },{timestamps:true});

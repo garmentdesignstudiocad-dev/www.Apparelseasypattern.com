@@ -14,26 +14,44 @@ async function filePath(file){
 }
 // One immutable private binary per product, format and size. Replacement only
 // changes the current mapping; already-issued orders retain their file version.
-async function uploadSizeFile(productId,format,size,originalName,bytes) {
+async function uploadSizeFile(productId,format,size,originalName,bytes,mime='') {
   const Product=require('../models/mongo/Product');
   const product=await Product.findById(productId).lean();
   const fail=message=>{throw Object.assign(new Error(message),{status:400});};
   if(!product)fail('Product not found.');
-  if(!['dxf','hpgl','plt','pdf'].includes(format) || path.extname(originalName).toLowerCase()!=='.'+format)fail('Choose the actual file for the selected format.');
+  if(!['dxf','hpgl','plt','pdf'].includes(format))fail('Choose a supported pattern format.');
+  const ext=require('./digitalUploadValidation').validate(originalName,bytes,format,mime,30*1024*1024);
   if(!product.available_sizes?.includes(size))fail('Choose a saved product size. Save size changes first.');
-  if(!Buffer.isBuffer(bytes) || !bytes.length || bytes.length>30*1024*1024)fail('Choose a file up to 30 MB.');
-  const head=bytes.subarray(0,4096).toString('latin1');
-  if(format==='pdf' && !head.startsWith('%PDF-'))fail('Invalid PDF content.');
-  if(format==='dxf' && !head.startsWith('AutoCAD Binary DXF') && !/(?:^|[\r\n])\s*0\s*[\r\n]+\s*SECTION\s*(?:[\r\n]|$)/i.test(head))fail('Invalid DXF content.');
-  if(['hpgl','plt'].includes(format) && !/(?:^|[;\s])(?:IN|PU|PD|PA|PR|SP|IP|SC|BP|DF)[-+0-9.,\s]*(?:;|$)/i.test(head))fail('Invalid plotter content.');
   await fs.mkdir(root(),{recursive:true});
-  const directory=await privateRoot(),name=crypto.randomBytes(24).toString('hex')+'.'+format;
+  const directory=await privateRoot(),name=crypto.randomBytes(24).toString('hex')+ext;
   await fs.writeFile(path.join(directory,name),bytes,{flag:'wx',mode:0o600});
   try {
-    const result=await Product.updateOne({_id:productId,available_sizes:size},[{$set:{digital_file_map:{$concatArrays:[{$filter:{input:{$ifNull:['$digital_file_map',[]]},as:'entry',cond:{$not:[{$and:[{$eq:['$$entry.format',{$literal:format}]},{$eq:['$$entry.size',{$literal:size}]}]}]}}},{$literal:[{format,size,file:name}]}]}}}]);
+    const result=await Product.updateOne({_id:productId,available_sizes:size},[{$set:{digital_file_map:{$concatArrays:[{$filter:{input:{$ifNull:['$digital_file_map',[]]},as:'entry',cond:{$not:[{$and:[{$eq:['$$entry.format',{$literal:format}]},{$eq:['$$entry.size',{$literal:size}]}]}]}}},{$literal:[{format,size,file:name,original_name:originalName}]}]}}}]);
     if(!result.matchedCount)fail('Product sizes changed. Reload the editor.');
   } catch(error) {await fs.unlink(path.join(directory,name)).catch(()=>{});throw error;}
-  return {success:true,mapped:true,format,size,fileName:originalName};
+  return {success:true,mapped:true,format,size,fileName:originalName,fileType:ext.slice(1)};
+}
+async function validateSelection(product,selectedFiles,item) {
+  const unavailable='Selected digital files are not available for download. Contact the studio before checkout.';
+  if(Number(item.quantity ?? 1)<=0)return '';
+  if(item.printable_selected!==false){
+    const sizes=Array.isArray(item.selected_sizes)?item.selected_sizes:[];
+    if(sizes.length){
+      const formats=Array.isArray(item.selected_formats)?item.selected_formats:[];
+      if(!formats.length || formats.some(format=>!['dxf','hpgl','plt','pdf'].includes(format)))return unavailable;
+      for(const format of new Set(formats))for(const size of new Set(sizes)){
+        const matches=(product.digital_file_map || []).filter(entry=>entry.format===format && entry.size===size);
+        if(matches.length!==1 || !['.'+format,'.zip'].includes(path.extname(matches[0].file).toLowerCase()) || !await filePath(matches[0].file))return unavailable;
+      }
+    }else{
+      if(typeof product.digital_file!=='string')return unavailable;
+      const ext=path.extname(product.digital_file).slice(1).toLowerCase();
+      if(item.selected_formats?.length && (item.selected_formats.length!==1 || item.selected_formats[0]!==ext))return unavailable;
+      if(!await filePath(product.digital_file))return unavailable;
+    }
+  }else if(!selectedFiles.length)return unavailable;
+  for(const file of selectedFiles)if(!file.digital_file || !await filePath(file.digital_file))return unavailable;
+  return '';
 }
 async function ensure(id){
   let order=await Order.findById(id).select('+download_token +download_assets').lean();
@@ -53,8 +71,8 @@ async function ensure(id){
       if(!item.selected_formats?.length)return null;
       for(const format of [...new Set(item.selected_formats)])for(const size of [...new Set(item.selected_sizes)]){
         const match=(product?.digital_file_map || []).filter(entry=>entry.format===format && entry.size===size);
-        if(match.length!==1 || path.extname(match[0].file)!=='.'+format)return null;
-        files.push({name:product.name+' - '+format.toUpperCase()+' - '+size,file:match[0].file});
+        if(match.length!==1 || !['.'+format,'.zip'].includes(path.extname(match[0].file)))return null;
+        files.push({name:match[0].original_name || product.name+' - '+format.toUpperCase()+' - '+size,file:match[0].file});
       }
     }else if(item.printable_selected!==false){
       // Legacy unsized purchases retain their explicitly configured base file.
@@ -100,4 +118,4 @@ async function manualGrant(id, customAssets) {
   return reissue(id);
 }
 
-module.exports={uploadSizeFile,ensure,reconcile,reissue,manualGrant,root,privateRoot,filePath,physical};
+module.exports={uploadSizeFile,validateSelection,ensure,reconcile,reissue,manualGrant,root,privateRoot,filePath,physical};

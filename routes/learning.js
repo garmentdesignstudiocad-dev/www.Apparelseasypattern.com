@@ -55,7 +55,7 @@ function createRouter(payments=createService()) {
     const item=await Booking.findById(req.params.id).lean();
     if(!item) return res.sendStatus(404);
     if(!item.payment_purpose) return res.set('Cache-Control','no-store').render('learning/booking',{title:'Course Booking Received',item});
-    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && ['Paid','Not Required'].includes(item.payment_status);
+    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && (item.payment_status==='Not Required' || item.payment_status==='Paid' && item.payment_verified_at);
     const course=confirmed?await Course.findById(item.course_id).select('+access_url').lean():null;
     res.set('Cache-Control','no-store').render('learning/access-confirmation',{title:'Course Registration',item,itemName:item.course_name,base:'/course-bookings',kind:'courses',privateUrl:course?.access_url || '',confirmed});
   }));
@@ -87,7 +87,7 @@ function createRouter(payments=createService()) {
   router.get('/webinar-registrations/:id',owner,wrap(async(req,res)=>{
     const item=await Registration.findById(req.params.id).lean();
     if(!item) return res.sendStatus(404);
-    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && ['Paid','Not Required'].includes(item.payment_status);
+    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && (item.payment_status==='Not Required' || item.payment_status==='Paid' && item.payment_verified_at);
     const webinar=await Webinar.findById(item.webinar_id).select(confirmed?'+meeting_link':'-meeting_link').lean();
     res.set('Cache-Control','no-store').render('learning/registration',{title:'Webinar Registration',item,webinar,confirmed});
   }));

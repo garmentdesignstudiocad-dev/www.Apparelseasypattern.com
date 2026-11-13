@@ -111,4 +111,4 @@ router.post('/product-config/fit/seed-100', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-module.exports=router;
+router.get('/notification-recipient',async(req,res,next)=>{try{const settings=await SiteSettings.findOne({key:'default'}).lean()||{};res.render('admin/settings_form',{title:'Notification Recipient Email',section:'notification-recipient',settings:Object.assign({notification_recipient_email:''},settings),message:req.query.message||''})}catch(e){next(e)}});router.post('/notification-recipient',async(req,res,next)=>{try{const email=String(req.body.notification_recipient_email||'').trim();const emailRegex=/^[^\\s@]+@[^\\s@]+\.[^\\s@]+$/;if(!emailRegex.test(email))return res.redirect('/admin/settings/notification-recipient?message=Invalid+email+format&error=1');await SiteSettings.findOneAndUpdate({key:'default'},{$set: {notification_recipient_email:email}},{upsert:true,runValidators:true});res.redirect('/admin/settings/notification-recipient?message=Notification+recipient+email+saved')}catch(e){next(e)}});module.exports=router;

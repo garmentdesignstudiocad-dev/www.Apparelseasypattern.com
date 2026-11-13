@@ -1,10 +1,15 @@
 // Focused physical checkout regression with temporary MongoDB and a mocked gateway.
 const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
 const mongoose=require('mongoose');
+const os=require('node:os');
+const path=require('node:path');
 const {MongoMemoryServer}=require('mongodb-memory-server');
 
 process.env.RAZORPAY_KEY_ID='rzp_test_dispatch_hubs';
 process.env.RAZORPAY_KEY_SECRET='dispatch-hubs-test-only';
+const privateFilesDir=require('node:fs').mkdtempSync(path.join(os.tmpdir(),'aep-delivery-zone-'));
+process.env.PATTERN_FILES_DIR=privateFilesDir;
 const gatewayOrders=[];
 require('razorpay');
 require.cache[require.resolve('razorpay')].exports=class{
@@ -36,6 +41,7 @@ async function run(){
   try{
     await mongoose.connect(mongo.getUri(),{dbName:'dispatch_hubs_test'});
     await TaxSettings.create({key:'default',enabled:true,percentage:18});
+    await fs.writeFile(path.join(privateFilesDir,'dispatch-test.pdf'),'%PDF-1.4 test fixture');
 
     const south=['Tamil Nadu','Karnataka','Kerala','Andhra Pradesh','Telangana','Puducherry'];
     const north=['Delhi','Chandigarh','Haryana','Himachal Pradesh','Jammu and Kashmir','Ladakh','Punjab','Rajasthan','Uttar Pradesh','Uttarakhand'];
@@ -55,7 +61,7 @@ async function run(){
     assert.equal(manual.body.hub_assignment_status,'pending_manual');
 
     const customer=await Customer.create({name:'Dispatch Test Customer',email:'dispatch-test@example.test',phone:'9876543210'});
-    const product=await Product.create({name:'Dispatch test pattern',slug:'dispatch-test-pattern',base_price:100,physical_price:50,trial_price:60,active:true});
+    const product=await Product.create({name:'Dispatch test pattern',slug:'dispatch-test-pattern',base_price:100,physical_price:50,trial_price:60,digital_file:'dispatch-test.pdf',active:true});
     const checkoutRequest=(shipping,physical=true)=>({
       createRazorpayOrder:true,
       session:{customerId:String(customer._id)},
@@ -110,6 +116,7 @@ async function run(){
   }finally{
     await mongoose.disconnect();
     await mongo.stop();
+    await fs.rm(privateFilesDir,{recursive:true,force:true});
   }
 }
 

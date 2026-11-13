@@ -77,6 +77,10 @@ async function runAtoYSuite() {
     digital_file: 'sample-shirt-pattern.pdf',
     category: 'Men',
     available_sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    digital_file_map: [
+      { format: 'dxf', size: 'S', file: 'sample-shirt-dxf.dxf', original_name: 'Slim_Fit_Shirt_S.dxf' },
+      { format: 'dxf', size: 'M', file: 'sample-shirt-dxf.dxf', original_name: 'Slim_Fit_Shirt_M.dxf' }
+    ],
     active: true
   });
 
@@ -260,6 +264,7 @@ async function runAtoYSuite() {
       product_id: testProduct._id,
       product_name: testProduct.name,
       quantity: 1,
+      selected_formats: ['dxf'],
       selected_sizes: digitalSizes,
       physical_sizes: physicalSizes,
       selected_files: [{ id: dxfFile._id, file_name: dxfFile.file_name, file_type: 'DXF' }],
@@ -289,7 +294,7 @@ async function runAtoYSuite() {
     event: 'admin_successful_payment'
   });
   assert.ok(ownerOrderLog, 'Owner order notification queued');
-  assert.equal(ownerOrderLog.subject, `New Paid Order - Apparel Easy Patterns Order #${testOrder._id}`);
+  assert.equal(ownerOrderLog.subject, 'New Paid Order Received - Apparel Easy Patterns');
   assert.ok(ownerOrderLog.message.includes('Vijay Kumar'), 'Customer name present in owner alert');
   assert.ok(ownerOrderLog.message.includes(mockPaymentId), 'Payment ID present in owner alert');
   console.log('   PASS TEST S: Owner notification queued with subject: ' + ownerOrderLog.subject);
@@ -301,7 +306,7 @@ async function runAtoYSuite() {
     event: 'order_payment_success'
   });
   assert.ok(customerConfirmLog, 'Customer confirmation email queued');
-  assert.equal(customerConfirmLog.subject, `Order Confirmed - Apparel Easy Patterns #${testOrder._id}`);
+  assert.equal(customerConfirmLog.subject, 'Your Order is Confirmed - Apparel Easy Patterns');
   console.log('   PASS TEST T: Customer confirmation email queued with subject: ' + customerConfirmLog.subject);
 
   // TEST U: Automatic customer digital delivery email with 24h validity notice

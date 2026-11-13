@@ -3,6 +3,7 @@ const { Schema, model } = require('mongoose');
 const ProductFileSchema = new Schema({
   product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   import_source_key: { type: String, default: undefined },
+  upload_slot:{type:String,enum:['techpack','measurement','marker'],default:undefined},
   file_name: { type: String, required: true },
   watermark_pdf:{type:Boolean,default:false},
   purpose: {type:String,enum:['other','dxf','tech_pack','specs'],default:'other'},

@@ -6,19 +6,22 @@ const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
+const os=require('node:os');
+const express=require('express');
 const {execFileSync}=require('node:child_process');
 const mongoose=require('mongoose');
 const ejs=require('ejs');
 const prefix=`learning_test_${process.pid}_${Date.now()}_`;
 const models={};
 const originals={};
-for(const name of ['Course','Webinar','CourseBooking','WebinarRegistration','SiteSettings','Receipt','NotificationLog','NotificationSettings','Courier','FeatureSettings','PaidAccessSettings','ConsultingService','BookPurchase','ConsultationBooking']) {
+for(const name of ['Course','Webinar','CourseBooking','WebinarRegistration','SiteSettings','Receipt','NotificationLog','NotificationSettings','Courier','FeatureSettings','PaidAccessSettings','ConsultingService','BookPurchase','ConsultationBooking','ClassSession','ClassRegistration']) {
   const filename=require.resolve(`../models/mongo/${name}`);
   const original=require(filename);originals[name]=original;
   models[name]=mongoose.model(`LearningTest${name}`,original.schema.clone(),prefix+name.toLowerCase());
   require.cache[filename].exports=models[name];
 }
-const {Course,Webinar,CourseBooking:Booking,WebinarRegistration:Registration}=models;
+models.ClassRegistration.schema.path('session_id').options.ref=models.ClassSession.modelName;
+const {Course,Webinar,CourseBooking:Booking,WebinarRegistration:Registration,ClassSession,ClassRegistration}=models;
 const {createService,failure}=require('../services/webinarPaymentService');
 const secret='isolated-webinar-test-secret';
 let orderCount=0, failOrder=false;
@@ -34,27 +37,35 @@ process.env.ADMIN_USERNAME='learning-test-owner';process.env.ADMIN_PASSWORD='lea
 process.env.SITE_URL='https://studio.example';
 const uri=process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI;
 let server;
+let resourceServer;
+const previousPatternFilesDir=process.env.PATTERN_FILES_DIR;
+const patternFilesDir=fs.mkdtempSync(path.join(os.tmpdir(),'learning-private-resources-'));
+process.env.PATTERN_FILES_DIR=patternFilesDir;
 async function run() {
+  console.log('Starting isolated learning workflow checks.');
   for(const folder of ['routes','services','middleware','models/mongo','public/js','scripts']) {
-    for(const file of fs.readdirSync(path.resolve(__dirname,'..',folder))) if(file.endsWith('.js')) execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',folder,file)]);
+    for(const file of fs.readdirSync(path.resolve(__dirname,'..',folder))) if(file.endsWith('.js')) execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',folder,file)],{env:{...process.env,NODE_OPTIONS:''}});
   }
-  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')]);
+  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')],{env:{...process.env,NODE_OPTIONS:''}});
   let compiled=0;
   function compile(dir) {for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())compile(file);else if(file.endsWith('.ejs')){ejs.compile(fs.readFileSync(file,'utf8'),{filename:file});compiled++;}}}
   compile(path.resolve(__dirname,'../views'));
   assert.ok(uri,'MongoDB configuration is required for this isolated integration test.');
   await mongoose.connect(uri,{serverSelectionTimeoutMS:15000,autoIndex:false});
+  console.log('Connected to isolated learning-test MongoDB.');
   // Only the isolated models get collections/indexes created by this test.
-  for(const Model of Object.values(models)) {await Model.createCollection();await Model.createIndexes();}
+  for(const Model of Object.values(models)) {console.log(`Preparing isolated ${Model.modelName}.`);await Model.createCollection();console.log(`Creating isolated ${Model.modelName} indexes.`);await Model.createIndexes();console.log(`Ready isolated ${Model.modelName}.`);}
   const course=await Course.create({name:'Test Pattern Course',slug:'test-pattern-course',short_description:'Practical pattern making',description:'Course details',trainer:'Test Trainer',duration:'6 weeks',mode:'Online / Offline',price:2500,modules:['Basic Blocks','Grading'],schedule_information:'Weekends',active:true});
   const future=new Date(Date.now()+7*86400000);
   const base={title:'Test Webinar',description:'Webinar details',speaker:'Test Speaker',starts_at:future,duration_minutes:90,mode:'Online',meeting_platform:'Zoom',meeting_link:'https://example.test/private-meeting',active:true,registration_open:true,max_seats:1};
   const free=await Webinar.create({...base,slug:'test-free-webinar',price:0});
   const paid=await Webinar.create({...base,slug:'test-paid-webinar',price:499});
   await Webinar.create({...base,slug:'test-hidden-webinar',active:false});
+  console.log('Isolated learning records are ready.');
   const app=require('../server');
   server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   const origin=`http://127.0.0.1:${server.address().port}`;
+  console.log('Learning test server is ready.');
   const jars={};
   async function request(url,body,who='visitor') {
     const response=await fetch(origin+url,{method:body?'POST':'GET',redirect:'manual',headers:{...(jars[who]?{cookie:jars[who]}:{}),...(body?{'Content-Type':'application/x-www-form-urlencoded'}:{})},body:body?new URLSearchParams(body):undefined});
@@ -140,6 +151,60 @@ async function run() {
   const adminWebinar=await Webinar.findOne({slug:'admin-webinar'});
   assert.equal((await request(`/admin/webinars/${adminWebinar._id}/edit`,null,'admin')).status,200);
   assert.equal((await request(`/admin/webinars/${adminWebinar._id}/edit`,{...webinarData,registration_open:''},'admin')).status,303);
+  const classStart=new Date(Date.now()+14*86400000);
+  const classLocalStart=new Date(classStart.getTime()+330*60000).toISOString().slice(0,16);
+  const classLocalEnd=new Date(classStart.getTime()+3930000+330*60000).toISOString().slice(0,16);
+  const classForm=await request('/admin/classes/new',null,'admin');
+  const classCsrf=token(classForm.html);
+  const classData={_csrf:classCsrf,title:'Protected Resource Class',slug:'protected-resource-class',type:'Online Class',description:'Private learning materials',starts_at:classLocalStart,ends_at:classLocalEnd,price:'999',meeting_platform:'Zoom',meeting_link:'https://example.test/class-meeting',status:'Upcoming',registration_open:'on',published:'on'};
+  console.log('Testing admin class resource management.');
+  assert.equal((await request('/admin/classes',{...classData,_csrf:'invalid'},'admin')).status,403,'Class create must reject missing/invalid CSRF.');
+  assert.equal((await request('/admin/classes',classData,'admin')).status,302,'Admin can create a class with a valid token.');
+  const managedClass=await ClassSession.findOne({slug:classData.slug});
+  assert.ok(managedClass);
+  const uploadClassResource=async(fields,name,bytes,mime)=>{const form=new FormData();for(const [key,value] of Object.entries(fields))form.append(key,value);form.append('resource_file',new Blob([bytes],{type:mime}),name);const response=await fetch(origin+`/admin/classes/${managedClass._id}/resources`,{method:'POST',redirect:'manual',headers:jars.admin?{cookie:jars.admin}:{},body:form});return response;};
+  assert.equal((await uploadClassResource({_csrf:'invalid'},'Class Notes.pdf',Buffer.from('%PDF-1.7\nnotes'),'application/pdf')).status,403,'Resource upload must reject invalid CSRF.');
+  assert.equal((await uploadClassResource({_csrf:classCsrf},'broken.pdf',Buffer.from('not a PDF'),'application/pdf')).status,400);
+  const classPdfBytes=Buffer.from('%PDF-1.7\nprivate class notes');
+  const classZipBytes=Buffer.from('PK\x03\x04private class archive');
+  assert.equal((await uploadClassResource({_csrf:classCsrf},'Class Notes.pdf',classPdfBytes,'application/pdf')).status,303);
+  assert.equal((await uploadClassResource({_csrf:classCsrf},'Class Materials.zip',classZipBytes,'application/zip')).status,303);
+  const editClassPage=await request(`/admin/classes/${managedClass._id}/edit`,null,'admin');
+  assert.match(editClassPage.html,/Class Notes\.pdf/);
+  assert.match(editClassPage.html,/Class Materials\.zip/);
+  assert.ok(!editClassPage.html.includes('private_resources'));
+  const publicClassPage=await request('/classes/protected-resource-class');
+  assert.equal(publicClassPage.status,200);
+  assert.ok(!publicClassPage.html.includes('Class Notes.pdf'));
+  const confirmedClassRegistration=await ClassRegistration.create({session_id:managedClass._id,name:'Class Learner',email:'class-learner@example.test',phone:'+919876543210',amount:999,payment_status:'paid',registration_status:'confirmed',payment_verified_at:new Date(),razorpay_payment_id:'pay_class_resource'});
+  const pendingClassRegistration=await ClassRegistration.create({session_id:managedClass._id,name:'Pending Learner',email:'pending-learner@example.test',phone:'+919876543211',amount:999,payment_status:'pending',registration_status:'pending'});
+  const savedClass=await ClassSession.findById(managedClass._id).select('+private_resources').lean();
+  const pdfResource=savedClass.private_resources.find(resource=>resource.original_name==='Class Notes.pdf');
+  const zipResource=savedClass.private_resources.find(resource=>resource.original_name==='Class Materials.zip');
+  const protectedApp=express();
+  protectedApp.use((req,res,next)=>{req.session={classRegistrations:req.get('x-test-registration')?[req.get('x-test-registration')]:[]};next();});
+  protectedApp.use(require('../routes/classes'));
+  resourceServer=protectedApp.listen(0,'127.0.0.1');
+  await new Promise(resolve=>resourceServer.once('listening',resolve));
+  const resourceOrigin=`http://127.0.0.1:${resourceServer.address().port}`;
+  const downloadClassResource=(registrationId,resourceId)=>fetch(`${resourceOrigin}/classes/registration/${registrationId}/resources/${resourceId}`,{headers:registrationId?{'x-test-registration':registrationId}:{},redirect:'manual'});
+  const unauthenticatedDownload=await fetch(`${resourceOrigin}/classes/registration/${confirmedClassRegistration._id}/resources/${pdfResource._id}`,{redirect:'manual'});
+  assert.equal(unauthenticatedDownload.status,403,'A confirmed registration is insufficient without its registering browser session.');
+  assert.equal((await downloadClassResource(String(pendingClassRegistration._id),pdfResource._id)).status,403);
+  const pdfDownload=await downloadClassResource(String(confirmedClassRegistration._id),pdfResource._id);
+  assert.equal(pdfDownload.status,200);
+  assert.ok(pdfDownload.headers.get('content-disposition').includes('Class Notes.pdf'));
+  assert.deepEqual(Buffer.from(await pdfDownload.arrayBuffer()),classPdfBytes);
+  const zipDownload=await downloadClassResource(String(confirmedClassRegistration._id),zipResource._id);
+  assert.equal(zipDownload.status,200);
+  assert.ok(zipDownload.headers.get('content-disposition').includes('Class Materials.zip'));
+  assert.deepEqual(Buffer.from(await zipDownload.arrayBuffer()),classZipBytes);
+  assert.equal((await downloadClassResource(String(confirmedClassRegistration._id),'000000000000000000000000')).status,404);
+  const removeClassPage=await request(`/admin/classes/${managedClass._id}/edit`,null,'admin');
+  assert.equal((await request(`/admin/classes/${managedClass._id}/resources/${pdfResource._id}/remove`,{_csrf:token(removeClassPage.html)},'admin')).status,303);
+  assert.equal((await downloadClassResource(String(confirmedClassRegistration._id),pdfResource._id)).status,404);
+  assert.equal((await downloadClassResource(String(confirmedClassRegistration._id),zipResource._id)).status,200);
+  console.log('PASS: admin class CRUD CSRF, private PDF/ZIP upload and removal, paid customer authorization, and original-byte downloads.');
   const closedPage=await request('/webinars/admin-webinar',null,'closed');
   assert.equal((await request('/webinars/admin-webinar/register',{...person,_csrf:token(paidPage.html)},'paid')).status,409);
   assert.equal((await request(`/admin/course-bookings/${savedBooking._id}`,null,'admin')).status,200);
@@ -177,7 +242,8 @@ async function run() {
   console.log(`Tested detail URLs: ${origin}/courses/test-pattern-course ; ${origin}/webinars/test-free-webinar ; ${origin}/webinars/test-paid-webinar`);
   console.log('Razorpay requests were simulated. All learning records used isolated temporary collections.');
 }
-run().catch(error=>{console.error('Learning tests failed:',error.name,error.code || '',error instanceof assert.AssertionError?error.message:(error.status?error.message:'See the failing test or MongoDB connectivity; credentials are not printed.'));process.exitCode=1;}).finally(async()=>{
+run().catch(error=>{console.error('Learning tests failed:',error.name,error.code || '',error instanceof assert.AssertionError || error.status || error instanceof ReferenceError?error.message:'See the failing test or MongoDB connectivity; credentials are not printed.');if(error instanceof ReferenceError)console.error(error.stack);process.exitCode=1;}).finally(async()=>{
+  if(resourceServer)await new Promise(resolve=>resourceServer.close(resolve));
   if(server)await new Promise(resolve=>server.close(resolve));
   if(mongoose.connection.readyState===1) for(const Model of Object.values(models)) {
     assert.ok(Model.collection.name.startsWith(prefix));
@@ -185,4 +251,6 @@ run().catch(error=>{console.error('Learning tests failed:',error.name,error.code
   }
   await mongoose.disconnect();
   if(require.cache[require.resolve('../config/db')])await require('../config/db').db.destroy();
+  if(previousPatternFilesDir===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=previousPatternFilesDir;
+  fs.rmSync(patternFilesDir,{recursive:true,force:true});
 });

@@ -11,11 +11,15 @@ router.get('/downloads/:token/:asset?',async(req,res,next)=>{
     if(!/^\d+$/.test(req.params.asset))return res.sendStatus(404);
     const asset=row.download_assets?.[Number(req.params.asset)];if(!asset)return res.sendStatus(404);
     const file=await delivery.filePath(asset.file);if(!file)return res.status(503).send('This file is temporarily unavailable. Contact the studio.');
+    const path=require('node:path');
+    const ext=path.extname(file);
+    const original=path.win32.basename(path.basename(asset.name || 'pattern')).replace(/[\x00-\x1f\x7f]/g,'');
+    const downloadName=(original || 'pattern')+(original.toLowerCase().endsWith(ext.toLowerCase())?'':ext);
     if(asset.watermark_pdf===true && require('path').extname(file).toLowerCase()==='.pdf'){
-      try{const bytes=await require('../services/pdfWatermark').copy(file,row._id);return res.type('application/pdf').attachment((asset.name.replace(/[^a-zA-Z0-9 _-]/g,'').slice(0,80)||'document')+'.pdf').send(bytes);}
+      try{const bytes=await require('../services/pdfWatermark').copy(file,row._id);return res.type('application/pdf').attachment(downloadName).send(bytes);}
       catch(error){logError('PDF watermarking failed:',error);return res.status(503).send('The protected document is temporarily unavailable. Contact us with your order reference.');}
     }
-    res.download(file,(asset.name.replace(/[^a-zA-Z0-9 _-]/g,'').slice(0,80)||'pattern')+require('path').extname(file),error=>{if(error && !res.headersSent)next(error);});
+    res.download(file,downloadName,error=>{if(error && !res.headersSent)next(error);});
   }catch(error){next(error);}
 });
 module.exports=router;

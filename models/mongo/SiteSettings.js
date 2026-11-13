@@ -71,4 +71,12 @@ for (const [key, value] of Object.entries(linkedin.defaults)) {
   });
 }
 
+// Add notification recipient email field
+schema.add({
+  notification_recipient_email: {
+    type: String,
+    default: '',
+  },
+});
+
 module.exports = model('SiteSettings', schema);

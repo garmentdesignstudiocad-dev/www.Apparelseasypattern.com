@@ -5,8 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title><%= siteSettings?.home_title || 'Apparel Easy Patterns — Production-Friendly Garment Pattern Blocks' %></title>
-  <meta name="description" content="<%= siteSettings?.home_meta_description || 'Production-friendly garment pattern blocks engineered for perfect fit, sampling speed, and industrial consistency across Men, Women, and Kids.' %>">
+  <title><%= typeof seoTitle !== 'undefined' && seoTitle ? seoTitle : (siteSettings?.home_title || 'Apparel Easy Patterns') %></title>
 
   <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

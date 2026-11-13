@@ -5,8 +5,9 @@ module.exports=async({models,request,input,paymentOverrides})=>{
   const old=process.env.PATTERN_FILES_DIR;process.env.PATTERN_FILES_DIR=dir;
   const uploaded=[];
   try{
-    await fs.writeFile(path.join(dir,'p.dxf'),'test pattern');
-    const product=await Product.create({name:'Shirt Pattern Collection – Fit 3 Basic Short-Sleeve',slug:'commerce-shirt',base_price:50,additional_size_price:50,physical_price:50,trial_price:1100,digital_file:'p.dxf'});
+    await fs.writeFile(path.join(dir,'p-m.dxf'),'test pattern M');
+    await fs.writeFile(path.join(dir,'p-l.dxf'),'test pattern L');
+    const product=await Product.create({name:'Shirt Pattern Collection – Fit 3 Basic Short-Sleeve',slug:'commerce-shirt',base_price:50,additional_size_price:50,physical_price:50,trial_price:1100,digital_file:'p-m.dxf',available_sizes:['M','L'],digital_file_map:[{format:'dxf',size:'M',file:'p-m.dxf',original_name:'p-m.dxf'},{format:'dxf',size:'L',file:'p-l.dxf',original_name:'p-l.dxf'}]});
     await Courier.create({_id:'commerce-courier',name:'Configured Courier',active:true,region_ids:['south'],pincodes:['560*'],charge:300,charge_approved:true,delivery_min_days:2,delivery_max_days:3});
     await Courier.create({_id:'destination-courier',name:'Destination Courier',active:true,region_ids:['south'],pincodes:['638751'],charge:250,charge_approved:true,delivery_min_days:3,delivery_max_days:4});
     await Courier.create({_id:'blank-courier',name:'Blank Rules',active:true,pincodes:[]});
@@ -33,6 +34,11 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       }, who, false);
     }
 
+    await authCustomer('missingdownload');
+    const unavailableFile=await ProductFile.create({product_id:product._id,file_name:'Unavailable PDF',file_type:'PDF',file_price:10,active:true});
+    const unavailableCheckout=await request('/checkout',{customer:input.customer,items:[{product_id:String(product._id),quantity:1,selected_files:[{id:String(unavailableFile._id)}]}],shipping:{}},'missingdownload');
+    assert.equal(unavailableCheckout.status,400,'Checkout must not accept payment for a selected file without a private download.');
+
     const cases=[
       {name:'digital',digital:1,physical:0,trial:0,sizes:['M'],subtotal:50},
       {name:'additional size',digital:1,physical:0,trial:0,sizes:['M','L'],subtotal:100},
@@ -45,7 +51,7 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     ];
     for(const [index,test] of cases.entries()){
       const who='commerce'+index,physical=!!(test.physical || test.trial); await authCustomer(who);
-      const item={product_id:String(product._id),quantity:test.digital,physical_quantity:test.physical,trial_quantity:test.trial,selected_sizes:test.sizes,selected_files:[],selected_addons:[],total:1,unit_price:1};
+      const item={product_id:String(product._id),quantity:test.digital,physical_quantity:test.physical,trial_quantity:test.trial,selected_sizes:test.sizes,selected_formats:['dxf'],selected_files:[],selected_addons:[],total:1,unit_price:1};
       const payload={customer:input.customer,items:[item],shipping:physical?{...input.shipping}:{},grand_total:1,tax_amount:0,payment_status:'paid'};
       assert.equal((await request('/cart/add',{...item,files:[],addons:[]},who)).status,200,test.name+' cart');
       const checkout=await request('/checkout',undefined,who);assert.equal(checkout.status,200);
@@ -124,7 +130,7 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       const digitalLogs=await NotificationLog.find({reference_id:String(order._id),event:'order_digital_ready'}).lean();
       assert.equal(digitalLogs.length,test.digital?1:0);if(test.digital)assert.equal(digitalLogs[0].channel,'email');
       const customerMail=await NotificationLog.findOne({reference_id:String(order._id),event:'order_payment_success',channel:'email'}).lean();
-      assert.match(customerMail.message,/Selected sizes:/);assert.match(customerMail.message,/GST \(18%\)/);assert.match(customerMail.message,/Online Amount Paid:/);
+      assert.match(customerMail.message,/Digital sizes:/);assert.match(customerMail.message,/GST \(18%\)/);assert.match(customerMail.message,/Online Amount Paid:/);
       if(physical){
         assert.equal(order.customer_selected_courier,false);
         assert.equal(order.destination_region,'South India');
@@ -161,8 +167,10 @@ module.exports=async({models,request,input,paymentOverrides})=>{
       for(const log of digitalLogs)await Promise.all([dispatch(log._id),dispatch(log._id)]);
       assert.equal(sends,test.digital?1:0);
     }
-    const dxf=await ProductFile.create({product_id:product._id,file_name:'Slim Fit DXF',file_type:'DXF',purpose:'dxf',file_price:399,price_per_selected_size:true,active:true});
-    const hpgl=await ProductFile.create({product_id:product._id,file_name:'Slim Fit HPGL.plt',file_type:'HPGL',purpose:'other',file_price:399,price_per_selected_size:true,active:true});
+    await fs.writeFile(path.join(dir,'option-dxf.dxf'),'option DXF');
+    await fs.writeFile(path.join(dir,'option-hpgl.plt'),'option HPGL');
+    const dxf=await ProductFile.create({product_id:product._id,file_name:'Slim Fit DXF',file_type:'DXF',digital_file:'option-dxf.dxf',purpose:'dxf',file_price:399,price_per_selected_size:true,active:true});
+    const hpgl=await ProductFile.create({product_id:product._id,file_name:'Slim Fit HPGL.plt',file_type:'HPGL',digital_file:'option-hpgl.plt',purpose:'other',file_price:399,price_per_selected_size:true,active:true});
     const adminFiles=await request('/admin/products/'+product._id+'/files',undefined,'admin');assert.match(adminFiles.html,/name="price_per_selected_size"/);
     const sizeProductPage=await request('/product/'+product.slug);
     assert.match(sizeProductPage.html,/Editable DXF Pattern/);assert.match(sizeProductPage.html,/HPGL Pattern/);assert.match(sizeProductPage.html,/per selected size/);
@@ -225,5 +233,5 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     assert.equal((await Product.findById(product._id)).active,false);
     assert.equal((await request('/product/'+product.slug)).status,404);
     console.log('PASS: seven purchase combinations, sizes, 18% GST, paise, courier exclusion, address snapshots, failed/tampered payments, signed webhooks, concurrent callback/webhook idempotency, customer/owner email content, SMTP failure isolation, private download entitlement, email-only mixed digital delivery, receipts, admin order/payment display and admin product/price/file/add-on management.');
-  }finally{if(old===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=old;for(const file of ['p.dxf',...uploaded])await fs.unlink(path.join(dir,file));await fs.rmdir(dir);}
+  }finally{if(old===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=old;for(const file of ['p-m.dxf','p-l.dxf','option-dxf.dxf','option-hpgl.plt',...uploaded])await fs.unlink(path.join(dir,file));await fs.rmdir(dir);}
 };

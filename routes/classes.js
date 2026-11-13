@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const path = require('node:path');
 const Razorpay = require('razorpay');
 const ClassSession = require('../models/mongo/ClassSession');
 const ClassRegistration = require('../models/mongo/ClassRegistration');
@@ -70,16 +71,33 @@ router.post('/classes/registration/:id/verify', async (req, res, next) => {
 router.get('/classes/registration/:id', async (req, res, next) => {
   try {
     if (!req.session.classRegistrations?.includes(req.params.id)) return res.status(403).render('error', { title: 'Access Restricted', message: 'Registration access is available only in the registering browser session.' });
-    const registration = await ClassRegistration.findById(req.params.id).populate({ path: 'session_id', select: '+meeting_link' }).lean();
-    if (!registration || !registration.session_id || registration.registration_status !== 'confirmed') return res.status(404).render('error', { title: 'Registration Not Confirmed', message: 'This registration is not confirmed.' });
+    const registration = await ClassRegistration.findById(req.params.id).populate({ path: 'session_id', select: '+meeting_link +private_resources' }).lean();
+    if (!registration || !registration.session_id || registration.registration_status !== 'confirmed' || registration.payment_status !== 'paid' || !registration.payment_verified_at) return res.status(404).render('error', { title: 'Registration Not Confirmed', message: 'This registration is not confirmed.' });
     res.render('classes/confirmation', { title: 'Registration Confirmed', registration, session: registration.session_id });
+  } catch (error) { next(error); }
+});
+
+router.get('/classes/registration/:id/resources/:resourceId', async (req, res, next) => {
+  try {
+    if (!req.session.classRegistrations?.includes(req.params.id)) return res.sendStatus(403);
+    const registration = await ClassRegistration.findById(req.params.id)
+      .populate({ path: 'session_id', select: '+private_resources' })
+      .lean();
+    if (!registration || registration.registration_status !== 'confirmed' || registration.payment_status !== 'paid' || !registration.payment_verified_at) return res.sendStatus(403);
+    const resource = registration.session_id?.private_resources?.find(item => String(item._id) === req.params.resourceId);
+    if (!resource) return res.sendStatus(404);
+    const file = await require('../services/digitalDeliveryService').filePath(resource.file);
+    if (!file) return res.status(503).send('This course resource is temporarily unavailable. Contact the studio.');
+    const filename = path.basename(path.win32.basename(resource.original_name)).replace(/[\x00-\x1f\x7f]/g, '') || 'course-resource';
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' });
+    res.download(file, filename, error => { if (error && !res.headersSent) next(error); });
   } catch (error) { next(error); }
 });
 
 router.get('/my-courses', async (req, res, next) => {
   try {
     const ids = Array.isArray(req.session.classRegistrations) ? req.session.classRegistrations : [];
-    const registrations = await ClassRegistration.find({ _id: { $in: ids }, registration_status: 'confirmed', payment_status: 'paid' }).populate({ path: 'session_id', select: '+meeting_link' }).sort({ createdAt: -1 }).lean();
+    const registrations = await ClassRegistration.find({ _id: { $in: ids }, registration_status: 'confirmed', payment_status: 'paid', payment_verified_at: { $type: 'date' } }).populate({ path: 'session_id', select: '+meeting_link +private_resources' }).sort({ createdAt: -1 }).lean();
     res.render('classes/my_courses', { title: 'My Courses', registrations: registrations.filter(row=>row.session_id) });
   } catch (error) { next(error); }
 });

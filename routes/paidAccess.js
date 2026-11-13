@@ -1,4 +1,5 @@
 const express=require('express');
+const path=require('node:path');
 const Book=require('../models/mongo/Book');
 const Service=require('../models/mongo/ConsultingService');
 const Purchase=require('../models/mongo/BookPurchase');
@@ -33,7 +34,7 @@ router.param('id',(req,res,next,id)=>/^[a-f\d]{24}$/i.test(id)?next():res.sendSt
 for(const [kind,Parent,Model,base] of [['books',Book,Purchase,'book-purchases'],['consulting',Service,Booking,'consultation-bookings']]) {
   const payments=access.paymentService(Model,access.purposes[kind]);
   const form=async(req,res,next)=>{
-    const item=await Parent.findOne({slug:req.params.slug,active:true}).lean();
+    const item=await Parent.findOne({slug:req.params.slug,active:true}).select(kind==='books'?'+ebook_file +ebook_file_name':'').lean();
     if(!item) return res.sendStatus(404);
     const settings=await access.getSettings(),fee=access.quote(kind,item,settings);
     if(!fee.active || fee.external) return res.status(409).send('Direct access is unavailable.');
@@ -60,7 +61,7 @@ for(const [kind,Parent,Model,base] of [['books',Book,Purchase,'book-purchases'],
     // A fresh form with identical validated details also resumes the same booking.
     row=await Model.findOne({$or:[{submission_key},{request_key}]});
     if(!row){
-      try {row=await Model.create({...data,...access.snapshot(kind,item,req.accessSettings),item_id:item._id,item_name:item.title || item.name,purchase_type:item.purchase_type,submission_key,request_key,session_owner:tokens.owner(req)});}
+      try {row=await Model.create({...data,...access.snapshot(kind,item,req.accessSettings),item_id:item._id,item_name:item.title || item.name,purchase_type:item.purchase_type,...(kind==='books'?{ebook_file:item.ebook_file,ebook_file_name:item.ebook_file_name}:{}),submission_key,request_key,session_owner:tokens.owner(req)});}
       catch(error){if(error.code!==11000)throw error;row=await Model.findOne({$or:[{submission_key},{request_key}]});if(!row)throw error;}
     }
     await Model.updateOne({_id:row._id},{$set:{local_reference_id:String(row._id)}});
@@ -72,10 +73,27 @@ for(const [kind,Parent,Model,base] of [['books',Book,Purchase,'book-purchases'],
   }));
   const owner=wrap(async(req,res,next)=>req.session[base]?.includes(req.params.id) || await Model.exists({_id:req.params.id,session_owner:tokens.owner(req)})?next():res.status(403).send('Use the browser used to register, or contact the studio with your reference.'));
   router.get(`/${base}/:id`,owner,wrap(async(req,res)=>{
-    const item=await Model.findById(req.params.id).lean();if(!item)return res.sendStatus(404);
-    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && ['Paid','Not Required'].includes(item.payment_status) && (kind!=='consulting' || Model.schedulingReady(item));
-    const parent=confirmed && kind==='books'?await Parent.findById(item.item_id).select('+ebook_url').lean():null;
-    res.set('Cache-Control','no-store').render('learning/access-confirmation',{title:kind==='books'?'Book Purchase':'Consultation Booking',item,itemName:item.item_name,kind,base:`/${base}`,confirmed,privateUrl:parent?.ebook_url || ''});
+    const item=await Model.findById(req.params.id).select(kind==='books'?'+ebook_file':'').lean();if(!item)return res.sendStatus(404);
+    const paidVerified=item.payment_status==='Paid' && Boolean(item.payment_verified_at);
+    const confirmed=['Confirmed','Attended'].includes(item.registration_status) && (item.payment_status==='Not Required' || paidVerified) && (kind!=='consulting' || Model.schedulingReady(item));
+    const hasPurchasedFile=kind==='books' && Boolean(item.ebook_file);
+    if(kind==='books')delete item.ebook_file;
+    const parent=confirmed && kind==='books'?await Parent.findById(item.item_id).select('+ebook_url +ebook_file').lean():null;
+    const privateUrl=kind==='books' && confirmed && (hasPurchasedFile || parent?.ebook_file)?`/${base}/${item._id}/resource`:parent?.ebook_url || '';
+    res.set('Cache-Control','no-store').render('learning/access-confirmation',{title:kind==='books'?'Book Purchase':'Consultation Booking',item,itemName:item.item_name,kind,base:`/${base}`,confirmed,privateUrl});
+  }));
+  if(kind==='books')router.get(`/${base}/:id/resource`,owner,wrap(async(req,res,next)=>{
+    const item=await Model.findById(req.params.id).select('+ebook_file +ebook_file_name').lean();
+    if(!item)return res.sendStatus(404);
+    if(item.registration_status!=='Confirmed' || !(['Not Required'].includes(item.payment_status) || item.payment_status==='Paid' && item.payment_verified_at))return res.sendStatus(403);
+    const book=await Parent.findById(item.item_id).select('+ebook_file +ebook_file_name').lean();
+    const storedFile=item.ebook_file || book?.ebook_file;
+    if(!storedFile)return res.sendStatus(404);
+    const file=await require('../services/digitalDeliveryService').filePath(storedFile);
+    if(!file)return res.status(503).send('This e-book is temporarily unavailable. Contact the studio.');
+    const filename=path.win32.basename(path.basename(item.ebook_file_name || book?.ebook_file_name || 'ebook.pdf')).replace(/[\x00-\x1f\x7f]/g,'');
+    res.set({'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'});
+    res.download(file,filename || 'ebook.pdf',error=>{if(error && !res.headersSent)next(error);});
   }));
   if(kind==='consulting')for(const response of ['accept','reject'])router.post(`/${base}/:id/${response}-alternative`,owner,wrap(async(req,res)=>{
     try {await Model.decideSchedule(req.params.id,response,req.body);}

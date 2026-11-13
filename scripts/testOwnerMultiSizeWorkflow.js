@@ -6,6 +6,7 @@ const assert = require('assert');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const mongoose = require('mongoose');
 const vm = require('vm');
 
@@ -71,6 +72,24 @@ async function run() {
   const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/garment_pattern_test';
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 15000, autoIndex: false });
+  }
+  const previousPatternDir = process.env.PATTERN_FILES_DIR;
+  const ownsPatternDir = !previousPatternDir;
+  const tempPatternDir = previousPatternDir || await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pattern-test-'));
+  process.env.PATTERN_FILES_DIR = tempPatternDir;
+  if (ownsPatternDir) {
+    process.on('exit', () => {
+      delete process.env.PATTERN_FILES_DIR;
+      fs.rmSync(tempPatternDir, { recursive: true, force: true });
+    });
+  }
+  const mappedPatternFiles = [];
+  for (const size of ['S', 'M', 'L', 'XL', 'XXL']) {
+    for (const format of ['dxf', 'hpgl', 'plt', 'pdf']) {
+      const file = `shirt-${size.toLowerCase()}-${format}.${format}`;
+      await fs.promises.writeFile(path.join(tempPatternDir, file), format === 'pdf' ? '%PDF-1.4 test pattern' : `test ${format} ${size}`);
+      mappedPatternFiles.push({ format, size, file, original_name: file });
+    }
   }
 
   // Configure settings
@@ -170,6 +189,8 @@ async function run() {
       physical: true,
       trial: false
     },
+    digital_file: 'shirt-m-dxf.dxf',
+    digital_file_map: mappedPatternFiles,
     active: true,
     status: 'active'
   });
@@ -179,7 +200,8 @@ async function run() {
   const fileHpgl = await ProductFile.create({ product_id: shirt._id, file_name: 'Shirt_Pattern.hpgl', file_type: 'HPGL', purpose: 'other', file_price: 399, active: true });
   const filePlt = await ProductFile.create({ product_id: shirt._id, file_name: 'Shirt_Pattern.plt', file_type: 'PLT', purpose: 'other', file_price: 399, active: true });
   const filePdf = await ProductFile.create({ product_id: shirt._id, file_name: 'Shirt_Guide.pdf', file_type: 'PDF', purpose: 'other', file_price: 399, active: true });
-  const fileTechPack = await ProductFile.create({ product_id: shirt._id, file_name: 'TechPack_POM_Specs.zip', file_type: 'ZIP', purpose: 'tech_pack', file_price: 199, active: true });
+  await fs.promises.writeFile(path.join(tempPatternDir, 'techpack.zip'), 'test ZIP content');
+  const fileTechPack = await ProductFile.create({ product_id: shirt._id, file_name: 'TechPack_POM_Specs.zip', file_type: 'ZIP', digital_file: 'techpack.zip', purpose: 'tech_pack', file_price: 199, active: true });
 
   // Helper to complete checkout and mock razorpay payment
   async function completeCheckout(who, customerEmail, cartItems, shippingInfo = {}) {
@@ -574,10 +596,6 @@ async function run() {
   // TEST 12: Secure Download Entitlement & Authorization
   // ------------------------------------------------------------------------
   console.log('-> Executing TEST 12: Secure Download Entitlement & IDOR Protection');
-  const os = require('os');
-  const tempPatternDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pattern-test-'));
-  const oldPatternDir = process.env.PATTERN_FILES_DIR;
-  process.env.PATTERN_FILES_DIR = tempPatternDir;
   await fs.promises.writeFile(path.join(tempPatternDir, 'pattern.pdf'), '%PDF-1.4 test pattern content');
 
   const privateProd = await Product.create({
@@ -657,7 +675,6 @@ async function run() {
 
   const reauthorizedRes = await request(`/downloads/${refreshedOrder.download_token}`, undefined, cust1);
   assert.equal(reauthorizedRes.status, 200, 'Customer must regain download access after admin reissue');
-  process.env.PATTERN_FILES_DIR = oldPatternDir;
   console.log('   PASS TEST 14: Admin successfully reissued expired link with fresh 24h window');
 
   // ------------------------------------------------------------------------
@@ -683,13 +700,13 @@ async function run() {
   }], { pincode: '560001', courier_id: 'express-courier' });
 
   // Subtotal = 399 (digital) + 399 (physical) = 798
-  // Courier = 50
+  // Courier is arranged and paid separately; it is not part of this checkout.
   // GST 18% on 798 = 143.64
-  // Total = 798 + 143.64 + 50 = 991.64
+  // Total = 798 + 143.64 = 941.64
   assert.equal(order15.subtotal, 798);
   assert.equal(order15.tax_amount, 143.64, 'GST 18% must be computed strictly on product subtotal, NOT courier');
-  assert.equal(order15.delivery_charge, 50, 'Courier charge must be separate');
-  assert.equal(order15.grand_total, 991.64, 'Grand total must be subtotal + tax + courier');
+  assert.equal(order15.delivery_charge, 0, 'No courier charge is collected by the website.');
+  assert.equal(order15.grand_total, 941.64, 'Grand total excludes separately arranged courier charges.');
   console.log('   PASS TEST 15: GST computed strictly on product subtotal (₹798 * 18% = ₹143.64), courier (₹50) excluded');
 
   // ------------------------------------------------------------------------

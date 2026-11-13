@@ -1,6 +1,7 @@
 const crypto=require('crypto');
 const Log=require('../models/mongo/NotificationLog');
 const Settings=require('../models/mongo/NotificationSettings');
+const SiteSettings=require('../models/mongo/SiteSettings');
 const receiptService=require('./receiptService');
 const {createProviders}=require('./notificationProviders');
 const categories={course_enquiry:'course_updates',class_registration:'course_updates',product_order:'order_updates',course_registration:'course_updates',webinar_registration:'webinar_updates',book_purchase:'book_updates',consultation_booking:'consulting_updates'};
@@ -17,6 +18,8 @@ async function enqueue(type,id,job){
   const newOrder=type==='product_order' && job.event==='created';
   if(type==='product_order' && job.event==='payment_success' && (!row.payment_verified_at || row.payment_status!=='paid'))return;
   const site=await require('./siteSettingsService').getSiteSettings();
+  const siteSettings=await SiteSettings.findOne({key:'default'}).lean()||{};
+  const recipient=siteSettings.notification_recipient_email||site.contact_email||'';
   const receipt=row.payment_verified_at?await receiptService.ensure(type,id):null;
   if(job.event==='payment_success' && !receipt)throw new Error('A verified receipt is required.');
   const origin=receiptService.publicOrigin(),receiptLink=receipt && origin?`${origin}/receipts/${receipt.token}`:'';
@@ -30,7 +33,9 @@ async function enqueue(type,id,job){
   }
   if(type==='course_enquiry')next='The studio will contact you about your course enquiry. No payment is required.';
   if(job.event==='reminder')next=job.detail;
-  const contact=[site.contact_email,site.contact_phone].filter(Boolean).join(' / ');
+  const notificationSettings=await Settings.findOne({key:'default'}).lean()||{};
+
+const contact=recipient || '';
   next=(next+(contact?' Contact: '+contact:'')).slice(0,700);
   const amountText=type==='course_enquiry'?'Not applicable':'INR '+(amount/100).toFixed(2);
   const event=eventName(type,job.event);let subject=`${site.store_name}: ${event.replaceAll('_',' ')}`;

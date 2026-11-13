@@ -14,6 +14,7 @@ const ClassSessionSchema = new Schema({
   mode: { type: String, default: 'Online' },
   meeting_platform: { type: String, enum: ['Google Meet', 'Zoom', 'Other'], default: 'Google Meet' },
   meeting_link: { type: String, default: '', select: false },
+  private_resources: { type: [new Schema({ file: { type: String, required: true }, original_name: { type: String, required: true, maxlength: 255 } })], default: [], select: false },
   participant_receives: { type: String, default: '' },
   promotional_title: { type: String, default: '' },
   promotional_text: { type: String, default: '' },

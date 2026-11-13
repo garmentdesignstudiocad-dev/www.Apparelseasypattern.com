@@ -7,6 +7,7 @@ const schema = new Schema({
   cover_url: String, topics: [String], pages: { type: Number, min: 1 },
   who_should_read: { type: String, maxlength: 5000, default: '' },
   amazon_url: String, ebook_url: {type:String,select:false},
+  ebook_file:{type:String,select:false},ebook_file_name:{type:String,select:false},
   purchase_type: {type:String,enum:['external','direct','free'],default:'external'},
   price: {type:Number,min:0,max:1000000,default:null},
   active: { type: Boolean, default: false },

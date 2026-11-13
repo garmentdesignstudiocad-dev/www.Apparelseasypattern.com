@@ -1,8 +1,11 @@
 const path = require('path');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { collectMediaUpdate } = require('../services/productMediaIntegration');
 const { logError } = require('../services/safeLog');
 const express = require('express');
 const multer = require('multer');
+const notificationService = require('../services/notificationService');
 const router = express.Router();
 router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
 for(const param of ['id','productId','fileId','addonId']) router.param(param,(req,res,next,value)=>/^[a-f\d]{24}$/i.test(value)?next():res.status(404).render('error',{title:'Not Found',message:'The requested record was not found.'}));
@@ -210,11 +213,17 @@ function productSetup(product, files = []) {
   const filesNeedingReview = files.filter(file =>
     file.purpose === 'other' && (product.import_source_key || file.import_source_key));
   const filesWithoutUpload = files.filter(file => file.purpose !== 'other' && !file.hasPrivateFile);
-  const filesComplete = (product.hasPrivateBaseFile || files.length > 0)
-    && filesNeedingReview.length === 0
-    && filesWithoutUpload.length === 0;
   const sizesComplete = Array.isArray(product.available_sizes) && product.available_sizes.length > 0;
   const options = product.pattern_options || {};
+  const mappedFileSizes = new Set(product.mappedFileSizes || (product.digital_file_map || []).map(file => file.size));
+  const missingMappedSizes = sizesComplete && options.printable !== false
+    ? product.available_sizes.filter(size => !mappedFileSizes.has(size))
+    : [];
+  const hasPrivateMappedFiles = mappedFileSizes.size > 0;
+  const filesComplete = (product.hasPrivateBaseFile || hasPrivateMappedFiles || files.length > 0)
+    && filesNeedingReview.length === 0
+    && filesWithoutUpload.length === 0
+    && missingMappedSizes.length === 0;
   const pricingComplete = Boolean(
     (options.printable !== false && Number(product.base_price) > 0)
     || (options.physical !== false && Number(product.physical_price) > 0)
@@ -232,6 +241,7 @@ function productSetup(product, files = []) {
     missing.push(`Private download missing for "${file.file_name}".`);
   }
   if (!filesComplete) missing.push('Product files have not been added or reviewed.');
+  if (missingMappedSizes.length) missing.push('Upload a private pattern file for every available size.');
   if (!pricingComplete) missing.push('Customer price not set for an available option.');
   if (!sizesComplete) missing.push('Available sizes not set.');
 
@@ -426,7 +436,7 @@ router.get(['/', '/dashboard'], adminAuth, async (req, res) => {
 router.get('/products', adminAuth, async (req, res) => {
   try {
     // Admin must include drafts and inactive records; publicFilter is storefront-only.
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+    const products = await Product.find({}).select('+digital_file_map').sort({ createdAt: -1 }).lean();
     const [productFiles, productsWithBaseFiles] = products.length
       ? await Promise.all([
         ProductFile.find({ product_id: { $in: products.map(product => product._id) } }).lean(),
@@ -443,6 +453,7 @@ router.get('/products', adminAuth, async (req, res) => {
     const filesWithPrivateUploadsSet = new Set(filesWithPrivateUploads.map(file => String(file._id)));
     for (const product of products) {
       product.hasPrivateBaseFile = productsWithPrivateBase.has(String(product._id));
+      product.mappedFileSizes=(product.digital_file_map || []).map(file=>file.size);
     }
     for (const file of productFiles) {
       file.hasPrivateFile = filesWithPrivateUploadsSet.has(String(file._id));
@@ -553,7 +564,8 @@ router.get('/products/:id/edit', adminAuth, async (req, res) => {
       return res.redirect('/admin/products');
     }
     const productFiles = await ProductFile.find({ product_id: product._id }).sort({ createdAt: -1 }).select('+digital_file').lean();
-    product.mappedFiles=(product.digital_file_map || []).map(({format,size})=>({format,size}));
+    product.mappedFiles=(product.digital_file_map || []).map(({format,size,file,original_name})=>({format,size,fileType:path.extname(file).slice(1),fileName:original_name || ''}));
+    product.mappedFileSizes=product.mappedFiles.map(file=>file.size);
     delete product.digital_file_map;
     product.hasPrivateBaseFile = Boolean(product.digital_file);
     delete product.digital_file;
@@ -585,7 +597,7 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
   const productForm = parseProductPayload(req.body);
 
   try {
-    const product = await Product.findById(req.params.id).select('+digital_file');
+    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map');
     if (!product) {
       return res.redirect('/admin/products');
     }
@@ -647,12 +659,14 @@ Object.assign(product, productForm, collectMediaUpdate(product, req.body, req.fi
   } catch (err) {
     logError('Admin product update error:', err);
     const [product, productFiles] = await Promise.all([
-      Product.findById(req.params.id).select('+digital_file').lean(),
+      Product.findById(req.params.id).select('+digital_file +digital_file_map').lean(),
       ProductFile.find({ product_id: req.params.id }).sort({ createdAt: -1 }).select('+digital_file').lean(),
     ]);
     if (product) {
       product.hasPrivateBaseFile = Boolean(product.digital_file);
+      product.mappedFileSizes=(product.digital_file_map || []).map(file=>file.size);
       delete product.digital_file;
+      delete product.digital_file_map;
     }
     for (const file of productFiles) {
       file.hasPrivateFile = Boolean(file.digital_file);
@@ -687,7 +701,9 @@ router.post('/products/:id/toggle', adminAuth, async (req, res) => {
       }
       const productData = product.toObject();
       productData.hasPrivateBaseFile = Boolean(productData.digital_file);
+      productData.mappedFileSizes=(product.digital_file_map || []).map(file=>file.size);
       delete productData.digital_file;
+      delete productData.digital_file_map;
       const missing = productSetup(productData, files).missing;
       if (product.status !== 'active' || !await hasConfiguredPaidOption(product)) {
         missing.push('A positive price is required for at least one enabled product option.');
@@ -763,11 +779,18 @@ router.post('/products/:productId/files', adminAuth, async (req, res) => {
 // Direct pattern file upload endpoint (DXF, HPGL, PLT, PDF, Tech Pack, Markers)
 const directPatternUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }
+  limits: { fileSize: 50 * 1024 * 1024, files: 1, fields: 5, parts: 6 },
+  defParamCharset: 'utf8'
 });
 
-router.post('/products/:productId/direct-file', adminAuth, directPatternUpload.single('file'), async (req, res) => {
+router.post('/products/:productId/direct-file', adminAuth, (req,res,next)=>directPatternUpload.single('file')(req,res,error=>{
+  if(!error)return next();
+  logError('Direct upload multipart rejected:',error);
+  return res.status(error.code==='LIMIT_FILE_SIZE'?413:400).json({error:error.code==='LIMIT_FILE_SIZE'?'File exceeds the 50 MB upload limit.':'Invalid upload. Select one file and try again.'});
+}), async (req, res) => {
+  let pendingPath;
   try {
+    if(!req.session.productMediaCsrf || req.body._csrf!==req.session.productMediaCsrf)return res.status(403).json({error:'Reload the product editor and try again.'});
     const product = await Product.findById(req.params.productId);
     if (!product) return res.status(404).json({ error: 'Product not found' });
     if (!req.file || !req.file.buffer || !req.file.buffer.length) {
@@ -775,59 +798,30 @@ router.post('/products/:productId/direct-file', adminAuth, directPatternUpload.s
     }
 
     if(req.body.purpose==='pattern'){
-      if(!req.session.productMediaCsrf || req.body._csrf!==req.session.productMediaCsrf)return res.status(403).json({error:'Reload the product editor and try again.'});
-      try{return res.json(await require('../services/digitalDeliveryService').uploadSizeFile(product._id,req.body.format,req.body.size,req.file.originalname,req.file.buffer));}
-      catch(error){return res.status(error.status || 500).json({error:error.status?error.message:'Private file upload failed.'});}
+      return res.json(await require('../services/digitalDeliveryService').uploadSizeFile(product._id,req.body.format,req.body.size,req.file.originalname,req.file.buffer,req.file.mimetype));
     }
     const originalName = req.file.originalname || 'pattern-file';
-    const ext = path.extname(originalName).toLowerCase();
-    const allowedExts = ['.dxf', '.hpgl', '.plt', '.pdf', '.zip', '.aama', '.astm'];
-    if (!allowedExts.includes(ext)) {
-      return res.status(400).json({ error: 'Unsupported pattern format. Allowed: DXF, HPGL, PLT, PDF, ZIP.' });
-    }
-
-    // PDF magic bytes validation
-    if (ext === '.pdf') {
-      if (req.file.buffer.length < 4 || req.file.buffer.subarray(0, 4).toString('ascii') !== '%PDF') {
-        return res.status(400).json({ error: 'Invalid PDF file content: %PDF header missing.' });
-      }
-    }
+    const rawFormat = String(req.body.format || '').toLowerCase();
+    const purposes={techpack:'tech_pack',measurement:'specs',marker:'specs'};
+    if(!Object.hasOwn(purposes,rawFormat))return res.status(400).json({error:'Choose a supported document slot.'});
+    const uploadValidation=require('../services/digitalUploadValidation');
+    const ext=rawFormat==='measurement'
+      ? await uploadValidation.validateMeasurement(originalName,req.file.buffer,req.file.mimetype)
+      : uploadValidation.validate(originalName,req.file.buffer,rawFormat,req.file.mimetype);
 
     // Save to private storage (never public!)
     const delivery = require('../services/digitalDeliveryService');
+    await fs.promises.mkdir(delivery.root(), { recursive: true });
     const privateRoot = await delivery.privateRoot();
-    await fs.promises.mkdir(privateRoot, { recursive: true });
     const safeStorageName = crypto.randomBytes(24).toString('hex') + ext;
     const destPath = path.join(privateRoot, safeStorageName);
     await fs.promises.writeFile(destPath, req.file.buffer, { flag: 'wx', mode: 0o600 });
+    pendingPath=destPath;
 
-    const rawFormat = String(req.body.format || '').toLowerCase();
-    const rawPurpose = String(req.body.purpose || '').toLowerCase();
-    const extType = ext.replace('.', '').toLowerCase();
-
-    // Accurately set file_type without mislabeling PDF
-    const file_type = extType;
-
-    // Determine purpose
-    let purpose = 'other';
-    if (rawPurpose === 'tech_pack' || rawFormat === 'techpack' || originalName.toLowerCase().includes('techpack') || originalName.toLowerCase().includes('pom')) {
-      purpose = 'tech_pack';
-    } else if (rawFormat === 'marker' || originalName.toLowerCase().includes('marker')) {
-      purpose = 'specs';
-    } else if (extType === 'dxf') {
-      purpose = 'dxf';
-    } else if (extType === 'pdf' && rawPurpose !== 'pattern') {
-      purpose = 'specs';
-    }
-
-    // Check for replacement: same product and same file_type and purpose, or same file_name
-    let existingFile = await ProductFile.findOne({
-      product_id: product._id,
-      $or: [
-        { file_type, purpose },
-        { file_name: originalName }
-      ]
-    });
+    const file_type=ext.slice(1);
+    const purpose=purposes[rawFormat];
+    // Slot-scoped replacement cannot overwrite another document with the same filename.
+    const existingFile=await ProductFile.findOne({product_id:product._id,upload_slot:rawFormat});
 
     let doc;
     if (existingFile) {
@@ -844,20 +838,15 @@ router.post('/products/:productId/direct-file', adminAuth, directPatternUpload.s
         file_name: originalName,
         file_type,
         purpose,
+        upload_slot: rawFormat,
         digital_file: safeStorageName,
         file_price: purpose === 'tech_pack' ? Number(product.tech_pack_price || 0) : 0,
         active: true
       });
     }
 
-    if (rawPurpose === 'pattern' && ['dxf', 'hpgl', 'plt', 'pdf'].includes(file_type) && !product.digital_file) {
-      product.digital_file = safeStorageName;
-      await product.save();
-    }
-
-    const badgeText = purpose === 'tech_pack' ? 'TECH PACK'
-      : (purpose === 'specs' && (rawFormat === 'marker' || originalName.toLowerCase().includes('marker'))) ? 'MARKER'
-      : file_type.toUpperCase();
+    pendingPath=null; // Persisted; retain previous binaries for issued download grants.
+    const badgeText=({techpack:'TECH PACK',measurement:'MEASUREMENT CHART',marker:'MARKER'})[rawFormat]+' / '+file_type.toUpperCase();
 
     const badgeClass = file_type === 'pdf' ? 'file-badge--pdf'
       : file_type === 'dxf' ? 'file-badge--dxf'
@@ -875,8 +864,10 @@ router.post('/products/:productId/direct-file', adminAuth, directPatternUpload.s
       isReplacement: Boolean(existingFile)
     });
   } catch (err) {
-    console.error('Direct file upload error:', err);
-    return res.status(500).json({ error: 'Direct file upload failed' });
+    if(pendingPath)await fs.promises.unlink(pendingPath).catch(error=>logError('Direct upload cleanup failed:',error));
+    logError('Direct file upload failed:',err);
+    const storage=['EACCES','EPERM','ENOENT','ENOSPC','EROFS'].includes(err.code);
+    return res.status(err.status || (storage?503:500)).json({error:err.status?err.message:storage?'Private storage is unavailable. Ask the server administrator to check the storage directory, permissions and free space.':'Could not save the uploaded file. Check server logs and try again.'});
   }
 });
 

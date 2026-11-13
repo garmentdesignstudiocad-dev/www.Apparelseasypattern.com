@@ -945,7 +945,8 @@
                   : fType.includes('dxf') ? 'file-badge--dxf'
                   : (fType.includes('hpgl') || fType.includes('plt')) ? 'file-badge--hpgl'
                   : 'file-badge--zip';
-                const badgeText = fName.includes('marker') ? 'MARKER'
+                const slotLabel = ({techpack:'TECH PACK',measurement:'MEASUREMENT CHART',marker:'MARKER'})[file.upload_slot];
+                const badgeText = slotLabel ? slotLabel+' / '+fType.toUpperCase() : fName.includes('marker') ? 'MARKER'
                   : (fType.includes('tech_pack') || fName.includes('techpack') || fName.includes('pom')) ? 'TECH PACK'
                   : fType.includes('pdf') ? 'PDF'
                   : fType.includes('dxf') ? 'DXF'
@@ -976,7 +977,7 @@
                 Direct Pattern File Upload
               </div>
               <p style="font-size:12px;color:#64748B;margin:0 0 12px">
-                Choose a saved size, then upload its DXF, HPGL, PLT or PDF file. Files stay private; verified customers receive only their purchased formats and sizes. Links allow repeat downloads for 24 hours.
+                Choose a saved size, then upload its DXF, HPGL, PLT or PDF file (up to 30 MB), or a ZIP package for that format. Documents accept PDF or ZIP up to 50 MB. ZIP files from macOS or Windows are stored unchanged; no extraction is needed. Files stay private; verified customers receive only their purchased formats and sizes. Links allow repeat downloads for 24 hours.
               </p>
 
               <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-bottom:12px">
@@ -984,14 +985,14 @@
                   <select id="pattern-upload-size"><option value="">Choose size</option><% (productForm.available_sizes || []).forEach(size=>{ %><option value="<%= size %>"><%= size %></option><% }) %></select>
                   <small>Save product sizes before uploading. Select another size to upload its separate file. Re-uploading the same format and size replaces that mapping only.</small>
                 </label>
-                <div id="mapped-pattern-files" style="grid-column:1/-1"><% (productForm.mappedFiles || []).forEach(entry=>{ %><div><%= entry.format.toUpperCase() %> / <%= entry.size %> ? uploaded</div><% }) %></div>
+                <div id="mapped-pattern-files" style="grid-column:1/-1"><% (productForm.mappedFiles || []).forEach(entry=>{ %><div><%= entry.format.toUpperCase() %> / <%= entry.size %> ? <%= (entry.fileType || entry.format).toUpperCase() %> uploaded <%= entry.fileName || '' %></div><% }) %></div>
                 <!-- DXF Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--dxf" style="margin-bottom:6px">DXF</span>
-                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Master CAD Pattern (.dxf)</div>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Master CAD Pattern (.dxf or .zip)</div>
                   <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
                     <span>Select DXF</span>
-                    <input type="file" accept=".dxf" class="admin-direct-file-input" data-format="dxf" data-purpose="pattern" style="display:none">
+                    <input type="file" accept=".dxf,.zip" class="admin-direct-file-input" data-format="dxf" data-purpose="pattern" style="display:none">
                   </label>
                   <div class="direct-upload-status" data-format="dxf" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
@@ -999,10 +1000,10 @@
                 <!-- HPGL Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--hpgl" style="margin-bottom:6px">HPGL</span>
-                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">HPGL Plotter File (.hpgl)</div>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">HPGL Plotter File (.hpgl or .zip)</div>
                   <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
                     <span>Select HPGL</span>
-                    <input type="file" accept=".hpgl" class="admin-direct-file-input" data-format="hpgl" data-purpose="pattern" style="display:none">
+                    <input type="file" accept=".hpgl,.zip" class="admin-direct-file-input" data-format="hpgl" data-purpose="pattern" style="display:none">
                   </label>
                   <div class="direct-upload-status" data-format="hpgl" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
@@ -1010,10 +1011,10 @@
                 <!-- PLT Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--hpgl" style="margin-bottom:6px">PLT</span>
-                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Standard Plotter (.plt)</div>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Standard Plotter (.plt or .zip)</div>
                   <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
                     <span>Select PLT</span>
-                    <input type="file" accept=".plt" class="admin-direct-file-input" data-format="plt" data-purpose="pattern" style="display:none">
+                    <input type="file" accept=".plt,.zip" class="admin-direct-file-input" data-format="plt" data-purpose="pattern" style="display:none">
                   </label>
                   <div class="direct-upload-status" data-format="plt" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
@@ -1021,10 +1022,10 @@
                 <!-- PDF Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--pdf" style="margin-bottom:6px">PDF</span>
-                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Approved Pattern PDF (.pdf)</div>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Approved Pattern PDF (.pdf or .zip)</div>
                   <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
                     <span>Select PDF</span>
-                    <input type="file" accept=".pdf" class="admin-direct-file-input" data-format="pdf" data-purpose="pattern" style="display:none">
+                    <input type="file" accept=".pdf,.zip" class="admin-direct-file-input" data-format="pdf" data-purpose="pattern" style="display:none">
                   </label>
                   <div class="direct-upload-status" data-format="pdf" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
@@ -1040,13 +1041,22 @@
                   <div class="direct-upload-status" data-format="techpack" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
 
+                <!-- Measurement Chart Upload -->
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
+                  <span class="file-badge file-badge--pdf">MEASUREMENT CHART</span>
+                  <div style="font-size:11.5px;color:#64748B;margin:8px 0">Measurement Chart (.csv, .pdf or .zip)</div>
+                  <label class="btn ghost small" style="cursor:pointer"><span>Select Measurement Chart</span>
+                    <input type="file" accept=".csv,.pdf,.zip" class="admin-direct-file-input" data-format="measurement" data-purpose="specs" style="display:none">
+                  </label>
+                  <div class="direct-upload-status" data-format="measurement" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
+                </div>
                 <!-- Marker Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--pdf" style="margin-bottom:6px">MARKER</span>
-                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Consumption Marker (.pdf)</div>
+                  <div style="font-size:11.5px;color:#64748B;margin-bottom:8px">Consumption Marker (.pdf or .zip)</div>
                   <label class="btn ghost small" style="cursor:pointer;display:inline-block;padding:4px 10px;font-size:11.5px">
                     <span>Select Marker</span>
-                    <input type="file" accept=".pdf" class="admin-direct-file-input" data-format="marker" data-purpose="marker" style="display:none">
+                    <input type="file" accept=".pdf,.zip" class="admin-direct-file-input" data-format="marker" data-purpose="marker" style="display:none">
                   </label>
                   <div class="direct-upload-status" data-format="marker" style="font-size:11px;color:#0284C7;margin-top:4px;display:none"></div>
                 </div>
@@ -1596,7 +1606,7 @@
       if (emptyState) emptyState.remove();
 
       const existingRow = Array.from(container.querySelectorAll('.ref-file-row')).find(row =>
-        row.dataset.fileId === data.fileId || row.dataset.badge === data.badgeText
+        row.dataset.fileId === data.fileId
       );
       const row = existingRow || document.createElement('div');
       row.className = 'ref-file-row';
@@ -1659,6 +1669,8 @@
         if (!file || !editingProductId) return;
         const format = input.dataset.format;
         const purpose = input.dataset.purpose;
+        const maxMB=purpose==='pattern'?30:50;
+        if(file.size>maxMB*1024*1024){alert('File exceeds the '+maxMB+' MB limit.');input.value='';return;}
         const uploadSize = document.getElementById('pattern-upload-size')?.value;
         if(purpose === 'pattern' && !uploadSize){alert('Choose a saved product size first.');input.value='';return;}
         const statusEl = document.querySelector('.direct-upload-status[data-format="' + format + '"]');
@@ -1676,9 +1688,15 @@
 
         fetch('/admin/products/' + editingProductId + '/direct-file', {
           method: 'POST',
-          body: fd
+          body: fd,
+          headers: {'Accept':'application/json'}
         })
-        .then(r => r.json())
+        .then(async r => {
+          if(r.redirected)throw new Error('Admin session expired. Sign in and reload the editor.');
+          const data=await r.json().catch(()=>{throw new Error(r.status===413?'Upload exceeds the server request limit. Ask the administrator to check proxy limits.':'Server returned HTTP '+r.status+'. Check server logs and try again.');});
+          if(!r.ok)throw new Error(data.error || 'Upload failed (HTTP '+r.status+').');
+          return data;
+        })
         .then(data => {
           if (data.success) {
             if (statusEl) {
@@ -1690,7 +1708,7 @@
               const key=data.format+'/'+data.size;
               let row=[...list.children].find(row=>row.dataset.mapping===key);
               if(!row){row=document.createElement('div');row.dataset.mapping=key;list.appendChild(row);}
-              row.textContent=data.format.toUpperCase()+' / '+data.size+' ? uploaded';
+              row.textContent=data.format.toUpperCase()+' / '+data.size+' ? '+data.fileType.toUpperCase()+' uploaded '+data.fileName;
             }else updateFilesList(data);
           } else {
             if (statusEl) {

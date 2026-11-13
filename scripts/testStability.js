@@ -10,6 +10,9 @@ const ejs=require('ejs');
 const {execFileSync}=require('node:child_process');
 const uri=process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI;
 const prefix=`stability_test_${process.pid}_${Date.now()}_`;
+const priorPatternFilesDir=process.env.PATTERN_FILES_DIR;
+const patternFilesDir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'stability-private-'));
+process.env.PATTERN_FILES_DIR=patternFilesDir;
 const names=['Product','ProductFile','Addon','Customer','Order','Payment','TaxSettings','DeliverySettings','Pincode','SiteSettings','ClassSession','ClassRegistration','Course','Webinar','CourseBooking','WebinarRegistration','Receipt','NotificationLog','NotificationSettings','Courier','FeatureSettings','PaidAccessSettings','ConsultingService','BookPurchase','ConsultationBooking','Lead','Book','Article','Coupon','PricingSettings','DeliveryZone'];
 const models={};
 for(const name of names) {
@@ -25,14 +28,15 @@ process.env.RAZORPAY_KEY_ID='rzp_test_stability';process.env.RAZORPAY_KEY_SECRET
 process.env.ADMIN_USERNAME='stability-owner';process.env.ADMIN_PASSWORD='stability-password';
 let server;
 async function run(){
-  for(const folder of ['routes','controllers','services','middleware','models/mongo','config','scripts'])for(const file of fs.readdirSync(path.resolve(__dirname,'..',folder)))if(file.endsWith('.js'))execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',folder,file)]);
-  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')]);
+  for(const folder of ['routes','controllers','services','middleware','models/mongo','config','scripts'])for(const file of fs.readdirSync(path.resolve(__dirname,'..',folder)))if(file.endsWith('.js'))execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',folder,file)],{env:{...process.env,NODE_OPTIONS:''}});
+  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')],{env:{...process.env,NODE_OPTIONS:''}});
   let templates=0;function compile(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())compile(file);else if(file.endsWith('.ejs')){ejs.compile(fs.readFileSync(file,'utf8'),{filename:file});templates++;}}}compile(path.resolve(__dirname,'../views'));
   assert.ok(uri,'MongoDB is required for the isolated regression test.');await mongoose.connect(uri,{serverSelectionTimeoutMS:15000,autoIndex:false});
   for(const Model of Object.values(models)){await Model.createCollection();await Model.createIndexes();}
-  const product=await Product.create({name:'Regression Pattern',slug:'regression-pattern',base_price:100,physical_price:50,trial_price:80,active:true});
+  const product=await Product.create({name:'Regression Pattern',slug:'regression-pattern',base_price:100,physical_price:50,trial_price:80,digital_file:'regression.dxf',active:true});
   const other=await Product.create({name:'Other',slug:'other',active:true});
-  const file=await ProductFile.create({product_id:product._id,file_name:'DXF',file_type:'DXF',file_price:20,active:true});
+  await fs.promises.writeFile(path.join(patternFilesDir,'regression.dxf'),'test pattern');
+  const file=await ProductFile.create({product_id:product._id,file_name:'DXF',file_type:'DXF',file_price:20,digital_file:'regression.dxf',active:true});
   const wrongFile=await ProductFile.create({product_id:other._id,file_name:'Other DXF',file_type:'DXF',file_price:20,active:true});
   const addon=await Addon.create({product_id:product._id,name:'Adjustment',price:10,active:true});
   await TaxSettings.create({key:'default',enabled:true,percentage:18});await DeliverySettings.create({key:'default',enabled:true,default_charge:25});
@@ -112,11 +116,11 @@ async function run(){
   const prodCsrf = newProd.html.match(/name="_csrf" value="([a-f0-9]+)"/)?.[1] || '';
   assert.equal((await request('/admin/products',{name:'Invalid',slug:'invalid',base_price:'-1',_csrf:prodCsrf},'admin',false)).status,400);
   assert.equal((await request('/admin/settings/gst',{percentage:'NaN'},'admin',false)).status,400);
-  const badClass=await request('/admin/classes',{title:'Invalid date',type:'Course',starts_at:'2026-02-30T10:00',ends_at:'2026-02-30T11:00',price:'100'},'admin',false);assert.equal(badClass.status,400);assert.ok(!badClass.html.includes('undefined/edit'));
+  const classForm=await request('/admin/classes/new',undefined,'admin');const classCsrf=classForm.html.match(/name="_csrf" value="([a-f0-9]{124})"/)?.[1]||'';assert.equal((await request('/admin/classes',{title:'Invalid date',type:'Course',starts_at:'2026-02-30T10:00',ends_at:'2026-02-30T11:00',price:'100'},'admin',false)).status,403);const badClass=await request('/admin/classes',{_csrf:classCsrf,title:'Invalid date',type:'Course',starts_at:'2026-02-30T10:00',ends_at:'2026-02-30T11:00',price:'100'},'admin',false);assert.equal(badClass.status,400);assert.ok(!badClass.html.includes('undefined/edit'));
   assert.equal((await request('/admin/logout',undefined,'admin')).location,'/admin/login');assert.equal((await request('/admin',undefined,'admin')).location,'/admin/login');assert.equal((await request('/admin/products',undefined,'admin')).location,'/admin/login');assert.match((await request('/cart/count',undefined,'admin')).html,/"count":2/);
   const relogin=await request('/admin/login',{username:process.env.ADMIN_USERNAME,password:process.env.ADMIN_PASSWORD},'admin',false);assert.equal(relogin.location,'/admin');
   console.log('PASS: /admin authentication, control-center links, all controls return 200, Back to Dashboard, logout/session loss and login return to /admin.');
   console.log(`PASS: ${templates} EJS templates, JS syntax, ${seen.size} public/admin routes and links, missing optional fields, form validation, safe errors, login rotation/logout/cart preservation, legacy verification, digital and physical delivery, fixed GST 18%, server-priced gateway amounts, payment records and repeated callbacks.`);
   console.log('All writes were isolated to temporary MongoDB collections. No live payments were charged.');
 }
-run().catch(error=>{console.error('Stability test failed:',error.name,error instanceof assert.AssertionError?error.message:'Safe diagnostic: '+String(error.code || 'UNKNOWN'));console.error((error.stack || '').split('\n').filter(line=>line.trim().startsWith('at ')).slice(0,3).join('\n'));process.exitCode=1;}).finally(async()=>{if(server)await new Promise(resolve=>server.close(resolve));if(mongoose.connection.readyState===1)for(const Model of Object.values(models)){assert.ok(Model.collection.name.startsWith(prefix));await Model.collection.drop().catch(error=>{if(error.code!==26)throw error;});}await mongoose.disconnect();if(require.cache[require.resolve('../config/db')])await require('../config/db').db.destroy();});
+run().catch(error=>{console.error('Stability test failed:',error.name,error instanceof assert.AssertionError?error.message:'Safe diagnostic: '+String(error.code || 'UNKNOWN'));console.error((error.stack || '').split('\n').filter(line=>line.trim().startsWith('at ')).slice(0,3).join('\n'));process.exitCode=1;}).finally(async()=>{if(server)await new Promise(resolve=>server.close(resolve));if(mongoose.connection.readyState===1)for(const Model of Object.values(models)){assert.ok(Model.collection.name.startsWith(prefix));await Model.collection.drop().catch(error=>{if(error.code!==26)throw error;});}await mongoose.disconnect();if(require.cache[require.resolve('../config/db')])await require('../config/db').db.destroy();if(patternFilesDir.startsWith(path.join(require('node:os').tmpdir(),'stability-private-'))){await fs.promises.rm(patternFilesDir,{recursive:true,force:true});if(priorPatternFilesDir===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=priorPatternFilesDir;}});

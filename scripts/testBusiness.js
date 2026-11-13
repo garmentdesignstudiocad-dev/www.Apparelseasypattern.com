@@ -3,6 +3,7 @@ require('../models/mongo/FeatureSettings').findById = () => ({lean: async () => 
 // Isolated HTTP integration tests; no live database writes or payments.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const ejs = require('ejs');
@@ -12,6 +13,7 @@ process.env.ADMIN_PASSWORD = 'studio-test-password';
 process.env.SITE_URL = 'https://studio.example';
 const Lead = require('../models/mongo/Lead');
 const Book = require('../models/mongo/Book');
+const BookPurchase = require('../models/mongo/BookPurchase');
 const Article = require('../models/mongo/Article');
 const Product = require('../models/mongo/Product');
 const ClassSession = require('../models/mongo/ClassSession');
@@ -52,13 +54,14 @@ function query(items, single = false) {
   };
   return q;
 }
-for (const Model of [require('../models/mongo/Courier'),Lead, Book, Article, Product, ClassSession, require('../models/mongo/Course'), require('../models/mongo/Webinar'), require('../models/mongo/ProductFile'), require('../models/mongo/Addon'), require('../models/mongo/TaxSettings'), require('../models/mongo/NotificationLog')]) {
+for (const Model of [require('../models/mongo/Courier'),Lead, Book, BookPurchase, Article, Product, ClassSession, require('../models/mongo/Course'), require('../models/mongo/Webinar'), require('../models/mongo/ProductFile'), require('../models/mongo/Addon'), require('../models/mongo/TaxSettings'), require('../models/mongo/NotificationLog')]) {
   const rows = []; stores.set(Model, rows);
   Model.init = async function() { return this; };
   Model.find = filter => query(rows.filter(row => matches(row, filter || {})));
   Model.findOne = filter => query(rows.filter(row => matches(row, filter || {})), true);
   Model.findById = id => query(rows.filter(row => String(row._id) === String(id)), true);
   Model.countDocuments = async filter => rows.filter(row => matches(row, filter)).length;
+  Model.exists = async filter => rows.some(row => matches(row,filter));
   Model.distinct = async (field, filter = {}) => [...new Set(rows.filter(row => matches(row, filter)).map(row => row[field]).filter(Boolean))];
   Model.updateOne = async (filter, update, options) => {
     let row = rows.find(r => matches(r, filter));
@@ -93,8 +96,15 @@ access.getSettings=async()=>settings;
 access.getConsultingServices=async()=>({find:()=>query([])});
 async function run() {
   console.log('[DEBUG] testBusiness run() started');
-  for (const dir of ['routes','models/mongo','services','config','scripts']) for (const file of fs.readdirSync(path.resolve(__dirname,'..',dir))) if (file.endsWith('.js')) execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',dir,file)]);
-  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')]);
+  const priorPatternFilesDir=process.env.PATTERN_FILES_DIR;
+  const bookFilesDir=fs.mkdtempSync(path.join(os.tmpdir(),'business-book-files-'));
+  process.env.PATTERN_FILES_DIR=bookFilesDir;
+  const notifications=require('../services/notificationService'),priorSafeFlush=notifications.safeFlush;
+  notifications.safeFlush=async()=>{};
+  const paidAccessSettings={...settings.books};
+  Object.assign(settings.books,{enabled:true,active:true,fee:0,button_text:'Get book'});
+  for (const dir of ['routes','models/mongo','services','config','scripts']) for (const file of fs.readdirSync(path.resolve(__dirname,'..',dir))) if (file.endsWith('.js')) execFileSync(process.execPath,['--check',path.resolve(__dirname,'..',dir,file)],{env:{...process.env,NODE_OPTIONS:''}});
+  execFileSync(process.execPath,['--check',path.resolve(__dirname,'../server.js')],{env:{...process.env,NODE_OPTIONS:''}});
   let compiled = 0;
   function compile(dir) { for (const entry of fs.readdirSync(dir,{withFileTypes:true})) { const file=path.join(dir,entry.name); if(entry.isDirectory()) compile(file); else if(file.endsWith('.ejs')) { ejs.compile(fs.readFileSync(file,'utf8'),{filename:file}); compiled++; } } }
   compile(path.resolve(__dirname,'../views'));
@@ -114,7 +124,7 @@ async function run() {
   async function request(url, body, who = 'public') {
     const response = await fetch(origin+url, { method:body?'POST':'GET',redirect:'manual',headers:{ connection:'close', ...(jar[who]?{cookie:jar[who]}:{}),...(body?{'Content-Type':'application/x-www-form-urlencoded'}:{}) },body:body?new URLSearchParams(body):undefined });
     const cookie=response.headers.get('set-cookie');if(cookie)jar[who]=cookie.split(';')[0];
-    return {status:response.status,location:response.headers.get('location'),html:await response.text()};
+    return {status:response.status,location:response.headers.get('location'),headers:response.headers,html:await response.text()};
   }
   const token = html => html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
   try {
@@ -158,6 +168,51 @@ async function run() {
       assert.equal((await request(`/admin/${kind}/${row._id}/edit`,{...data,active:'',published:''},'admin')).status,303);
       assert.equal((await request(`/${kind==='books'?'books':'updates'}/new-content`)).status,404);
     }
+    const bookForm=await request('/admin/books/new',null,'admin'),bookCsrf=token(bookForm.html);
+    const bookFields={_csrf:bookCsrf,title:'Uploaded Book',slug:'uploaded-book',author:'Studio',description:'Private resource',topics:'Fit',purchase_type:'free',price:'',active:'on'};
+    const uploadBook=async(url,fields,name,bytes)=>{const form=new FormData();for(const [key,value] of Object.entries(fields))form.append(key,value);form.append('ebook_file',new Blob([bytes],{type:name.toLowerCase().endsWith('.zip')?'application/zip':'application/pdf'}),name);const response=await fetch(origin+url,{method:'POST',redirect:'manual',headers:jar.admin?{cookie:jar.admin}:{},body:form});const cookie=response.headers.get('set-cookie');if(cookie)jar.admin=cookie.split(';')[0];return {status:response.status,location:response.headers.get('location'),html:await response.text()};};
+    assert.equal((await uploadBook('/admin/books/new',bookFields,'not-a-book.pdf',Buffer.from('invalid'))).status,400);
+    assert.equal((await uploadBook('/admin/books/new',{...bookFields,slug:'invalid-zip-book'},'invalid.zip',Buffer.from('not a ZIP'))).status,400);
+    assert.equal((await uploadBook('/admin/books/new',bookFields,'Studio Guide.pdf',Buffer.from('%PDF-1.7\nprivate book bytes'))).status,303);
+    const uploadedBook=await Book.findOne({slug:'uploaded-book'}).select('+ebook_file +ebook_file_name').lean();
+    assert.equal(uploadedBook.ebook_file_name,'Studio Guide.pdf');
+    const accessPage=await request('/books/uploaded-book/access',null,'book-access');
+    assert.equal(accessPage.status,200);
+    const accessFields={_csrf:token(accessPage.html),submission_key:accessPage.html.match(/name="submission_key" value="([^"]+)"/)[1],full_name:'Book Reader',email:'reader@example.test',whatsapp:'9876543210'};
+    const purchase=await request('/books/uploaded-book/access',accessFields,'book-access');
+    assert.equal(purchase.status,303);
+    const purchaseId=purchase.location.split('/').pop();
+    const resourceUrl=`/book-purchases/${purchaseId}/resource`;
+    assert.equal((await request(resourceUrl,null,'intruder')).status,403);
+    const resource=await request(resourceUrl,null,'book-access');
+    assert.equal(resource.status,200);
+    assert.ok(resource.headers.get('content-disposition').includes('Studio Guide.pdf'));
+    assert.ok(resource.html.includes('private book bytes'));
+    const replacePage=await request(`/admin/books/${uploadedBook._id}/edit`,null,'admin');
+    const replaced=await uploadBook(`/admin/books/${uploadedBook._id}/edit`,{...bookFields,_csrf:token(replacePage.html)},'Replacement.pdf',Buffer.from('%PDF-1.7\nreplacement'));
+    assert.equal(replaced.status,303);
+    assert.equal((await request(resourceUrl,null,'book-access')).status,200,'Existing paid/free entitlements retain their original file after replacement.');
+    const removePage=await request(`/admin/books/${uploadedBook._id}/edit`,null,'admin');
+    const removeForm=new FormData();for(const [key,value] of Object.entries({...bookFields,_csrf:token(removePage.html),remove_ebook_file:'on'}))removeForm.append(key,value);
+    const removed=await fetch(origin+`/admin/books/${uploadedBook._id}/edit`,{method:'POST',redirect:'manual',headers:jar.admin?{cookie:jar.admin}:{},body:removeForm});
+    assert.equal(removed.status,303);
+    assert.equal((await request(resourceUrl,null,'book-access')).status,200,'Removing the current book file does not revoke a recorded entitlement.');
+    const zipBytes=Buffer.from('PK\x03\x04test book archive');
+    const zipBookFields={...bookFields,title:'Uploaded ZIP Book',slug:'uploaded-zip-book'};
+    assert.equal((await uploadBook('/admin/books/new',zipBookFields,'Studio Resources.zip',zipBytes)).status,303);
+    const zipBook=await Book.findOne({slug:'uploaded-zip-book'}).select('+ebook_file +ebook_file_name').lean();
+    assert.equal(zipBook.ebook_file_name,'Studio Resources.zip');
+    const zipAccessPage=await request('/books/uploaded-zip-book/access',null,'zip-book-reader');
+    const zipAccessFields={_csrf:token(zipAccessPage.html),submission_key:zipAccessPage.html.match(/name="submission_key" value="([^"]+)"/)[1],full_name:'ZIP Reader',email:'zip-reader@example.test',whatsapp:'9876543210'};
+    const zipPurchase=await request('/books/uploaded-zip-book/access',zipAccessFields,'zip-book-reader');
+    assert.equal(zipPurchase.status,303);
+    const zipPurchaseId=zipPurchase.location.split('/').pop();
+    const zipResourceUrl=`/book-purchases/${zipPurchaseId}/resource`;
+    assert.equal((await request(zipResourceUrl,null,'intruder')).status,403);
+    const zipDownload=await fetch(origin+zipResourceUrl,{headers:jar['zip-book-reader']?{cookie:jar['zip-book-reader']}:{},redirect:'manual'});
+    assert.equal(zipDownload.status,200);
+    assert.ok(zipDownload.headers.get('content-disposition').includes('Studio Resources.zip'));
+    assert.deepEqual(Buffer.from(await zipDownload.arrayBuffer()),zipBytes);
     assert.equal((await request('/admin/leads/invalid',null,'admin')).status,404);
     assert.equal((await request('/cart/add',{product_id:String(product._id),quantity:'2',physical_quantity:'1',trial_quantity:'1'})).status,200);
     assert.match((await request('/cart')).html,/Integration Pattern/);
@@ -167,6 +222,6 @@ async function run() {
     for(const url of ['/checkout','/checkout/razorpay-callback','/checkout/payment-method/proceed','/checkout/delivery-charge']) assert.ok(paymentRoutes.includes(url));
     console.log(`PASS: JS syntax, ${compiled} EJS templates, public pages, SEO, private content, admin login/access, lead and corporate submission, validation, CSRF, search/filter/status/CSV, content create/edit/visibility, populated cart/checkout and Razorpay route preservation.`);
     console.log('Persistence is simulated; no live records or payments created.');
-  } finally { if (server?.closeAllConnections) server.closeAllConnections(); await new Promise(resolve=>server.close(resolve)); if(require.cache[require.resolve('../config/db')]) await require('../config/db').db.destroy(); if(mongoose.connection.readyState===1) await mongoose.disconnect(); }
+  } finally { notifications.safeFlush=priorSafeFlush;settings.books=paidAccessSettings;if(priorPatternFilesDir===undefined)delete process.env.PATTERN_FILES_DIR;else process.env.PATTERN_FILES_DIR=priorPatternFilesDir;if(bookFilesDir.startsWith(path.join(os.tmpdir(),'business-book-files-')))fs.rmSync(bookFilesDir,{recursive:true,force:true});if (server?.closeAllConnections) server.closeAllConnections(); await new Promise(resolve=>server.close(resolve)); if(require.cache[require.resolve('../config/db')]) await require('../config/db').db.destroy(); if(mongoose.connection.readyState===1) await mongoose.disconnect(); }
 }
 run().then(() => process.exit(0)).catch(error => { console.error(error); process.exit(1); });

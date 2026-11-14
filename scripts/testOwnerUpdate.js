@@ -52,7 +52,7 @@ async function run(){
   for(const secret of ['printable.pdf','editable.dxf','support.pdf','measurements.pdf'])assert(!response.text.includes(secret),'Private filename leaked');
   assert.equal((await request('/private/patterns/printable.pdf')).status,404);
   const pricing=require('../services/orderPricing'),options=require('../services/patternOptions');
-  const cases=[ [{quantity:1,selected_sizes:['S','M']},[],110], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[0]],40], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[1]],30], [{quantity:0,printable_selected:false,physical_quantity:2,selected_sizes:['S','M']},[],120], [{quantity:0,printable_selected:false,trial_quantity:2,selected_sizes:['S','M']},[],400] ];
+  const cases=[ [{quantity:1,selected_sizes:['S','M'],selected_formats:['pdf']},[],110], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[0]],40], [{quantity:1,printable_selected:false,selected_sizes:['S']},[files[1]],30], [{quantity:0,printable_selected:false,physical_quantity:2,selected_sizes:['S','M']},[],120], [{quantity:0,printable_selected:false,trial_quantity:2,selected_sizes:['S','M']},[],400] ];
   for(const [item,selected,expected] of cases){assert.equal(options.validate(product,selected,item),'');assert.equal(pricing.itemPrice(product,selected,[],item).total,expected);assert.equal((await request('/cart/add',{product_id:String(product._id),...item,files:selected.map(f=>String(f._id))},'visitor',true)).status,200);}
   assert.deepEqual(pricing.totals(150),{subtotal:150,courier:0,tax:27,total:177,amount:17700});
   assert.equal((await request('/cart/add',{product_id:String(product._id),selected_sizes:['BAD']},'visitor',true)).status,400);

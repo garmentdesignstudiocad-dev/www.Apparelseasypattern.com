@@ -194,7 +194,7 @@ async function run(){
     const pills=(rows,key)=>rows.map(row=>({dataset:{[key]:row.size},querySelector:()=>row}));
     let stripes=true,calls=0,lastBody='',mockResponse=null;
     const context={document:{getElementById:element},URLSearchParams,Set,console,
-      softPills:pills(soft,'softSize'),physPills:pills(phys,'physSize'),physicalInput:{checked:false},
+      softPills:pills(soft,'softSize'),physPills:pills(phys,'physSize'),digitalInput:{checked:true},physicalInput:{checked:false},
       tabBtnStripes:{classList:{contains:()=>stripes}},
       fetch:async(url,options)=>{calls++;lastBody=options.body;assert.equal(url,'/enquiries');if(mockResponse)return mockResponse();return fetch(origin+url,{...options,headers:{...options.headers,cookie,'X-Forwarded-For':testIp}});}};
     for(const [variable,id]of Object.entries({inpStripesRep:'inputStripesRepeat',inpStripesCut:'inputStripesCuttable',inpChecksWarp:'inputChecksWarp',inpChecksWeft:'inputChecksWeft',inpChecksCut:'inputChecksCuttable',errStripesRep:'errStripesRepeat',errStripesCut:'errStripesCuttable',errChecksWarp:'errChecksWarp',errChecksWeft:'errChecksWeft',errChecksCut:'errChecksCuttable'}))context[variable]=element(id);

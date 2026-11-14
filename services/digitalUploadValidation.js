@@ -64,4 +64,26 @@ async function validateMeasurement(originalName,bytes,mime=''){
   await validateCsvContent(bytes);
   return ext;
 }
-module.exports={validate,validateMeasurement};
+// Companion slots: a secondary attachment (PDF or ZIP) alongside the primary CAD/document slot.
+// format values: 'dxf_pdf','dxf_zip','hpgl_pdf','hpgl_zip','plt_pdf','plt_zip',
+//                'pdf_pdf','pdf_zip','techpack_pdf','techpack_zip',
+//                'measurement_pdf','measurement_csv','measurement_zip','basic_measurement_pdf','basic_measurement_csv','basic_measurement_zip','marker_pdf','marker_zip'
+const COMPANION_SLOTS=new Set(['dxf_pdf','dxf_zip','hpgl_pdf','hpgl_zip','plt_pdf','plt_zip','pdf_zip','techpack_pdf','techpack_zip','measurement_pdf','measurement_csv','measurement_zip','basic_measurement_pdf','basic_measurement_csv','basic_measurement_zip','marker_pdf','marker_zip']);
+function validateCompanion(originalName,bytes,slot,mime='',maxBytes=50*1024*1024){
+  if(!COMPANION_SLOTS.has(slot))fail('Choose a supported companion upload slot.');
+  const expectedExt='.'+slot.split('_').pop(); // e.g. 'dxf_pdf' -> '.pdf'
+  const ext=path.extname(originalName||'').toLowerCase();
+  if(ext!==expectedExt && ext!=='.zip')fail(`Choose a ${expectedExt.slice(1).toUpperCase()} or ZIP for this companion slot.`);
+  if(!Buffer.isBuffer(bytes)||!bytes.length)fail('Choose a non-empty file.');
+  if(bytes.length>maxBytes)throw Object.assign(new Error(`File exceeds the ${maxBytes/1024/1024} MB limit.`),{status:413});
+  const generic=['','application/octet-stream','binary/octet-stream','application/x-download'];
+  const known={'.pdf':['application/pdf','application/x-pdf'],'.zip':['application/zip','application/x-zip-compressed','application/x-zip'],'.csv':['text/csv','application/csv','application/vnd.ms-excel','text/plain']};
+  const allowedMime=[...generic,...(known[ext]||[])];
+  if(!allowedMime.includes(String(mime).toLowerCase()))fail('File MIME type does not match its extension.');
+  const head=bytes.subarray(0,4096).toString('latin1');
+  if(ext==='.pdf'&&!head.startsWith('%PDF-'))fail('Invalid PDF content.');
+  if(ext==='.zip'&&!(bytes.length>=4&&['504b0304','504b0506','504b0708'].includes(bytes.subarray(0,4).toString('hex'))))fail('Invalid ZIP content.');
+  if(ext==='.csv')return validateCsvContent(bytes).then(()=>ext);
+  return ext;
+}
+module.exports={validate,validateMeasurement,validateCompanion,COMPANION_SLOTS};

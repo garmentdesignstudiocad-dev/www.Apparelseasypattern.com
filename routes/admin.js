@@ -802,9 +802,37 @@ router.post('/products/:productId/direct-file', adminAuth, (req,res,next)=>direc
     }
     const originalName = req.file.originalname || 'pattern-file';
     const rawFormat = String(req.body.format || '').toLowerCase();
+    const uploadValidation=require('../services/digitalUploadValidation');
+    // Companion slot: a secondary attachment (PDF or ZIP) alongside a primary CAD/document slot.
+    if(uploadValidation.COMPANION_SLOTS.has(rawFormat)){
+      const extResult=uploadValidation.validateCompanion(originalName,req.file.buffer,rawFormat,req.file.mimetype);
+      const ext=extResult instanceof Promise ? await extResult : extResult;
+      const delivery=require('../services/digitalDeliveryService');
+      await fs.promises.mkdir(delivery.root(),{recursive:true});
+      const privateRoot=await delivery.privateRoot();
+      const safeStorageName=crypto.randomBytes(24).toString('hex')+ext;
+      const destPath=path.join(privateRoot,safeStorageName);
+      await fs.promises.writeFile(destPath,req.file.buffer,{flag:'wx',mode:0o600});
+      pendingPath=destPath;
+      const file_type=ext.slice(1);
+      // Companion purpose: companion files are attached to orders as selected_files so delivery works via ProductFile
+      const purpose='specs';
+      const existingDoc=await ProductFile.findOne({product_id:product._id,upload_slot:rawFormat});
+      let doc;
+      if(existingDoc){
+        existingDoc.file_name=originalName;existingDoc.file_type=file_type;
+        existingDoc.purpose=purpose;existingDoc.digital_file=safeStorageName;existingDoc.active=true;
+        await existingDoc.save();doc=existingDoc;
+      }else{
+        doc=await ProductFile.create({product_id:product._id,file_name:originalName,file_type,purpose,upload_slot:rawFormat,digital_file:safeStorageName,file_price:0,active:true});
+      }
+      pendingPath=null;
+      const slotLabel=rawFormat.replace('_',' ').toUpperCase();
+      const badgeClass=file_type==='pdf'?'file-badge--pdf':file_type==='csv'?'file-badge--pdf':'file-badge--zip';
+      return res.json({success:true,fileId:doc._id.toString(),fileName:doc.file_name,fileType:doc.file_type,purpose:doc.purpose,badgeText:slotLabel+' / '+file_type.toUpperCase(),badgeClass,isReplacement:Boolean(existingDoc)});
+    }
     const purposes={techpack:'tech_pack',measurement:'specs',marker:'specs'};
     if(!Object.hasOwn(purposes,rawFormat))return res.status(400).json({error:'Choose a supported document slot.'});
-    const uploadValidation=require('../services/digitalUploadValidation');
     const ext=rawFormat==='measurement'
       ? await uploadValidation.validateMeasurement(originalName,req.file.buffer,req.file.mimetype)
       : uploadValidation.validate(originalName,req.file.buffer,rawFormat,req.file.mimetype);

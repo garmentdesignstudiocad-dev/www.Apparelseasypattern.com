@@ -46,7 +46,7 @@ function fixture(failures=[]){
   const logger={module:{exports:{}},console:{error:(...args)=>logs.push(args)}};
   vm.runInNewContext(safeLogSource,logger);
   const stubs={
-    crypto:{},'../models/mongo/NotificationLog':Log,'../models/mongo/NotificationSettings':Settings,
+    crypto:{},'../models/mongo/NotificationLog':Log,'../models/mongo/NotificationSettings':Settings,'../models/mongo/SiteSettings':{},
     './receiptService':{types:{product_order:'Order'}},
     './notificationProviders':{createProviders:()=>({email:async row=>{
       assert.equal(row.status,'sending');assert.equal(row.attempts,1);

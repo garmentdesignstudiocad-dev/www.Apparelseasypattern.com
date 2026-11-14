@@ -1083,11 +1083,12 @@
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">1</span>
-                <span>FIT BLOCK PATTERN &mdash; SOFT COPY</span>
+                <span>Digital Pattern / Soft Copy &mdash; Select if needed</span>
               </div>
             </div>
             <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 12px;">
-              Ready-to-download digital CAD pattern files. Choose one, multiple, or all formats.
+              <label><input type="checkbox" id="digital-option" <%= product.pattern_options?.printable === false ? 'disabled' : '' %>> Include digital pattern / soft copy</label>
+              <br>Choose one, multiple, or all formats and the digital sizes you need.
             </p>
 
             <!-- Base printable option linked to digital format selection -->
@@ -1271,7 +1272,7 @@
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">3</span>
-                <span>PHYSICAL PATTERN &mdash; HARD COPY (BROWN SHEET)</span>
+                <span>Physical Pattern Printout &mdash; Select if needed</span>
               </div>
             </div>
 
@@ -1305,6 +1306,9 @@
 
             <!-- Physical Size Selection Row (Independent of soft copy) -->
             <div id="physicalSizesContainer" style="background:var(--ref-bg-light);border:1px solid var(--ref-border);border-radius:10px;padding:14px;opacity:0.45;pointer-events:none;transition:all 0.2s ease;">
+              <label style="display:block;margin-bottom:12px;">Printouts per selected size
+                <input id="physical-copies" type="number" min="1" max="1000" step="1" value="1" disabled style="width:80px;margin-left:8px;">
+              </label>
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                 <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
                   <span>SELECT PHYSICAL PATTERN SIZES</span>
@@ -1731,6 +1735,7 @@
     });
 
     // 4. STEP 1 — Soft Copy Sizes Selection (Multi-size checkboxes)
+    const digitalInput = document.getElementById('digital-option');
     const softPills = document.querySelectorAll('.ref-size-pill[data-soft-size]');
     const btnSelectAllSoft = document.getElementById('btnSelectAllSoftSizes');
     const btnClearSoft = document.getElementById('btnClearSoftSizes');
@@ -1738,6 +1743,7 @@
     const stickySizeBadge = document.getElementById('stickySizeBadge');
 
     function getSelectedSoftSizes() {
+      if (!digitalInput?.checked) return [];
       const selected = [];
       softPills.forEach(pill => {
         const input = pill.querySelector('input.soft-size-check');
@@ -1815,7 +1821,7 @@
       const cbEl = document.getElementById(item.cb);
       cardEl?.addEventListener('click', (e) => {
         e.preventDefault();
-        if (!inputEl) return;
+        if (!inputEl || inputEl.disabled) return;
         inputEl.checked = !inputEl.checked;
         const mark = cbEl?.querySelector('span');
         if (inputEl.checked) {
@@ -1830,6 +1836,7 @@
     });
 
     function getSelectedDigitalFormats() {
+      if (!digitalInput?.checked) return [];
       return formatConfigs
         .map(item => document.getElementById(item.input))
         .filter(inp => inp && inp.checked)
@@ -1837,6 +1844,17 @@
     }
 
     function syncDigitalSizeAvailability() {
+      formatConfigs.forEach(item => {
+        const input = document.getElementById(item.input);
+        const card = document.getElementById(item.card);
+        if (input) input.disabled = !digitalInput?.checked;
+        if (card) {
+          card.style.opacity = digitalInput?.checked ? '1' : '0.45';
+          card.setAttribute('aria-disabled', String(!digitalInput?.checked));
+        }
+      });
+      if (techPackInput) techPackInput.disabled = !digitalInput?.checked || !techPackAvailable;
+      if (sumTechPackRow) sumTechPackRow.style.display = digitalInput?.checked && techPackInput?.checked ? 'flex' : 'none';
       const enabled = getSelectedDigitalFormats().length > 0;
       const selection = document.getElementById('digitalSizeSelection');
       if (selection) {
@@ -1847,17 +1865,18 @@
         const input = pill.querySelector('input.soft-size-check');
         if (input) {
           input.disabled = !enabled;
-          if (!enabled) input.checked = false;
         }
       });
       if (btnSelectAllSoft) btnSelectAllSoft.disabled = !enabled;
       if (btnClearSoft) btnClearSoft.disabled = !enabled;
       updateSoftSizePillStates();
     }
+    digitalInput?.addEventListener('change', syncDigitalSizeAvailability);
 
     // 6. STEP 2 — Tech Pack (Separate Optional Card)
     const techPackCard = document.getElementById('techPackCard');
     const techPackInput = document.getElementById('techPackInput');
+    const techPackAvailable = Boolean(techPackInput && !techPackInput.disabled);
     const techPackCheckMark = document.getElementById('techPackCheckMark');
     const sumTechPackRow = document.getElementById('sumTechPackRow');
     const sumTechPackPrice = document.getElementById('sumTechPackPrice');
@@ -1884,6 +1903,12 @@
     // 7. STEP 3 — Physical Printout & Independent Physical Sizes
     const physicalCard = document.getElementById('physicalPrintoutCard');
     const physicalInput = document.getElementById('physical-option');
+    const physicalCopies = document.getElementById('physical-copies');
+    physicalCopies?.addEventListener('input', recalculateTotals);
+    function getPhysicalCopies() {
+      const copies = Number(physicalCopies?.value);
+      return Number.isInteger(copies) && copies >= 1 && copies <= 1000 ? copies : 0;
+    }
     const physicalCheckMark = document.getElementById('physicalPrintoutCheckMark');
     const physicalSizesContainer = document.getElementById('physicalSizesContainer');
     const physPills = document.querySelectorAll('.ref-size-pill[data-phys-size]');
@@ -1923,6 +1948,7 @@
       e.preventDefault();
       if (physicalInput?.disabled) return;
       physicalInput.checked = !physicalInput.checked;
+      if (physicalCopies) physicalCopies.disabled = !physicalInput.checked;
       const mark = physicalCheckMark?.querySelector('span');
       if (physicalInput.checked) {
         physicalCard.classList.add('checked');
@@ -1930,17 +1956,6 @@
         if (physicalSizesContainer) {
           physicalSizesContainer.style.opacity = '1';
           physicalSizesContainer.style.pointerEvents = 'auto';
-        }
-        // If no physical sizes are selected yet, auto-select the chosen soft sizes or first size
-        const currentPhys = getSelectedPhysSizes();
-        if (currentPhys.length === 0) {
-          const softSizes = getSelectedSoftSizes();
-          const targetSizes = softSizes.length > 0 ? softSizes : [physPills[0]?.dataset.physSize].filter(Boolean);
-          physPills.forEach(pill => {
-            const input = pill.querySelector('input.phys-size-check');
-            if (input && targetSizes.includes(pill.dataset.physSize)) input.checked = true;
-          });
-          updatePhysSizePillStates();
         }
       } else {
         physicalCard.classList.remove('checked');
@@ -1957,12 +1972,14 @@
       pill.addEventListener('click', (e) => {
         e.preventDefault();
         const input = pill.querySelector('input.phys-size-check');
+        if (!physicalInput?.checked) return;
         if (input) input.checked = !input.checked;
         updatePhysSizePillStates();
       });
     });
 
     btnSelectAllPhys?.addEventListener('click', () => {
+      if (!physicalInput?.checked) return;
       physPills.forEach(pill => {
         const input = pill.querySelector('input.phys-size-check');
         if (input) input.checked = true;
@@ -2091,7 +2108,7 @@
       const isPhysical = Boolean(physicalInput && physicalInput.checked);
       const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
       const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
-      const hasTechPack = Boolean(techPackInput && techPackInput.checked);
+      const hasTechPack = Boolean(digitalInput?.checked && techPackInput && techPackInput.checked);
 
       // 1. Soft Copy Calculation
       let softCopyCost = 0;
@@ -2130,12 +2147,12 @@
         physicalCost = selectedPhysSizes.reduce((sum, size) => {
           const input = Array.from(document.querySelectorAll('.phys-size-check')).find(candidate => candidate.value === size);
           return sum + Number(input?.dataset.price ?? physicalPrice);
-        }, 0);
+        }, 0) * getPhysicalCopies();
       }
       if (sumPhysicalRow) {
         if (hasPhysical) {
           sumPhysicalRow.style.display = 'flex';
-          if (sumPhysicalLabel) sumPhysicalLabel.textContent = 'Hard Copy (' + selectedPhysSizes.length + ' size' + (selectedPhysSizes.length === 1 ? '' : 's') + ')';
+          if (sumPhysicalLabel) sumPhysicalLabel.textContent = 'Hard Copy (' + selectedPhysSizes.length + ' sizes × ' + getPhysicalCopies() + ' copies)';
           if (sumPhysicalPrice) sumPhysicalPrice.textContent = '₹' + physicalCost.toLocaleString('en-IN');
         } else {
           sumPhysicalRow.style.display = 'none';
@@ -2227,11 +2244,18 @@
       const isPhysical = Boolean(physicalInput && physicalInput.checked);
       const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
       const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
-      const hasTechPack = Boolean(techPackInput && techPackInput.checked);
+      const hasTechPack = Boolean(digitalInput?.checked && techPackInput && techPackInput.checked);
 
-      if (!hasDigital && !hasPhysical && !hasTechPack) {
+      const selectionError = !digitalInput?.checked && !isPhysical
+        ? 'Select Physical Pattern Printout, Digital Pattern / Soft Copy, or both.'
+        : digitalInput?.checked && !hasDigital
+          ? 'Select at least one digital format and size.'
+          : isPhysical && (!hasPhysical || !getPhysicalCopies())
+            ? 'Select at least one physical size and a whole-number print quantity from 1 to 1000.'
+            : '';
+      if (selectionError) {
         if (errBanner) {
-          errBanner.textContent = 'Please select at least one format and size, or physical pattern option to proceed.';
+          errBanner.textContent = selectionError;
           errBanner.style.display = 'block';
         }
         return;
@@ -2252,7 +2276,7 @@
         printable_selected: hasDigital,
         selected_formats: selectedFormats,
         quantity: hasDigital || hasTechPack ? 1 : 0,
-        physical_quantity: selectedPhysSizes.length,
+        physical_quantity: selectedPhysSizes.length * (isPhysical ? getPhysicalCopies() : 0),
         trial_quantity: 0,
         files: filesPayload,
         addons: []

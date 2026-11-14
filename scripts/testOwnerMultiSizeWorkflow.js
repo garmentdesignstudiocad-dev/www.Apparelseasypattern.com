@@ -243,6 +243,69 @@ async function run() {
   }
 
   // ------------------------------------------------------------------------
+  // Independent purchase modes use the real cart/checkout routes and mocked gateway.
+  const physicalOnlyProduct = await Product.create({
+    name: 'Printout without digital files', slug: 'printout-no-digital-files',
+    base_price: 399, physical_price: 399, available_sizes: ['S', 'M'],
+    pattern_options: { printable: false, physical: true, trial: false }, active: true
+  });
+  for (const mode of ['neither', 'physical', 'digital', 'both']) {
+    const who = 'independent_' + mode;
+    const email = await authCustomer(who);
+    const digital = mode === 'digital' || mode === 'both';
+    const physical = mode === 'physical' || mode === 'both';
+    const selectedProduct = mode === 'physical' ? physicalOnlyProduct : shirt;
+    const selection = {
+      product_id: String(selectedProduct._id), printable_selected: digital,
+      selected_sizes: digital ? ['S', 'M'] : [], selected_formats: digital ? ['dxf'] : [],
+      physical_sizes: physical ? ['S', 'M'] : [], quantity: digital ? 1 : 0,
+      physical_quantity: physical ? 4 : 0, trial_quantity: 0, files: [], addons: [], total: 1
+    };
+    const added = await request('/cart/add', selection, who);
+    const checkout = {customer: {name: who, email, phone: '9876543210'}, items: [selection]};
+    if (mode === 'neither') {
+      assert.equal(added.status, 400);
+      assert.equal((await request('/checkout', checkout, who)).status, 400);
+      assert.equal(JSON.parse((await request('/cart/count', undefined, who)).html).count, 0);
+      continue;
+    }
+    assert.equal(added.status, 200, mode + ' cart');
+    assert.match((await request('/cart', undefined, who)).html, /S, M/, mode + ' sizes persist');
+    if (physical) {
+      assert.equal((await request('/checkout', checkout, who)).status, 400, 'Physical needs address');
+      checkout.shipping = {address: '12 Fixture Road', city: 'Bengaluru', state: 'Karnataka', pincode: '560001'};
+      for (const invalid of [{physical_sizes: []}, {physical_quantity: 3}]) {
+        assert.equal((await request('/cart/add', {...selection, ...invalid}, who)).status, 400);
+        assert.equal((await request('/checkout', {...checkout, items: [{...selection, ...invalid}]}, who)).status, 400);
+      }
+    }
+    if (digital) {
+      for (const invalid of [{selected_sizes: []}, {selected_formats: []}]) {
+        assert.equal((await request('/cart/add', {...selection, ...invalid}, who)).status, 400);
+        assert.equal((await request('/checkout', {...checkout, items: [{...selection, ...invalid}]}, who)).status, 400);
+      }
+    }
+    assert.equal((await request('/checkout', checkout, who)).status, 200, mode + ' checkout');
+    const proceed = await request('/checkout/payment-method/proceed', {}, who);
+    assert.equal(proceed.status, 200, mode + ' order creation');
+    const data = JSON.parse(proceed.html);
+    const unpaid = await Order.findOne({razorpay_order_id: data.razorpay_order_id});
+    const subtotal = (digital ? 798 : 0) + (physical ? 1596 : 0);
+    assert.equal(unpaid.subtotal, subtotal);
+    assert.equal(data.amount, Math.round(subtotal * 118));
+    assert.equal(unpaid.items[0].physical_quantity, physical ? 4 : 0);
+    assert.equal(unpaid.items[0].quantity, digital ? 1 : 0);
+    assert.equal(await digitalDeliveryService.ensure(unpaid._id), null, 'Unpaid orders have no download');
+    const paymentId = 'pay_' + crypto.randomBytes(8).toString('hex');
+    const signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(data.razorpay_order_id + '|' + paymentId).digest('hex');
+    assert.equal((await request('/checkout/razorpay-callback', {razorpay_order_id: data.razorpay_order_id, razorpay_payment_id: paymentId, razorpay_signature: signature}, who)).status, 302);
+    assert.equal((await Order.findById(unpaid._id)).payment_status, 'paid');
+    const grant = await digitalDeliveryService.ensure(unpaid._id);
+    assert.equal(Boolean(grant), digital, mode + ' download entitlement');
+    if (digital) assert.equal((await request('/downloads/' + grant.download_token + '/0', undefined, who)).status, 200);
+  }
+  console.log('PASS independent modes: neither rejected; physical without digital assets; digital without address; both; sizes/copies, validation, persisted cart, server-priced gateway amount and verified-only downloads.');
+
   // TEST 1: 1 Digital Size + 1 Format (M, DXF)
   // ------------------------------------------------------------------------
   console.log('-> Executing TEST 1: 1 digital size + 1 format (Size M, DXF only)');

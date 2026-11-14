@@ -8,6 +8,7 @@ function printable(item) { return item.printable_selected !== false; }
 function validate(product, files, item) {
   const available=availability(product), selected=item.selected_sizes || [];
   const physicalSelected = (Array.isArray(item.physical_sizes) && item.physical_sizes.length) ? item.physical_sizes : null;
+  if(Number(item.quantity ?? 1)>0 && printable(item) && product.available_sizes?.length && (!Array.isArray(item.selected_formats) || !item.selected_formats.length || item.selected_formats.some(format=>!['dxf','hpgl','plt','pdf'].includes(format))))return 'Select at least one valid digital format.';
   if(files.some(file=>file.price_per_selected_size)) {
     if(!Array.isArray(item.selected_sizes) || !selected.length)return 'Select at least one size for per-size digital files.';
     if(selected.some(size=>typeof size!=='string' || !/^[a-zA-Z0-9 ._-]{1,40}$/.test(size.trim())) || new Set(selected.map(size=>size.trim().toLowerCase())).size!==selected.length)return 'Choose each size only once for per-size digital files.';
@@ -18,8 +19,9 @@ function validate(product, files, item) {
   if(Number(item.physical_quantity)>0 && !available.physical)return 'Physical pattern is unavailable.';
   if(Number(item.trial_quantity)>0 && !available.trial)return 'Trial sample is unavailable.';
   if(Number(item.quantity ?? 1)>0 && product.available_sizes?.length && (!selected.length || selected.some(size=>!product.available_sizes.includes(size))))return 'Select the configured sizes for this pattern.';
-  if(Number(item.physical_quantity)>0 && product.available_sizes?.length && !physicalSelected && !selected.length)return 'Select at least one size for physical patterns.';
-  if(physicalSelected && product.available_sizes?.length && physicalSelected.some(size=>!product.available_sizes.includes(size)))return 'Select configured sizes for physical patterns.';
+  if(Number(item.physical_quantity)>0 && product.available_sizes?.length && !physicalSelected && (Array.isArray(item.physical_sizes) || !selected.length))return 'Select at least one size for physical patterns.';
+  if(Number(item.physical_quantity)>0 && physicalSelected && product.available_sizes?.length && physicalSelected.some(size=>!product.available_sizes.includes(size)))return 'Select configured sizes for physical patterns.';
+  if(Number(item.physical_quantity)>0 && physicalSelected && Number(item.physical_quantity)%physicalSelected.length!==0)return 'Choose a whole-number print quantity for each selected physical size.';
   if(!physicalSelected && product.available_sizes?.length && [item.physical_quantity,item.trial_quantity].some(q=>Number(q)>0 && selected.length>0 && Number(q)%selected.length!==0))return 'Physical and trial quantities must include each selected size.';
   return '';
 }

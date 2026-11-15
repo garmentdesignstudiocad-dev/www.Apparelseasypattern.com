@@ -13,6 +13,7 @@ module.exports = {
     ['/admin/webinar-registrations', 'Webinar Registrations'],
   ],
   'Website Control': [
+    ['/admin/content', 'Website Content Manager'],
     ['/admin/settings/features', 'Feature Visibility'], ['/admin/settings/appearance', 'Website Appearance'],
     ['/admin/settings/website', 'Website Settings'],
     ['/admin/seo', 'SEO Planning & Keywords'],

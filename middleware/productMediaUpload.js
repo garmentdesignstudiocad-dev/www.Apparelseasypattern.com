@@ -22,7 +22,7 @@ const allowed = {
 const limits = {
   fieldSize: 1024 * 1024,
   fileSize: 100 * 1024 * 1024,
-  files: 14,
+  files: 15,
   fields: 150,
   parts: 170
 };
@@ -117,7 +117,8 @@ const fields = upload.fields([
   { name: "gallery_images", maxCount: 10 },
   { name: "sample_image", maxCount: 1 },
   { name: "product_video", maxCount: 1 },
-  { name: "size_chart_pdf_file", maxCount: 1 }
+  { name: "size_chart_pdf_file", maxCount: 1 },
+  { name: "size_chart_image_file", maxCount: 1 }
 ]);
 
 function flattenFiles(req) {

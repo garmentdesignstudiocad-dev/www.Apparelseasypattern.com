@@ -36,6 +36,8 @@ const appearanceStorage = multer.diskStorage({
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname || '').toLowerCase();
+    const expected = { 'image/jpeg': ['.jpg','.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'], 'video/mp4': ['.mp4'], 'video/webm': ['.webm'], 'application/pdf': ['.pdf'] };
+    if (!expected[file.mimetype]?.includes(ext)) return cb(new Error('File extension must match JPEG, PNG, WebP, MP4, WebM or PDF content.'));
     cb(null, crypto.randomUUID() + ext);
   }
 });
@@ -114,6 +116,7 @@ router.use((req, res, next) => {
 // Display Admin Appearance page
 function renderPage(req, res, settings, errors = []) {
   const messages = {
+    draft: 'Draft saved. Live website unchanged. Use Preview saved draft before publishing.',
     saved: 'Website appearance saved successfully.',
     reset: 'Default theme restored. Branding and text were kept.'
   };
@@ -148,7 +151,7 @@ router.get('/', async (req, res, next) => {
       main_website_url: appearance.safeUrl(
         process.env.MAIN_WEBSITE_URL
       ),
-      ...(stored || {})
+      ...(stored || {}), ...(stored?.appearance_draft || {})
     });
 
     return renderPage(req, res, settings);
@@ -188,10 +191,17 @@ async function handleAppearanceSave(req, res, next) {
       main_website_url: appearance.safeUrl(
         process.env.MAIN_WEBSITE_URL
       ),
-      ...(stored || {})
+      ...(stored || {}), ...(stored?.appearance_draft || {})
     });
 
     // Process direct uploaded files if any
+    for (const file of Object.values(req.files || {}).flat()) {
+      const buffer = await fsp.readFile(file.path);
+      if (!require('../middleware/productMediaUpload').signatureMatches(buffer.subarray(0, 32), file.mimetype)) {
+        await cleanStagedFiles(req);
+        return res.status(400).send('Use valid JPEG, PNG, WebP, MP4, WebM or PDF media.');
+      }
+    }
     const mediaFieldMap = {
       upload_home_image_path: 'home_image_path',
       upload_home_video_path: 'home_video_path',
@@ -241,6 +251,10 @@ async function handleAppearanceSave(req, res, next) {
       }
 
       const val = req.body[key].trim();
+      if (Object.values(mediaFieldMap).includes(key) && /^https?:/i.test(val) && !val.startsWith('https://')) {
+        await cleanStagedFiles(req);
+        return res.status(400).send('Media links must use HTTPS.');
+      }
       // If a media field was submitted empty, preserve the existing value
       if (Object.values(mediaFieldMap).includes(key) && !val) {
         submitted[key] = currentSettings[key] || '';
@@ -295,7 +309,9 @@ async function handleAppearanceSave(req, res, next) {
     // Update MongoDB without overwriting unrelated settings
     await SiteSettings.findOneAndUpdate(
       { key: 'default' },
-      { $set: update },
+      req.body.content_action === 'draft'
+        ? { $set: { appearance_draft: { ...(stored?.appearance_draft || {}), ...update } } }
+        : { $set: update, $unset: { appearance_draft: 1 } },
       {
         upsert: true,
         runValidators: true,
@@ -307,7 +323,7 @@ async function handleAppearanceSave(req, res, next) {
     clearSiteSettingsCache();
 
     return res.redirect(
-      '/admin/settings/appearance?status=saved'
+      '/admin/settings/appearance?status=' + (req.body.content_action === 'draft' ? 'draft' : 'saved')
     );
   } catch (error) {
     await cleanStagedFiles(req);

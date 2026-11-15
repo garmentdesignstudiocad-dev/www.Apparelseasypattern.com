@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= title %></title><link rel="stylesheet" href="/css/styles.css"></head><body>
+<%- include('../partials/admin_header') %>
+<main class="container section"><h1>Website Content Manager</h1>
+<p>Edit individual letters or complete text, including Tamil. HTML is displayed as text. Product data, prices, form values and system messages remain managed by their existing controls.</p>
+<p><a href="/admin/settings/appearance">Homepage, navigation, footer and banner settings / media</a> · <a href="/admin/settings/website">Business contact details</a></p>
+<p><%= message %></p>
+<form method="get"><label>Page or shared section <select name="page" onchange="this.form.submit()"><% pages.forEach(item => { %><option value="<%= item %>" <%= item === page ? 'selected' : '' %>><%= item.replace('.ejs','') %></option><% }) %></select></label><button>Open</button></form>
+<form method="post"><input type="hidden" name="_csrf" value="<%= learningCsrf %>"><input type="hidden" name="page" value="<%= page %>">
+<% entries.forEach(entry => { %><label style="display:block;margin:18px 0"><span style="display:block"><%= entry.value %></span><textarea name="text_<%= entry.key %>" maxlength="12000" rows="2" style="width:100%"><%= Object.hasOwn(values, entry.key) ? values[entry.key] : entry.value %></textarea></label><% }) %>
+<button class="btn" name="action" value="save">Save Draft</button> <button class="btn primary" name="action" value="publish">Publish this page</button> <button class="btn" name="action" value="restore">Restore Default to Draft</button>
+</form><p>Save first, then preview. Preview never publishes changes.</p>
+<label>Public page path to preview<input id="preview-path" value="<%= ({'about.ejs':'/about','contact.ejs':'/contact','products.ejs':'/products','classes/index.ejs':'/classes'})[page] || '/' %>" placeholder="/products"></label>
+<button type="button" class="btn" onclick="const p=document.getElementById('preview-path').value;if(p.startsWith('/')&&!p.startsWith('//')&&!p.includes('\\')){const u=new URL(p,location.origin);if(u.origin===location.origin){u.searchParams.set('content_preview','1');window.open(u.href,'_blank','noopener');}}">Preview saved draft</button>
+</main></body></html>

@@ -965,6 +965,9 @@
 
 <body>
   <%- include('partials/header') %>
+  <% if (typeof adminPreviewProduct !== 'undefined') { %><p>Admin preview — draft changes are not published.</p><% } %>
+  <% if (product.video_url) { %><div class="container"><video controls playsinline preload="metadata" src="<%= product.video_url %>" style="width:100%;max-width:640px;max-height:420px" aria-label="Garment fit demo"></video></div><% } %>
+  <% if (product.sample_image_url) { %><div class="container"><img src="<%= product.sample_image_url %>" alt="Finished garment sample" style="width:100%;max-width:480px;height:auto" loading="lazy"></div><% } %>
 
   <%
     // Approved gallery images for Basic Slim Fit Shirt

@@ -4,6 +4,7 @@ const { Schema, model } = require('mongoose');
 const { defaults, content, valid } = require('../../config/appearance');
 
 const schema = new Schema({
+  appearance_draft: { type: Schema.Types.Mixed, default: undefined },
   key: {
     type: String,
     default: 'default',

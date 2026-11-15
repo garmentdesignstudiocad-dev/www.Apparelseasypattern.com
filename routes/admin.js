@@ -534,6 +534,8 @@ router.post('/products', adminAuth, async (req, res) => {
 
   try {
     Object.assign(productForm, collectMediaUpdate({}, req.body, req.files));
+    productForm.active = req.body.admin_action === 'activate';
+    productForm.status = productForm.active ? 'active' : 'draft';
     await publishProductMedia(req);
     await Product.create(productForm);
     req.aepMediaCommitted = true;
@@ -556,13 +558,46 @@ router.post('/products', adminAuth, async (req, res) => {
   }
 });
 
+router.get('/products/:id/document/:documentId', adminAuth, async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id).select('+editor_documents +digital_file_map').lean();
+    if (!product) return res.sendStatus(404);
+    let entry = (product.editor_documents || []).find(item => item.id === req.params.documentId);
+    if (!entry && /^map-\d+$/.test(req.params.documentId)) entry = product.digital_file_map?.[Number(req.params.documentId.slice(4))];
+    if (!entry && /^[a-f\d]{24}$/i.test(req.params.documentId)) {
+      const doc = await ProductFile.findOne({ _id: req.params.documentId, product_id: product._id }).select('+digital_file').lean();
+      if (doc) entry = { file: doc.digital_file, original_name: doc.file_name };
+    }
+    const file = entry && await require('../services/digitalDeliveryService').filePath(entry.file);
+    if (!file) return res.sendStatus(404);
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    return res.download(file, entry.original_name || path.basename(file));
+  } catch (error) { next(error); }
+});
+
+router.get('/products/:id/preview', adminAuth, async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id).select('+editor_draft').lean();
+    if (!product) return res.sendStatus(404);
+    req.adminPreviewProduct = { ...product, ...(product.editor_draft || {}) };
+    res.locals.adminPreviewProduct = true;
+    delete req.adminPreviewProduct.editor_draft;
+    req.params.slug = req.adminPreviewProduct.slug;
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    return require('../controllers/productsController').productDetails(req, res, next);
+  } catch (error) { next(error); }
+});
+
 router.get('/products/:id/edit', adminAuth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map').lean();
+    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map +editor_draft +editor_documents').lean();
 
     if (!product) {
       return res.redirect('/admin/products');
     }
+    Object.assign(product, product.editor_draft || {});
+    delete product.editor_draft;
     const productFiles = await ProductFile.find({ product_id: product._id }).sort({ createdAt: -1 }).select('+digital_file').lean();
     product.mappedFiles=(product.digital_file_map || []).map(({format,size,file,original_name})=>({format,size,fileType:path.extname(file).slice(1),fileName:original_name || ''}));
     product.mappedFileSizes=product.mappedFiles.map(file=>file.size);
@@ -597,7 +632,7 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
   const productForm = parseProductPayload(req.body);
 
   try {
-    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map');
+    const product = await Product.findById(req.params.id).select('+digital_file +digital_file_map +editor_draft +editor_documents');
     if (!product) {
       return res.redirect('/admin/products');
     }
@@ -628,7 +663,7 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
       productForm.status = product.status;
     }
 
-    if (product.import_source_key && productForm.active && productForm.status === 'active') {
+    if (adminAction === 'activate' && product.import_source_key && productForm.active && productForm.status === 'active') {
       const candidate = { ...product.toObject(), ...productForm };
       if (!await hasConfiguredPaidOption(candidate)) {
         const productFiles = await ProductFile.find({ product_id: product._id }).select('+digital_file').lean();
@@ -645,13 +680,24 @@ router.post('/products/:id/edit', adminAuth, async (req, res) => {
         ));
       }
     }
-Object.assign(product, productForm, collectMediaUpdate(product, req.body, req.files));
+    const mediaBase = { ...product.toObject(), ...(product.editor_draft || {}) };
+    const candidate = { ...productForm, ...collectMediaUpdate(mediaBase, req.body, req.files) };
+    if (adminAction !== 'activate' && adminAction !== 'deactivate') {
+      const validation = new Product({ ...product.toObject(), ...candidate });
+      await validation.validate();
+      product.editor_draft = candidate;
+    } else {
+      Object.assign(product, candidate);
+      product.editor_draft = undefined;
+      await product.validate();
+      if (adminAction === 'activate') await require('../services/productDocumentDraft').publish(product);
+    }
     await publishProductMedia(req);
     await product.save();
     req.aepMediaCommitted = true;
     res.redirect(buildRedirectUrl(
       `/admin/products/${product._id}/edit`,
-      adminAction === 'save' ? 'Changes saved. Product publication status was unchanged.'
+      adminAction === 'save' ? 'Draft saved. Live product unchanged. Preview before publishing.'
         : adminAction === 'activate' ? 'Product activated successfully.'
           : adminAction === 'deactivate' ? 'Product saved as inactive.'
             : 'Product updated successfully.'
@@ -796,6 +842,7 @@ router.post('/products/:productId/direct-file', adminAuth, (req,res,next)=>direc
     if (!req.file || !req.file.buffer || !req.file.buffer.length) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
+    if (req.body.stage === '1') return res.json(await require('../services/productDocumentDraft').stage(product._id, req.body, req.file));
 
     if(req.body.purpose==='pattern'){
       return res.json(await require('../services/digitalDeliveryService').uploadSizeFile(product._id,req.body.format,req.body.size,req.file.originalname,req.file.buffer,req.file.mimetype));
@@ -901,6 +948,12 @@ router.post('/products/:productId/direct-file', adminAuth, (req,res,next)=>direc
 
 router.post('/products/:productId/direct-file/:fileId/delete', adminAuth, async (req, res) => {
   try {
+    if (!req.session.productMediaCsrf || req.body._csrf !== req.session.productMediaCsrf) return res.sendStatus(403);
+    const staged = await Product.findById(req.params.productId).select('+editor_documents');
+    if (staged?.editor_documents?.some(entry => entry.id === req.params.fileId)) {
+      await Product.updateOne({ _id: staged._id }, { $pull: { editor_documents: { id: req.params.fileId } } });
+      return res.json({ success: true });
+    }
     await ProductFile.deleteOne({ _id: req.params.fileId, product_id: req.params.productId });
     return res.json({ success: true });
   } catch (err) {

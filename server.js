@@ -19,6 +19,7 @@ if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 // View engine setup
 app.set('view engine', 'ejs');
+require('./services/websiteContent').install();
 app.set('views', path.join(__dirname, 'views'));
 const { normalize, cssVariables } = require('./config/appearance');
 app.use((req,res,next)=>{
@@ -114,6 +115,23 @@ app.use((req, res, next) => {
   if(seo.pageDefaults[section]){res.locals.seoTitle=res.locals.siteSettings[section+'_seo_title'];res.locals.description=res.locals.siteSettings[section+'_seo_description'];}
   next();
 });
+app.use(async (req, res, next) => {
+  try {
+    const preview = req.query.content_preview === '1';
+    if (preview && !req.session?.isAdmin) return res.sendStatus(403);
+    const content = require('mongoose').connection.readyState === 1
+      ? await require('./models/mongo/WebsiteContent').findOne({ key: 'default' }).lean() : null;
+    res.locals.siteSettings = { ...res.locals.siteSettings };
+    if (preview) {
+      const settings = await require('./models/mongo/SiteSettings').findOne({ key: 'default' }).lean();
+      res.locals.siteSettings = normalize({ ...res.locals.siteSettings, ...(settings?.appearance_draft || {}) });
+      res.locals.themeVariables = cssVariables(res.locals.siteSettings);
+    }
+    res.locals.contentText = require('./services/websiteContent').textRenderer(content?.[preview ? 'draft' : 'published'] || {});
+    if (preview) { res.set('Cache-Control', 'no-store'); res.set('X-Robots-Tag', 'noindex, nofollow'); }
+    next();
+  } catch (error) { next(error); }
+});
 app.use(require('./middleware/features').load, require('./middleware/features').guard);
 app.use('/', require('./routes/customerAccount'));
 app.use('/',require('./routes/seo'));
@@ -146,6 +164,7 @@ app.use('/admin/settings/features', require('./routes/adminFeatures'));
 app.use('/admin', require('./routes/adminNotifications'));
 app.use('/admin', require('./routes/adminPaidAccess'));
 app.use('/admin/settings/appearance', require('./routes/adminAppearance'));
+app.use('/admin/content', require('./routes/adminContent'));
 app.use('/admin/settings', adminSettingsRouter);
 app.use('/admin', require('./routes/adminLearning'));
 app.use('/admin', require('./routes/adminBusiness'));

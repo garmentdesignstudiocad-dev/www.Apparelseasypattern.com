@@ -248,7 +248,7 @@ async function productDetails(req, res, next) {
       });
     }
 
-    let product = await Product.findOne({
+    let product = req.adminPreviewProduct || await Product.findOne({
       slug,
       ...require('../services/patternOptions').publicFilter,
     }).lean();

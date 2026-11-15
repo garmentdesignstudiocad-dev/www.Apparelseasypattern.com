@@ -889,12 +889,23 @@
                 Direct Upload: Main Garment Photo
               </label>
               <input type="file" id="file-main-image" name="main_image" accept="image/jpeg,image/png,image/webp" style="font-size:13px">
+              <label>Or paste a direct HTTPS image URL <input type="url" name="main_image_link" placeholder="https://example.com/photo.jpg" data-media-preview="image"></label>
+              <label><input type="checkbox" name="remove_main_image"> Remove main photo</label>
             </div>
             <div>
               <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
                 Direct Upload: Gallery Garment Photos (Multiple)
               </label>
               <input type="file" id="file-gallery-images" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp" style="font-size:13px">
+              <label>Or add HTTPS gallery image URLs (one per line)<textarea name="gallery_image_links" placeholder="https://example.com/photo.webp"></textarea></label>
+              <p>AI-generated finished garment photos use the same upload/link options. Uploads take priority over links.</p>
+              <% (productForm.images || []).slice(1).forEach((src, index) => { %>
+                <label style="display:inline-block">Gallery <%= index %><img src="<%= src %>" alt="Gallery preview" style="width:80px;height:80px;object-fit:contain"><input type="checkbox" name="remove_gallery_image" value="<%= index %>"> Remove</label>
+              <% }); %>
+              <label>Reorder remaining gallery images by index (for example 2,0,1; leave blank to keep order)<input name="gallery_order"></label>
+              <label>AI / sample photo upload<input type="file" name="sample_image" accept="image/jpeg,image/png,image/webp"></label>
+              <label>Or HTTPS sample photo URL<input type="url" name="sample_image_link" data-media-preview="image"></label>
+              <label><input type="checkbox" name="remove_sample_image"> Remove sample photo</label>
             </div>
           </div>
         </div>
@@ -905,6 +916,9 @@
             Optional: Garment Fit Reel Video (MP4 / WebM)
           </label>
           <input type="file" name="product_video" accept="video/mp4,video/webm" style="font-size:13px;margin-bottom:8px">
+          <label>Or direct HTTPS MP4/WebM URL<input type="url" name="video_link" data-media-preview="video"></label>
+          <p>Use a 10–15 second finished garment demo. Maximum upload: 100 MB.</p>
+          <label><input type="checkbox" name="remove_video"> Remove video</label>
           <% if (productForm.video_url) { %>
             <video controls src="<%= productForm.video_url %>" style="max-width:280px;border-radius:8px;display:block"></video>
           <% } %>
@@ -1379,6 +1393,8 @@
               <div style="margin-bottom:12px;background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:10px;">
                 <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Upload Size Chart PDF</label>
                 <input type="file" name="size_chart_pdf_file" accept=".pdf,application/pdf" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:12.5px;background:#fff">
+                <label>Or HTTPS public size-chart PDF link<input type="url" name="size_chart_pdf_link"></label>
+                <p>Only public reference charts may use links. Paid patterns, Tech Packs and other paid documents must use the private upload slots.</p>
                 <% if (productForm.size_chart_pdf || productForm.size_chart_pdf_name) { %>
                   <div style="margin-top:6px;font-size:12px;color:#059669;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     <span>&#128196; Current PDF: <strong><%= productForm.size_chart_pdf_name || (productForm.size_chart_pdf ? productForm.size_chart_pdf.split('/').pop() : '') %></strong></span>
@@ -1395,6 +1411,8 @@
               <div style="margin-bottom:10px">
                 <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Size Chart Image URL</label>
                 <input type="text" name="size_chart_image" value="<%= productForm.size_chart_image || productForm.size_chart_url || '' %>" placeholder="https://... or /images/..." style="width:100%;padding:8px 12px;border:1px solid var(--admin-border);border-radius:6px;font-size:13px">
+                <label>Or upload a public chart image<input type="file" name="size_chart_image_file" accept="image/jpeg,image/png,image/webp"></label>
+                <label><input type="checkbox" name="remove_size_chart_image"> Remove chart image</label>
               </div>
 
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -1524,13 +1542,39 @@
         <footer class="ref-actions-footer">
           <a class="btn ghost" href="/admin/products">Cancel</a>
           <button type="submit" name="admin_action" value="save" class="btn ghost">Save Draft</button>
+          <% if (editingProduct) { %><a class="btn ghost" href="/admin/products/<%= editingProduct._id %>/preview" target="_blank" rel="noopener">Preview saved draft</a><% } %>
           <button type="submit" name="admin_action" value="activate" class="btn primary btn-orange" id="btn-update-product">
-            &#128190; <%= editingProduct ? 'Update Product' : 'Publish Product' %>
+            &#128190; Publish Product
           </button>
         </footer>
       </section>
 
     </form>
+    <% if (editingProduct) { %>
+      <section class="card"><h2>Private document previews</h2><p>New uploads in this editor are drafts until Publish Product. Reload after uploading to see preview links. Download a preview and open it in your PDF or CAD viewer. Paid assets accept private uploads only; public external links would bypass payment protection.</p>
+      <% (productForm.editor_documents || []).forEach(entry => { %><p>Draft: <a href="/admin/products/<%= editingProduct._id %>/document/<%= entry.id %>"><%= entry.format %> <%= entry.size %> — <%= entry.original_name %></a></p><% }); %>
+      <% (productFiles || []).forEach(file => { %><p>Published: <a href="/admin/products/<%= editingProduct._id %>/document/<%= file._id %>"><%= file.file_name %></a></p><% }); %>
+      <% (productForm.mappedFiles || []).forEach((file, index) => { %><p>Published: <a href="/admin/products/<%= editingProduct._id %>/document/map-<%= index %>"><%= file.format %> <%= file.size %> — <%= file.fileName %></a></p><% }); %>
+      </section>
+    <% } %>
+    <script>
+    document.querySelectorAll('[data-media-preview],input[type=file][accept^="image"],input[name=product_video]').forEach(function(input) {
+      input.addEventListener('change', function() {
+        var video = input.dataset.mediaPreview === 'video' || input.name === 'product_video';
+        var preview = input.nextElementSibling;
+        if (!preview || !preview.dataset.localPreview) {
+          preview = document.createElement(video ? 'video' : 'img');
+          preview.dataset.localPreview = '1'; preview.style.cssText = 'display:block;max-width:100%;width:280px;max-height:240px;object-fit:contain';
+          if (video) preview.controls = true;
+          input.after(preview);
+        }
+        if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+        if (input.files && input.files[0]) { preview.src = URL.createObjectURL(input.files[0]); preview.dataset.objectUrl = preview.src; }
+        else if (/^https:\/\//i.test(input.value)) preview.src = input.value;
+        else preview.removeAttribute('src');
+      });
+    });
+    </script>
   </main>
 
   <%- include('../partials/footer') %>
@@ -1839,7 +1883,9 @@
           if (!fileId || !editingProductId) return;
           if (confirm('Delete this pattern file?')) {
             fetch('/admin/products/' + editingProductId + '/direct-file/' + fileId + '/delete', {
-              method: 'POST'
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ _csrf: document.querySelector('input[name="_csrf"]')?.value || '' })
             })
             .then(r => r.json())
             .then(res => {
@@ -1875,6 +1921,7 @@
         }
         const fd = new FormData();
         fd.append('file', file);
+        fd.append('stage', '1');
         fd.append('format', format);
         fd.append('purpose', purpose);
         fd.append('size', uploadSize || '');

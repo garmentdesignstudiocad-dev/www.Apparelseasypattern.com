@@ -208,7 +208,7 @@ module.exports=async({models,request,input,paymentOverrides})=>{
     console.log('PASS: admin page compatibility, fixed North/Mumbai routing, no courier dependency, ignored client charge/hub values, zero online shipping and address snapshot.');
     const editPage = await request('/admin/products/'+product._id+'/edit', undefined, 'admin');
     const editCsrf = editPage.html.match(/name="_csrf" value="([a-f0-9]+)"/)?.[1] || '';
-    const edit={_csrf:editCsrf,name:product.name,slug:product.slug,base_price:'60',additional_size_price:'55',physical_price:'65',trial_price:'1200',active:'on'};
+    const edit={_csrf:editCsrf,admin_action:'activate',name:product.name,slug:product.slug,base_price:'60',additional_size_price:'55',physical_price:'65',trial_price:'1200',active:'on'};
     assert.equal((await request('/admin/products/'+product._id+'/edit',edit,'admin',false)).status,302);
     const changed=await Product.findById(product._id);
     assert.deepEqual([changed.base_price,changed.additional_size_price,changed.physical_price,changed.trial_price],[60,55,65,1200]);

@@ -829,10 +829,17 @@ async function postCheckout(
       -----------------------------------------------------
       */
 
+      const serverBundleFormats = (item.printable_selected !== false && Array.isArray(item.selected_sizes) && item.selected_sizes.length)
+        ? await require('../services/digitalDeliveryService').availableBundleFormats(product, item.selected_sizes)
+        : [];
+      const orderItemFormats = serverBundleFormats.length > 0
+        ? serverBundleFormats
+        : (Array.isArray(item.selected_formats) ? [...new Set(item.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : []);
+
       orderItems.push({
         product_name: product.name,
         printable_selected: item.printable_selected !== false,
-        selected_formats: Array.isArray(item.selected_formats) ? [...new Set(item.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [],
+        selected_formats: orderItemFormats,
         selected_sizes: item.selected_sizes || [],
         physical_sizes: item.physical_sizes || [],
         additional_size_price: Number(product.additional_size_price || 0),
@@ -852,10 +859,8 @@ async function postCheckout(
               file_type: file.file_type,
 
               file_price:
-                Number(
-                  file.file_price || 0
-                ),
-              price_per_selected_size: file.price_per_selected_size === true,
+                require('../services/markerOptions').filePrice(product,selectedFiles,file),
+              price_per_selected_size: !require('../services/markerOptions').isMarker(file) && file.price_per_selected_size === true,
 
             })
           ),

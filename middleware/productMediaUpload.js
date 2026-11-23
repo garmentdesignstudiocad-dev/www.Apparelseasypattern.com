@@ -94,7 +94,7 @@ const upload = multer({
     if (!extensions.includes(extension)) return cb(new Error('File extension does not match its media type'));
 
     const isVideoField = file.fieldname === "product_video";
-    const isDocField = file.fieldname === "size_chart_pdf_file";
+    const isDocField = file.fieldname === "size_chart_pdf_file" || file.fieldname === "how_to_measure_pdf_file";
 
     if (isVideoField && config.kind !== "video") {
       return cb(new Error("Video field requires MP4 or WebM"));
@@ -118,6 +118,7 @@ const fields = upload.fields([
   { name: "sample_image", maxCount: 1 },
   { name: "product_video", maxCount: 1 },
   { name: "size_chart_pdf_file", maxCount: 1 },
+  { name: "how_to_measure_pdf_file", maxCount: 1 },
   { name: "size_chart_image_file", maxCount: 1 }
 ]);
 

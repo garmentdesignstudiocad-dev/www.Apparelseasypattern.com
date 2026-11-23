@@ -36,22 +36,73 @@ async function validateSelection(product,selectedFiles,item) {
   if(Number(item.quantity ?? 1)<=0)return '';
   if(item.printable_selected!==false){
     const sizes=Array.isArray(item.selected_sizes)?item.selected_sizes:[];
-    if(sizes.length){
+    if(sizes.length && (product.digital_file_map?.length || !product.digital_file)){
       const formats=Array.isArray(item.selected_formats)?item.selected_formats:[];
       if(!formats.length || formats.some(format=>!['dxf','hpgl','plt','pdf'].includes(format)))return unavailable;
-      for(const format of new Set(formats))for(const size of new Set(sizes)){
-        const matches=(product.digital_file_map || []).filter(entry=>entry.format===format && entry.size===size);
-        if(matches.length!==1 || !['.'+format,'.zip'].includes(path.extname(matches[0].file).toLowerCase()) || !await filePath(matches[0].file))return unavailable;
+      for(const size of new Set(sizes)){
+        const sizeMatches=(product.digital_file_map || []).filter(entry=>formats.includes(entry.format) && entry.size===size);
+        if(!sizeMatches.length)return unavailable;
       }
-    }else{
-      if(typeof product.digital_file!=='string')return unavailable;
+      for(const format of new Set(formats)){
+        const formatMatches=(product.digital_file_map || []).filter(entry=>entry.format===format && sizes.includes(entry.size));
+        if(!formatMatches.length)return unavailable;
+        for(const entry of formatMatches){
+          if(!['.'+format,'.zip'].includes(path.extname(entry.file).toLowerCase()) || !await filePath(entry.file))return unavailable;
+        }
+      }
+    }else if(typeof product.digital_file==='string'){
       const ext=path.extname(product.digital_file).slice(1).toLowerCase();
       if(item.selected_formats?.length && (item.selected_formats.length!==1 || item.selected_formats[0]!==ext))return unavailable;
       if(!await filePath(product.digital_file))return unavailable;
+    }else if(product.digital_file_map?.length || sizes.length || item.selected_formats?.length){
+      return unavailable;
     }
   }else if(!selectedFiles.length)return unavailable;
   for(const file of selectedFiles)if(!file.digital_file || !await filePath(file.digital_file))return unavailable;
   return '';
+}
+async function availableBundleFormats(product, selectedSizes) {
+  if (!product || !Array.isArray(selectedSizes) || !selectedSizes.length) return [];
+  const available = [];
+  for (const format of ['dxf', 'hpgl', 'plt', 'pdf']) {
+    let hasFormat = false;
+    for (const size of selectedSizes) {
+      const match = (product.digital_file_map || []).filter(entry => entry.format === format && entry.size === size);
+      if (match.length === 1 && ['.' + format, '.zip'].includes(path.extname(match[0].file).toLowerCase())) {
+        hasFormat = true;
+        break;
+      }
+    }
+    if (hasFormat) {
+      let filesOk = true;
+      for (const size of selectedSizes) {
+        const matches = (product.digital_file_map || []).filter(entry => entry.format === format && entry.size === size);
+        for (const m of matches) {
+          if (!await filePath(m.file)) { filesOk = false; break; }
+        }
+        if (!filesOk) break;
+      }
+      if (filesOk) available.push(format);
+    }
+  }
+  return available;
+}
+
+// Expose only verified format/size availability; never expose private filenames.
+async function purchaseAvailability(product, files) {
+  const formats = {};
+  for (const format of ['dxf','hpgl','plt','pdf']) {
+    formats[format] = [];
+    for (const size of product.available_sizes || []) {
+      if (!await validateSelection(product, [], {quantity:1, selected_formats:[format], selected_sizes:[size]})) formats[format].push(size);
+    }
+  }
+  const readyFiles = [];
+  for (const file of files) if (file.active !== false && await filePath(file.digital_file)) {
+    const {digital_file, ...publicFile} = file;
+    readyFiles.push(publicFile);
+  }
+  return {formats, files:readyFiles};
 }
 async function ensure(id){
   let order=await Order.findById(id).select('+download_token +download_assets').lean();
@@ -68,11 +119,15 @@ async function ensure(id){
     const product=await require('../models/mongo/Product').findById(item.product_id).select('+digital_file +digital_file_map').lean();
     const files=[];
     if(item.printable_selected!==false && item.selected_sizes?.length){
-      if(!item.selected_formats?.length)return null;
-      for(const format of [...new Set(item.selected_formats)])for(const size of [...new Set(item.selected_sizes)]){
-        const match=(product?.digital_file_map || []).filter(entry=>entry.format===format && entry.size===size);
-        if(match.length!==1 || !['.'+format,'.zip'].includes(path.extname(match[0].file)))return null;
-        files.push({name:match[0].original_name || product.name+' - '+format.toUpperCase()+' - '+size,file:match[0].file});
+      for(const size of [...new Set(item.selected_sizes)]){
+        const sizeFormats = await availableBundleFormats(product, [size]);
+        const formatsToDeliver = item.selected_formats?.length ? item.selected_formats.filter(f => sizeFormats.includes(f)) : sizeFormats;
+        for(const format of formatsToDeliver){
+          const match=(product?.digital_file_map || []).filter(entry=>entry.format===format && entry.size===size);
+          if(match.length===1 && ['.'+format,'.zip'].includes(path.extname(match[0].file).toLowerCase())){
+            files.push({name:match[0].original_name || product.name+' - '+format.toUpperCase()+' - '+size,file:match[0].file});
+          }
+        }
       }
     }else if(item.printable_selected!==false){
       // Legacy unsized purchases retain their explicitly configured base file.
@@ -118,4 +173,4 @@ async function manualGrant(id, customAssets) {
   return reissue(id);
 }
 
-module.exports={uploadSizeFile,validateSelection,ensure,reconcile,reissue,manualGrant,root,privateRoot,filePath,physical};
+module.exports={purchaseAvailability,availableBundleFormats,uploadSizeFile,validateSelection,ensure,reconcile,reissue,manualGrant,root,privateRoot,filePath,physical};

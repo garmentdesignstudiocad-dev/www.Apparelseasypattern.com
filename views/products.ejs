@@ -25,6 +25,7 @@
     }
     .catalog-breadcrumb {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
       font-size: 12.5px;
@@ -610,11 +611,15 @@
       <a href="/products">Pattern Library</a>
       <% if (currentCategory && currentCategory !== 'all') { %>
         <span>/</span>
-        <span style="color:#0B192C;font-weight:700;text-transform:capitalize;"><%= currentCategory.replaceAll('-', ' ') %></span>
+        <a href="/products?category=<%= currentCategory %>" style="color:#0B192C;font-weight:700;text-transform:capitalize;"><%= currentCategory === 'men' ? "Men's" : (currentCategory === 'women' ? "Women's" : (currentCategory === 'kids' ? "Kid's" : currentCategory.replaceAll('-', ' '))) %></a>
       <% } %>
       <% if (currentType) { %>
         <span>/</span>
-        <span style="color:#D97706;font-weight:700;text-transform:capitalize;"><%= currentType.replaceAll('-', ' ') %></span>
+        <a href="/products?category=<%= currentCategory %>&type=<%= currentType %>" style="color:#D97706;font-weight:700;text-transform:capitalize;"><%= currentType.replaceAll('-', ' ') %></a>
+      <% } %>
+      <% if (currentFit) { %>
+        <span>/</span>
+        <span style="color:#0B192C;font-weight:700;text-transform:capitalize;"><%= currentFit.replaceAll('-', ' ') %></span>
       <% } %>
     </div>
 
@@ -630,6 +635,156 @@
         <%= siteSettings?.products_description || 'Explore curated pattern blocks engineered for production sampling across Men, Women, and Kids. Choose digital CAD master files (DXF, PDF, HPGL) or physical printed patterns.' %>
       </p>
     </section>
+
+    <!-- =========================================================================
+         SEQUENTIAL CUSTOMER JOURNEY (Owner Flow: Home -> Cat -> Garment -> Fit -> Product)
+         ========================================================================= -->
+    <div class="owner-journey-flow" id="customerJourneyTracker" style="background:#FFFFFF;border:1.5px solid #CBD5E1;border-radius:16px;padding:22px 24px;margin-bottom:32px;box-shadow:0 4px 18px rgba(11,25,44,0.05);">
+      <!-- Stage Status Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #F1F5F9;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;padding:3px 10px;background:#0B192C;color:#FFFFFF;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">Owner Flow</span>
+          <span style="font-size:13px;font-weight:700;color:#0B192C;">Sequential Selection Journey</span>
+        </div>
+        <div style="font-size:12.5px;font-weight:700;">
+          <% if (!currentCategory || currentCategory === 'all') { %>
+            <span style="background:#FEF3C7;color:#92400E;padding:4px 12px;border-radius:12px;border:1px solid #FDE68A;">Stage 1 of 4 &bull; Select Category</span>
+          <% } else if (!currentType) { %>
+            <span style="background:#FEF3C7;color:#92400E;padding:4px 12px;border-radius:12px;border:1px solid #FDE68A;">Stage 2 of 4 &bull; Select Garment Type</span>
+          <% } else if (!currentFit) { %>
+            <span style="background:#FEF3C7;color:#92400E;padding:4px 12px;border-radius:12px;border:1px solid #FDE68A;">Stage 3 of 4 &bull; Select Fit Block</span>
+          <% } else { %>
+            <span style="background:#D1FAE5;color:#065F46;padding:4px 12px;border-radius:12px;border:1px solid #A7F3D0;">Stage 4 of 4 &bull; Browse Matching Patterns</span>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- 4-Stage Stepper Progress Indicator -->
+      <div class="journey-stepper-cards" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:22px;">
+        <!-- Step 1 Card: Category -->
+        <a href="/products" style="text-decoration:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid <%= currentCategory && currentCategory !== 'all' ? '#10B981' : '#D97706' %>;background:<%= currentCategory && currentCategory !== 'all' ? '#ECFDF5' : '#FFFBEB' %>;transition:all 0.2s ease;">
+          <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:<%= currentCategory && currentCategory !== 'all' ? '#10B981' : '#D97706' %>;color:#FFFFFF;"><%= currentCategory && currentCategory !== 'all' ? '&#10003;' : '1' %></span>
+          <div>
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#64748B;">Stage 1: Category</div>
+            <div style="font-size:13.5px;font-weight:700;color:#0B192C;"><%= currentCategory === 'men' ? "Men's" : (currentCategory === 'women' ? "Women's" : (currentCategory === 'kids' ? "Kid's" : 'All Categories')) %></div>
+          </div>
+        </a>
+
+        <!-- Step 2 Card: Garment Type -->
+        <a href="<%= currentCategory ? '/products?category=' + currentCategory : '/products?category=men' %>" style="text-decoration:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid <%= currentType ? '#10B981' : (currentCategory ? '#D97706' : '#E2E8F0') %>;background:<%= currentType ? '#ECFDF5' : (currentCategory ? '#FFFBEB' : '#F8FAFC') %>;transition:all 0.2s ease;">
+          <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:<%= currentType ? '#10B981' : (currentCategory ? '#D97706' : '#CBD5E1') %>;color:#FFFFFF;"><%= currentType ? '&#10003;' : '2' %></span>
+          <div>
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#64748B;">Stage 2: Garment Type</div>
+            <div style="font-size:13.5px;font-weight:700;color:#0B192C;"><%= currentType ? currentType.charAt(0).toUpperCase() + currentType.slice(1).replace('-', ' ') : 'Select Garment' %></div>
+          </div>
+        </a>
+
+        <!-- Step 3 Card: Fit -->
+        <a href="<%= currentCategory && currentType ? '/products?category=' + currentCategory + '&type=' + currentType : '/products?category=men&type=shirt' %>" style="text-decoration:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid <%= currentFit ? '#10B981' : (currentType ? '#D97706' : '#E2E8F0') %>;background:<%= currentFit ? '#ECFDF5' : (currentType ? '#FFFBEB' : '#F8FAFC') %>;transition:all 0.2s ease;">
+          <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:<%= currentFit ? '#10B981' : (currentType ? '#D97706' : '#CBD5E1') %>;color:#FFFFFF;"><%= currentFit ? '&#10003;' : '3' %></span>
+          <div>
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#64748B;">Stage 3: Fit</div>
+            <div style="font-size:13.5px;font-weight:700;color:#0B192C;"><%= currentFit ? currentFit.charAt(0).toUpperCase() + currentFit.slice(1).replace('-', ' ') : 'Select Fit' %></div>
+          </div>
+        </a>
+
+        <!-- Step 4 Card: Product -->
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid <%= currentFit ? '#D97706' : '#E2E8F0' %>;background:<%= currentFit ? '#FFFBEB' : '#F8FAFC' %>;">
+          <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:<%= currentFit ? '#D97706' : '#CBD5E1' %>;color:#FFFFFF;">4</span>
+          <div>
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#64748B;">Stage 4: Pattern Block</div>
+            <div style="font-size:13.5px;font-weight:700;color:#0B192C;"><%= catalogProducts.length %> Available Block<%= catalogProducts.length === 1 ? '' : 's' %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 1 Selector: Categories -->
+      <div style="margin-bottom:16px;">
+        <span style="font-size:11.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748B;display:block;margin-bottom:8px;">1. Choose Category:</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <a href="/products?category=men" style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentCategory === 'men' ? 'background:#0B192C;color:#FFFFFF;box-shadow:0 2px 6px rgba(11,25,44,0.2);' : 'background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;' %>">
+            &#128084; Men's
+          </a>
+          <a href="/products?category=women" style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentCategory === 'women' ? 'background:#0B192C;color:#FFFFFF;box-shadow:0 2px 6px rgba(11,25,44,0.2);' : 'background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;' %>">
+            &#128087; Women's
+          </a>
+          <a href="/products?category=kids" style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentCategory === 'kids' ? 'background:#0B192C;color:#FFFFFF;box-shadow:0 2px 6px rgba(11,25,44,0.2);' : 'background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;' %>">
+            &#128085; Kid's
+          </a>
+          <a href="/products" style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= !currentCategory || currentCategory === 'all' ? 'background:#0B192C;color:#FFFFFF;' : 'background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;' %>">
+            All Collections
+          </a>
+        </div>
+      </div>
+
+      <!-- Stage 2 Selector: Garment Types (Slide 7: Shirt, Shorts, Casual Pant, Denim, Innerwear, Jackets) -->
+      <%
+        const activeDept = currentCategory || 'men';
+        const mensGarmentTypes = [
+          { name: 'Shirt', slug: 'shirt' },
+          { name: 'Shorts', slug: 'shorts' },
+          { name: 'Casual Pant', slug: 'casual-pant' },
+          { name: 'Denim', slug: 'denim' },
+          { name: 'Innerwear', slug: 'innerwear' },
+          { name: 'Jackets', slug: 'jackets' }
+        ];
+        const womensGarmentTypes = [
+          { name: 'Dresses', slug: 'dress' },
+          { name: 'Tops', slug: 'top' },
+          { name: 'Kurtas', slug: 'kurta' },
+          { name: 'Blouses', slug: 'blouse' },
+          { name: 'Bottoms', slug: 'bottoms' }
+        ];
+        const kidsGarmentTypes = [
+          { name: 'Boys', slug: 'boys' },
+          { name: 'Girls', slug: 'girls' },
+          { name: 'Tops', slug: 'tops' },
+          { name: 'Bottoms', slug: 'bottoms' }
+        ];
+        const displayedGarments = activeDept === 'women' ? womensGarmentTypes : (activeDept === 'kids' ? kidsGarmentTypes : mensGarmentTypes);
+      %>
+      <div style="margin-bottom:16px;padding-top:10px;border-top:1px dashed #E2E8F0;">
+        <span style="font-size:11.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748B;display:block;margin-bottom:8px;">
+          2. Choose Garment Type (<%= activeDept === 'women' ? "Women's" : (activeDept === 'kids' ? "Kid's" : "Men's") %>):
+        </span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <a href="/products?category=<%= activeDept %>" style="padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:700;text-decoration:none;<%= !currentType ? 'background:#D97706;color:#FFFFFF;' : 'background:#F8FAFC;color:#475569;border:1px solid #CBD5E1;' %>">
+            All <%= activeDept.charAt(0).toUpperCase() + activeDept.slice(1) %> Garments
+          </a>
+          <% displayedGarments.forEach(g => { %>
+            <a href="/products?category=<%= activeDept %>&type=<%= g.slug %>" style="padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= currentType === g.slug ? 'background:#0B192C;color:#FFFFFF;box-shadow:0 2px 4px rgba(11,25,44,0.15);' : 'background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;' %>">
+              <%= g.name %>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Stage 3 Selector: Fit Selection (Slide 8: Slim, Relaxed, Resort, Oversized) -->
+      <%
+        const ownerFits = [
+          { name: 'Slim Fit', slug: 'slim' },
+          { name: 'Relaxed Fit', slug: 'relaxed' },
+          { name: 'Resort Fit', slug: 'resort' },
+          { name: 'Oversized', slug: 'oversized' }
+        ];
+        const effectiveType = currentType || 'shirt';
+      %>
+      <div style="padding-top:10px;border-top:1px dashed #E2E8F0;">
+        <span style="font-size:11.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748B;display:block;margin-bottom:8px;">
+          3. Choose Fit Block (<%= effectiveType.charAt(0).toUpperCase() + effectiveType.slice(1) %>):
+        </span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <a href="/products?category=<%= activeDept %>&type=<%= effectiveType %>" style="padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:700;text-decoration:none;<%= !currentFit ? 'background:#D97706;color:#FFFFFF;' : 'background:#F8FAFC;color:#475569;border:1px solid #CBD5E1;' %>">
+            All Fits
+          </a>
+          <% ownerFits.forEach(f => { %>
+            <a href="/products?category=<%= activeDept %>&type=<%= effectiveType %>&fit=<%= f.slug %>" style="padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:700;text-decoration:none;transition:all 0.15s ease;<%= (currentFit === f.slug || currentFit === f.slug + '-fit') ? 'background:#0B192C;color:#FFFFFF;box-shadow:0 2px 4px rgba(11,25,44,0.15);' : 'background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;' %>">
+              <%= f.name %>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
 
     <!-- DEPARTMENT NAVIGATION TABS -->
     <nav class="dept-nav-tabs" aria-label="Department Categories">
@@ -685,8 +840,8 @@
           </option>
           <% dbTypes.forEach(t => { %>
             <option
-              value="<%= filterLink({ type: t.toLowerCase() }) %>"
-              <%= currentType === t.toLowerCase() ? 'selected' : '' %>
+              value="<%= filterLink({ type: t.toLowerCase().replace(/\s+/g, '-'), fit: '' }) %>"
+              <%= currentType === t.toLowerCase().replace(/\s+/g, '-') ? 'selected' : '' %>
             >
               <%= t.charAt(0).toUpperCase() + t.slice(1) %>
             </option>

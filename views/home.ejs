@@ -67,8 +67,8 @@
                   <%= siteSettings?.home_hero_primary_button || 'Browse Collection' %> &rarr;
                 </a>
               <% } %>
-              <% if (canVisit('/classes/enquiry')) { %>
-                <a class="fashion-btn fashion-btn--outline" href="/classes/enquiry">
+              <% if (canVisit('/custom-block')) { %>
+                <a class="fashion-btn fashion-btn--outline" href="/custom-block" id="btnRequestCustomBlock">
                   <%= siteSettings?.home_hero_secondary_button || 'Request a Custom Block' %>
                 </a>
               <% } %>
@@ -94,80 +94,84 @@
 
           </div>
 
-          <!-- Right Column: Mannequin + 3D Illuminated Basic Shirt Block Display -->
-          <div class="hero-showcase-column">
-
-            <div class="hero-3d-stage">
-
-              <div class="hero-3d-frame" id="shirt-showcase-frame">
-
-                <div class="frame-header">
-                  <span class="frame-badge">
-                    <span class="badge-dot"></span>
-                    <%= siteSettings?.home_floating_label || 'Basic Shirt Block · Block Library · Digital Files' %>
-                  </span>
-                  <span class="frame-tag">Promotional CAD Preview</span>
-                </div>
-
-                <div class="frame-title-bar">
-                  <h3 class="frame-title">
-                    <%= siteSettings?.home_floating_text || 'Basic Shirt Block' %>
-                  </h3>
-                  <span class="frame-fit-label">Industrial Slim Fit · Men</span>
-                </div>
-
-                <!-- Showcase Media Canvas with Watermark Protection -->
-                <div class="frame-canvas preview-watermark" data-protected-content data-watermark="AEP · PROMOTIONAL PREVIEW" data-vector-blueprint="/images/basic-shirt-pattern.svg">
-                  <img
-                    class="frame-illustration"
-                    src="<%= siteSettings?.home_showcase_image_path || '/images/reference/hero-mannequin-cad.jpg' %>"
-                    data-cad-vector="/images/basic-shirt-pattern.svg"
-                    alt="<%= siteSettings?.home_image_alt || 'Basic Shirt Block Technical Illustration and Mannequin' %>"
-                    width="470"
-                    height="270"
-                    fetchpriority="high"
-                  >
-                  <div class="canvas-3d-glow"></div>
-                </div>
-
-                <div class="frame-specs-grid">
-                  <div class="spec-pill">
-                    <span class="spec-label">Components</span>
-                    <strong class="spec-val">10-Piece System</strong>
-                  </div>
-                  <div class="spec-pill">
-                    <span class="spec-label">File Formats</span>
-                    <strong class="spec-val">DXF · PDF · HPGL</strong>
-                  </div>
-                  <div class="spec-pill">
-                    <span class="spec-label">Grading</span>
-                    <strong class="spec-val">Pre-Calibrated</strong>
-                  </div>
-                </div>
-
-                <p class="frame-caption">
-                  Promotional preview only. Illustration only. Confirm sizes and file format before ordering. Full CAD master files (DXF, PDF, HPGL) delivered upon order.
-                </p>
-
-                <div class="frame-actions">
-                  <% if (canVisit('/products')) { %>
-                    <a class="fashion-btn fashion-btn--gold" href="/products?category=men">
-                      Explore Menswear Blocks &rarr;
-                    </a>
-                  <% } %>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
         </div>
 
       </div>
 
     </section>
+
+    <!-- =========================================================================
+         01B: TRENDING FITS & NEW LAUNCHES (PowerPoint Slides 3 & 4)
+         ========================================================================= -->
+    <% if (canVisit('/products')) { %>
+    <section class="home-trending-section" id="trending-fits" aria-labelledby="trending-title" style="padding:48px 0;background:#F8FAFC;border-bottom:1px solid #E2E8F0;">
+      <div class="container">
+        <div class="section-header text-center" style="margin-bottom:32px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#D97706;margin-bottom:8px;">
+            Updated for every category &bull; Global Fashion Trends
+          </div>
+          <h2 id="trending-title" class="section-title section-title--flanked" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.8rem, 2.8vw, 2.4rem);color:#0B192C;">
+            <span class="title-line"></span>
+            <span>Trending Fits &amp; New Launches</span>
+            <span class="title-line"></span>
+          </h2>
+          <p class="section-lead" style="max-width:700px;margin:0 auto;color:#475569;font-size:1rem;">
+            New fits and new styling added weekly across Men's, Women's, and Kid's fit blocks based on the global fashion market.
+          </p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(310px, 1fr));gap:24px;">
+          <!-- Men's Trending Card -->
+          <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;padding:24px;box-shadow:0 4px 14px rgba(11,25,44,0.04);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h3 style="margin:0;font-size:1.25rem;font-weight:700;color:#0B192C;font-family:'Playfair Display',serif;">Men's Fits</h3>
+              <span style="font-size:11px;font-weight:800;color:#D97706;background:#FFFBEB;padding:4px 8px;border-radius:6px;border:1px solid #FDE68A;">NEW THIS WEEK</span>
+            </div>
+            <ul style="list-style:none;padding:0;margin:0 0 18px;font-size:13.5px;color:#334155;line-height:1.7;">
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Fit:</strong> Resort &amp; Relaxed Fit Blocks</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Silhouette:</strong> Camp Collar Shirt &amp; Chino Shorts</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>New Launch:</strong> Oversized Casual Pant Block</li>
+            </ul>
+            <a href="/products?category=men" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B192C;text-decoration:none;">
+              Explore Men's Fits &rarr;
+            </a>
+          </div>
+
+          <!-- Women's Trending Card -->
+          <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;padding:24px;box-shadow:0 4px 14px rgba(11,25,44,0.04);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h3 style="margin:0;font-size:1.25rem;font-weight:700;color:#0B192C;font-family:'Playfair Display',serif;">Women's Fits</h3>
+              <span style="font-size:11px;font-weight:800;color:#D97706;background:#FFFBEB;padding:4px 8px;border-radius:6px;border:1px solid #FDE68A;">NEW THIS WEEK</span>
+            </div>
+            <ul style="list-style:none;padding:0;margin:0 0 18px;font-size:13.5px;color:#334155;line-height:1.7;">
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Fit:</strong> Relaxed Comfort &amp; Resort Shapes</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Silhouette:</strong> Boxy Tops &amp; Elastic Pants</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>New Launch:</strong> Contemporary Kurta &amp; Dress Blocks</li>
+            </ul>
+            <a href="/products?category=women" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B192C;text-decoration:none;">
+              Explore Women's Fits &rarr;
+            </a>
+          </div>
+
+          <!-- Kid's Trending Card -->
+          <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;padding:24px;box-shadow:0 4px 14px rgba(11,25,44,0.04);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h3 style="margin:0;font-size:1.25rem;font-weight:700;color:#0B192C;font-family:'Playfair Display',serif;">Kid's Fits</h3>
+              <span style="font-size:11px;font-weight:800;color:#D97706;background:#FFFBEB;padding:4px 8px;border-radius:6px;border:1px solid #FDE68A;">NEW THIS WEEK</span>
+            </div>
+            <ul style="list-style:none;padding:0;margin:0 0 18px;font-size:13.5px;color:#334155;line-height:1.7;">
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Fit:</strong> Easy-Movement Regular &amp; Comfort Fits</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>Trending Silhouette:</strong> Elastic Waist Shorts &amp; Play Shirts</li>
+              <li style="display:flex;align-items:center;gap:8px;"><span style="color:#D97706;font-weight:700;">&bull;</span> <strong>New Launch:</strong> Age-Graded Essential Blocks</li>
+            </ul>
+            <a href="/products?category=kids" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B192C;text-decoration:none;">
+              Explore Kid's Fits &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <% } %>
 
     <!-- =========================================================================
          02: ONE LIBRARY, THREE WARDROBES (Section 2 in Reference Image 1)
@@ -423,6 +427,32 @@
               <span class="benefit-ref-tag">04 Quicker Approvals</span>
               <p class="benefit-ref-text">
                 <%= siteSettings?.home_card_4_description || 'Fewer revision rounds and lower development costs.' %>
+              </p>
+            </div>
+          </article>
+
+          <article class="benefit-ref-card">
+            <div class="benefit-icon-box" aria-hidden="true">
+              <!-- Box Package Icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <div class="benefit-ref-body">
+              <span class="benefit-ref-tag">05 Complete Package</span>
+              <p class="benefit-ref-text">
+                Pattern, spec sheet, tech pack, mini marker, and trial fit sample in one standardized workflow.
+              </p>
+            </div>
+          </article>
+
+          <article class="benefit-ref-card">
+            <div class="benefit-icon-box" aria-hidden="true">
+              <!-- Checkmark Target Icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div class="benefit-ref-body">
+              <span class="benefit-ref-tag">06 Right First Time</span>
+              <p class="benefit-ref-text">
+                Pre-calibrated industrial grading means fewer fit corrections and accelerated production readiness.
               </p>
             </div>
           </article>

@@ -4,7 +4,7 @@ const ProductFileSchema = new Schema({
   product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   import_source_key: { type: String, default: undefined },
   upload_slot:{type:String,enum:[
-    'techpack','measurement','marker',
+    'techpack','measurement','marker','basic_pattern_pdf',
     'dxf_pdf','dxf_zip',
     'hpgl_pdf','hpgl_zip',
     'plt_pdf','plt_zip',
@@ -14,6 +14,8 @@ const ProductFileSchema = new Schema({
     'basic_measurement_pdf','basic_measurement_csv','basic_measurement_zip',
     'marker_pdf','marker_zip',
   ],default:undefined},
+  free_basic_approved: { type: Boolean, default: false },
+  free_basic_size: { type: String, default: '' },
   file_name: { type: String, required: true },
   watermark_pdf:{type:Boolean,default:false},
   purpose: {type:String,enum:['other','dxf','tech_pack','specs'],default:'other'},

@@ -19,6 +19,13 @@ const file = ext => ({
   filename:
     "12345678-1234-1234-1234-123456789abc." + ext
 });
+function bounded(promise, milliseconds, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 
 test("Saving without uploads preserves all media", () => {
   const result = collectMediaUpdate(existing);
@@ -180,13 +187,13 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
     SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',RAZORPAY_KEY_ID:'',RAZORPAY_KEY_SECRET:'',DB_HOST:'127.0.0.1',DB_PORT:'1'});
   delete require.cache[require.resolve('../middleware/productMediaUpload')];
   delete require.cache[require.resolve('../services/productMediaIntegration')];
-  const mongo = await MongoMemoryServer.create({binary:{version:'7.0.14'}});
+    const mongo = await bounded(MongoMemoryServer.create({binary:{version:'7.0.14'}}),8000,'MongoMemoryServer startup timed out after 8 seconds');
   let server;
   const root = path.resolve(__dirname,'../private/verification/isolated-media',id);
   process.env.PATTERN_FILES_DIR = path.join(root, 'patterns');
   try {
     process.env.MONGODB_URI = mongo.getUri();
-    await mongoose.connect(mongo.getUri());
+    await mongoose.connect(mongo.getUri(), {serverSelectionTimeoutMS:8000});
     const Product = require('../models/mongo/Product');
     await Product.init();
     server = require('../server').listen(0,'127.0.0.1');
@@ -194,7 +201,12 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
     const origin = 'http://127.0.0.1:'+server.address().port;
     let cookie = '';
     async function request(url, body) {
-      const response = await fetch(origin+url,{method:body?'POST':'GET',body,redirect:'manual',headers:cookie?{cookie}:{}});
+      let response;
+      try {
+        response = await fetch(origin+url,{method:body?'POST':'GET',body,redirect:'manual',headers:cookie?{cookie}:{},signal:AbortSignal.timeout(8000)});
+      } catch (error) {
+        throw new Error(`Isolated Admin request timed out or failed: ${url} (${error.name})`,{cause:error});
+      }
       const setCookie = response.headers.get('set-cookie');
       if(setCookie)cookie=setCookie.split(';')[0];
       return response;
@@ -208,7 +220,7 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
       for(const [key,value] of Object.entries({_csrf:csrf,name:'Photo fixture',slug,admin_action:'activate',base_price:'123'}))data.set(key,value);
       return data;
     }
-    function photo(data,field,name='garment.png',bytes=png,type='image/png') {data.append(field,new Blob([bytes],{type}),name);}
+    function photo(data,field,name='garment.png',bytes=Buffer.concat([png,Buffer.from(name)]),type='image/png') {data.append(field,new Blob([bytes],{type}),name);}
     let data=form();photo(data,'main_image');photo(data,'gallery_images','back.png');photo(data,'gallery_images','side.png');
     assert.equal((await request('/admin/products',data)).status,302);
     let product=await Product.findOne({slug:'photo-fixture'}).lean();
@@ -225,6 +237,67 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
     product=await Product.findById(product._id).lean();
     assert.equal(product.images[1],original[2]);assert.equal(product.images.length,3);
     const saved=[...product.images];
+    data=form();photo(data,'gallery_images','renamed.png',Buffer.concat([png,Buffer.from('side.png')]));
+    assert.equal((await request(edit,data)).status,302);
+    assert.deepEqual((await Product.findById(product._id).lean()).images,saved);
+    data=form();data.set('admin_action','save');data.set('remove_main_image','on');data.set('remove_gallery_image','0');
+    assert.equal((await request(edit,data)).status,302);
+    const mediaDraft=await Product.findById(product._id).select('+editor_draft').lean();
+    assert.deepEqual(mediaDraft.images,saved);
+    assert.deepEqual(mediaDraft.editor_draft.images,['',saved[2]]);
+    assert((await (await request(edit)).text()).includes('data-saved=""'));
+    assert.equal((await request(edit,form())).status,302);
+    assert.deepEqual((await Product.findById(product._id).lean()).images,['',saved[2]]);
+    assert.equal((await request(saved[0])).status,200,'Removed files remain available to shared references');
+    const unrelated = await Product.create({name:'Unchanged photo fixture',slug:'unchanged-photo-fixture',images:['https://example.com/other-product.jpg'],finished_garment_images:['https://example.com/other-product.jpg']});
+    const unrelatedImages = (await Product.findById(unrelated._id).lean()).images;
+    data=form();data.set('admin_action','save');photo(data,'main_image','persistence-main.png');
+    assert.equal((await request(edit,data)).status,302,'Save main photo draft');
+    let draftState=await Product.findById(product._id).select('+editor_draft').lean();
+    const mainPhoto=draftState.editor_draft.images[0];
+    assert.equal(draftState.images[0],'','Draft save must leave published main photo unchanged');
+    assert(mainPhoto && mainPhoto!==draftState.images[0]);
+    let customerPage=await (await request('/product/photo-fixture')).text();
+    assert(!customerPage.includes(mainPhoto),'Customer page must not show an unpublished main photo');
+    assert.equal((await request(edit,form())).status,302,'Publish main photo draft');
+    let published=await Product.findById(product._id).lean();
+    assert.equal(published.images[0],mainPhoto);
+    customerPage=await (await request('/product/photo-fixture')).text();
+    assert(customerPage.includes(mainPhoto),'Customer page must show published main photo');
+    customerPage=await (await request('/product/photo-fixture')).text();
+    assert(customerPage.includes(mainPhoto),'Refreshed customer page must retain published main photo');
+    data=form();data.set('admin_action','save');data.set('remove_main_image','on');
+    assert.equal((await request(edit,data)).status,302,'Save main photo deletion draft');
+    assert.equal((await Product.findById(product._id).lean()).images[0],mainPhoto,'Draft deletion must leave published main photo unchanged');
+    assert((await (await request('/product/photo-fixture')).text()).includes(mainPhoto));
+    assert.equal((await request(edit,form())).status,302,'Publish main photo deletion');
+    published=await Product.findById(product._id).lean();
+    assert.equal(published.images[0],'');
+    customerPage=await (await request('/product/photo-fixture')).text();
+    assert(!customerPage.includes(mainPhoto),'Deleted main photo must be absent after publish and refresh');
+    data=form();data.set('admin_action','save');photo(data,'gallery_images','persistence-gallery.png');
+    assert.equal((await request(edit,data)).status,302,'Save gallery photo draft');
+    draftState=await Product.findById(product._id).select('+editor_draft').lean();
+    const galleryPhoto=draftState.editor_draft.images.at(-1);
+    assert(!draftState.images.includes(galleryPhoto),'Draft save must leave published gallery unchanged');
+    assert.equal((await request(edit,form())).status,302,'Publish gallery photo draft');
+    published=await Product.findById(product._id).lean();
+    assert(published.images.includes(galleryPhoto));
+    customerPage=await (await request('/product/photo-fixture')).text();
+    assert(customerPage.includes(galleryPhoto),'Customer page must show published gallery photo');
+    const galleryIndex=published.images.indexOf(galleryPhoto)-1;
+    data=form();data.set('admin_action','save');data.set('remove_gallery_image',String(galleryIndex));
+    assert.equal((await request(edit,data)).status,302,'Save gallery deletion draft');
+    assert((await Product.findById(product._id).lean()).images.includes(galleryPhoto),'Draft deletion must leave published gallery unchanged');
+    assert((await (await request('/product/photo-fixture')).text()).includes(galleryPhoto));
+    assert.equal((await request(edit,form())).status,302,'Publish gallery deletion');
+    published=await Product.findById(product._id).lean();
+    assert(!published.images.includes(galleryPhoto));
+    customerPage=await (await request('/product/photo-fixture')).text();
+    assert(!customerPage.includes(galleryPhoto),'Deleted gallery photo must be absent after publish and refresh');
+    assert.deepEqual(published.images,['',saved[2]],'Other photos on this product must remain unchanged');
+    assert.deepEqual((await Product.findById(unrelated._id).lean()).images,unrelatedImages,'Other product media must remain unchanged');
+    await Product.updateOne({_id:product._id},{$set:{images:saved}});
     const ProductFile = require('../models/mongo/ProductFile');
     await Product.updateOne({_id:product._id},{$set:{available_sizes:['M']}});
     const uploadDraft = async (format,purpose,size='') => {
@@ -326,4 +399,15 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
     assert(root.startsWith(parent+path.sep));
     await fs.rm(root,{recursive:true,force:true});
   }
+});
+
+test('Main removal keeps the gallery position across subsequent saves', () => {
+  const removed = collectMediaUpdate(existing, {remove_main_image:'on'});
+  assert.deepEqual(removed.images, ['',existing.images[1]]);
+  assert.deepEqual(collectMediaUpdate(removed).images,removed.images);
+  assert.deepEqual(collectMediaUpdate(removed,{remove_gallery_image:'0'}).images,[]);
+});
+test('Duplicate HTTPS links keep the first occurrence and gallery order', () => {
+  const result=collectMediaUpdate(existing,{gallery_image_links:existing.images.join('\n')+'\nhttps://example.com/new.png\nhttps://example.com/new.png'});
+  assert.deepEqual(result.images,[...existing.images,'https://example.com/new.png']);
 });

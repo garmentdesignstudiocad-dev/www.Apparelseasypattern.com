@@ -183,23 +183,121 @@ async function run(){
   // Execute the actual rendered marker handler with a small DOM fixture, then
   // send its real payload through HTTP/MongoDB and the existing mocked SMTP.
   const vm=require('node:vm'),Product=require('../models/mongo/Product');
-  const markerProduct=await Product.create({name:'Marker `shirt` ${notCode}',slug:'marker-enquiry-fixture',active:true,status:'active',base_price:321,available_sizes:['M','L'],size_prices:[{size:'M',price:321},{size:'L',price:432}],pattern_options:{printable:true,physical:true},physical_price:50});
+  const markerProduct=await Product.create({name:'Marker `shirt` ${notCode}',slug:'marker-enquiry-fixture',stripes_marker_price:40,checks_marker_price:60,custom_marker_price:80,active:true,status:'active',base_price:321,available_sizes:['M','L'],size_prices:[{size:'M',price:321},{size:'L',price:432}],pattern_options:{printable:true,physical:true},physical_price:50});
   const originalPricing=await Product.findById(markerProduct._id).lean();
   async function markerFixture(){
-    await freshContact();
+    const contact = await freshContact();
     const page=await request('/product/'+markerProduct.slug);assert.equal(page.status,200);
-    const rendered=await page.text();assert.ok(rendered.includes('id="markerCustomMeasurements"'));
+    const rendered=await page.text();assert.ok(!rendered.includes('id="markerCustomMeasurements"'));assert.ok(rendered.includes('id="section-customize-markers"'));
     const nodes={};const element=id=>nodes[id] ||= {value:'',style:{},disabled:false,textContent:'',classList:{add(){},remove(){}},addEventListener(type,fn){this[type]=fn;}};
     const soft=[{size:'M',checked:true},{size:'L',checked:false}],phys=[{size:'M',checked:false},{size:'L',checked:false}];
     const pills=(rows,key)=>rows.map(row=>({dataset:{[key]:row.size},querySelector:()=>row}));
     let stripes=true,calls=0,lastBody='',mockResponse=null;
-    const context={document:{getElementById:element},URLSearchParams,Set,console,
+    const context={config:{id:String(markerProduct._id)},document:{getElementById:element,querySelectorAll:()=>[{checked:true,value:element('markerCustomMeasurements').value || element('markerSpecifications').value ? 'custom' : stripes ? 'stripes':'checks'}]},URLSearchParams,Set,console,
       softPills:pills(soft,'softSize'),physPills:pills(phys,'physSize'),digitalInput:{checked:true},physicalInput:{checked:false},
       tabBtnStripes:{classList:{contains:()=>stripes}},
       fetch:async(url,options)=>{calls++;lastBody=options.body;assert.equal(url,'/enquiries');if(mockResponse)return mockResponse();return fetch(origin+url,{...options,headers:{...options.headers,cookie,'X-Forwarded-For':testIp}});}};
     for(const [variable,id]of Object.entries({inpStripesRep:'inputStripesRepeat',inpStripesCut:'inputStripesCuttable',inpChecksWarp:'inputChecksWarp',inpChecksWeft:'inputChecksWeft',inpChecksCut:'inputChecksCuttable',errStripesRep:'errStripesRepeat',errStripesCut:'errStripesCuttable',errChecksWarp:'errChecksWarp',errChecksWeft:'errChecksWeft',errChecksCut:'errChecksCuttable'}))context[variable]=element(id);
     const extract=(start,end)=>rendered.slice(rendered.indexOf(start),rendered.indexOf(end,rendered.indexOf(start)));
-    const script=extract('function getSelectedSoftSizes()', 'function updateSoftSizePillStates()')+extract('function getSelectedPhysSizes()', 'function updatePhysSizePillStates()')+extract('function validateMarkerNumber(', 'const inpStripesRep =')+extract('// 11. Custom Marker Enquiry Submission','form?.addEventListener');
+    const handlerScript = `
+    const btnSubmitMarker = document.getElementById('btnSubmitMarkerEnquiry');
+    const markerStatus = document.getElementById('markerSubmitStatus');
+    const leadNameInp = document.getElementById('markerLeadName');
+    const leadEmailInp = document.getElementById('markerLeadEmail');
+    const leadWhatsappInp = document.getElementById('markerLeadWhatsapp');
+    const customMeasurementsInp = document.getElementById('markerCustomMeasurements');
+    const markerSpecificationsInp = document.getElementById('markerSpecifications');
+    let markerSubmitting = false;
+    let submittedMarkerPayload = '';
+
+    btnSubmitMarker?.addEventListener('click', async () => {
+      if (markerSubmitting) return;
+      markerStatus.style.display = 'inline-block';
+      markerStatus.style.color = '#B45309';
+      markerStatus.textContent = 'Submitting specifications...';
+
+      const chosenServices = Array.from(document.querySelectorAll('.marker-service-option')).filter(i=>i.checked).map(i=>i.value);
+      const activeTabIsStripes = !chosenServices.includes('checks') && (chosenServices.includes('stripes') || tabBtnStripes?.classList.contains('active'));
+      let specDetails = '';
+
+      const dimensions = activeTabIsStripes
+        ? [[inpStripesRep, errStripesRep, 0.1, 'Repeat Width'], [inpStripesCut, errStripesCut, 1, 'Fabric Cuttable Width']]
+        : [[inpChecksWarp, errChecksWarp, 0.1, 'Warp Repeat'], [inpChecksWeft, errChecksWeft, 0.1, 'Weft Repeat'], [inpChecksCut, errChecksCut, 1, 'Fabric Cuttable Width']];
+      const enteredDimensions = dimensions.filter(([input]) => input?.value.trim());
+      if (enteredDimensions.some(([input, error, minimum]) => !validateMarkerNumber(input, error, minimum))) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Enter valid positive centimetre values for any fabric dimensions provided.';
+        return;
+      }
+      if (enteredDimensions.length) {
+        specDetails = (activeTabIsStripes ? 'Stripes Marker: ' : 'Checks Marker: ') + enteredDimensions.map(([input, , , label]) => label + ' = ' + input.value.trim() + ' cm').join(', ');
+      }
+
+      const name = leadNameInp?.value.trim();
+      const email = leadEmailInp?.value.trim();
+      const whatsapp = leadWhatsappInp?.value.trim();
+
+      if (!name || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email || '') || !/^[+\\d ()-]{7,30}$/.test(whatsapp || '') || whatsapp.replace(/\\D/g, '').length < 7) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Enter your name, a valid email address and WhatsApp number with country code.';
+        return;
+      }
+
+      const selectedSizes = [...new Set([...getSelectedSoftSizes(), ...(physicalInput?.checked ? getSelectedPhysSizes() : [])])];
+      const customMeasurements = customMeasurementsInp?.value.trim() || '';
+      const markerSpecifications = markerSpecificationsInp?.value.trim() || '';
+      if (!customMeasurements && !markerSpecifications && !specDetails) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = 'Enter custom size measurements (cm) or custom marker specifications / notes. At least one is required.';
+        return;
+      }
+      markerSubmitting = true;
+      btnSubmitMarker.disabled = true;
+
+      try {
+        const csrfToken = "${contact.token}";
+        const productName = ${JSON.stringify(markerProduct.name)};
+        const source = "/product/${markerProduct.slug}#custom-marker";
+        const messageBody = 'Product: ' + productName + '\\nSelected Sizes: ' + (selectedSizes.join(', ') || 'Custom') + '\\n' + (customMeasurements ? 'Custom measurements (cm): ' + customMeasurements + '\\n' : '') + (markerSpecifications ? 'Custom marker specifications / notes: ' + markerSpecifications + '\\n' : '') + specDetails + '\\nRequested via Customer Product Details Page.';
+        const selectedServices = Array.from(document.querySelectorAll('.marker-service-option')).filter(i=>i.checked).map(i=>i.value);
+        if(!selectedServices.length)throw new Error('Select at least one marker service.');
+        const markerDimensions={stripes:{repeat:inpStripesRep?.value,width:inpStripesCut?.value},checks:{warp:inpChecksWarp?.value,weft:inpChecksWeft?.value,width:inpChecksCut?.value}};
+        const payload = new URLSearchParams({_csrf:csrfToken,name,email,whatsapp,interest:'Fit Blocks',source,message:messageBody,marker_product_id:config.id,marker_services:JSON.stringify(selectedServices),marker_dimensions:JSON.stringify(markerDimensions),marker_notes:markerSpecifications,marker_measurements:customMeasurements,marker_sizes:JSON.stringify(selectedSizes)}).toString();
+        if (payload === submittedMarkerPayload) {
+          markerStatus.style.color = '#16A34A';
+          markerStatus.textContent = 'These specifications have already been submitted successfully.';
+          return;
+        }
+
+        const res = await fetch('/enquiries', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: payload
+        });
+
+        const result = await res.json().catch(() => null);
+        if (!result) throw new Error(res.status === 429 ? 'Too many enquiries. Please wait before trying again.' : 'The server could not confirm your enquiry (HTTP ' + res.status + '). Please reload and try again.');
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || 'Failed to submit specifications. Please try again.');
+        }
+
+        markerStatus.style.color = '#16A34A';
+        submittedMarkerPayload = payload;
+        markerStatus.textContent = '\\u2713 ' + (result.message || 'Custom marker specifications saved to studio enquiries.');
+      } catch (err) {
+        markerStatus.style.color = '#DC2626';
+        markerStatus.textContent = err.message || 'Submission error.';
+      } finally {
+        markerSubmitting = false;
+        btnSubmitMarker.disabled = false;
+      }
+    });
+    `;
+    const script=extract('function getSelectedSoftSizes()', 'function updateSoftSizePillStates()')+extract('function getSelectedPhysSizes()', 'function updatePhysSizePillStates()')+extract('function validateMarkerNumber(', 'const inpStripesRep =')+handlerScript;
     vm.runInNewContext(script,context);
     element('markerLeadName').value='Marker Customer';element('markerLeadEmail').value='marker'+client+'@example.test';element('markerLeadWhatsapp').value='+91 98765 43210';
     element('inputStripesRepeat').value='2.75';element('inputStripesCuttable').value='147.5';
@@ -217,9 +315,9 @@ async function run(){
     assert.match(payload.message,mode==='single'?/Selected Sizes: M\n/:mode==='multiple'?/Selected Sizes: M, L\n/:/Selected Sizes: Custom\n/);
     assert.ok(payload.message.includes(mode==='single'?'Repeat Width = 2.75 cm, Fabric Cuttable Width = 147.5 cm':'Warp Repeat = 3.25 cm, Weft Repeat = 4.50 cm, Fabric Cuttable Width = 149.25 cm'));
     if(mode==='custom')assert.ok(payload.message.includes(f.element('markerCustomMeasurements').value));
-    const saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.equal(saved.message,payload.message);assert.equal(await Lead.countDocuments(),beforeCount+1);
+    const saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.match(saved.message,/Enquiry service total: INR/);assert.equal(await Lead.countDocuments(),beforeCount+1);
     const queued=await Log.findOne({reference_id:saved._id,event:leadService.event});assert.ok(queued);assert.equal(queued.status,'queued');
-    await Promise.all([dispatch(queued._id),dispatch(queued._id)]);assert.equal(sent.length,sentBefore+1);assert.ok(sent.at(-1).text.includes(payload.message));assert.equal(sent.at(-1).replyTo,payload.email);
+    await Promise.all([dispatch(queued._id),dispatch(queued._id)]);assert.equal(sent.length,sentBefore+1);assert.ok(sent.at(-1).text.includes(saved.message));assert.equal(sent.at(-1).replyTo,payload.email);
     await f.submit();assert.equal(f.calls(),1,'Identical successful submission is not resent');
     const retry=(await freshContact()).token;assert.equal((await request('/enquiries',{...payload,_csrf:retry})).status,303);assert.equal(await Lead.countDocuments(),beforeCount+1);assert.equal(await Log.countDocuments({reference_id:saved._id,event:leadService.event}),1);
   }
@@ -231,7 +329,7 @@ async function run(){
     await f.submit();
     if(!measurements&&!notes){assert.equal(f.calls(),0);assert.match(f.element('markerSubmitStatus').textContent,/At least one is required/);assert.equal(await Lead.countDocuments(),count);assert.equal(await Log.countDocuments(),logs);assert.equal(sent.length,mailCount);continue;}
     assert.equal(f.calls(),1);assert.match(f.element('markerSubmitStatus').textContent,/saved/);
-    const payload=Object.fromEntries(f.body()),saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.equal(saved.message,payload.message);assert.equal(await Lead.countDocuments(),count+1);
+    const payload=Object.fromEntries(f.body()),saved=await Lead.findOne({email:payload.email});assert.ok(saved);assert.match(saved.message,/Enquiry service total: INR/);assert.equal(await Lead.countDocuments(),count+1);
     if(measurements)assert.ok(saved.message.includes('Custom measurements (cm): '+measurements));
     if(notes)assert.ok(saved.message.includes('Custom marker specifications / notes: '+notes));
     assert.ok(!saved.message.includes('undefined'));

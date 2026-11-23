@@ -137,6 +137,7 @@ app.use('/', require('./routes/customerAccount'));
 app.use('/',require('./routes/seo'));
 app.use('/', require('./routes/receipts'));
 app.use('/', require('./routes/downloads'));
+app.use('/', require('./routes/freePattern'));
 app.use(require('./middleware/patternStorefront'));
 app.use('/',require('./routes/patternUpdates'));
 app.use('/', require('./routes/classEnquiries'));
@@ -155,6 +156,26 @@ const cartRouter = require('./routes/cart');
 const classesRouter = require('./routes/classes');
 const adminClassesRouter = require('./routes/adminClasses');
 const adminSettingsRouter = require('./routes/adminSettings');
+
+// Optional remote demo admin access restriction gate
+if (process.env.REMOTE_ADMIN_ACCESS_KEY) {
+  app.use('/admin', (req, res, next) => {
+    if (req.query.access_key && req.query.access_key === process.env.REMOTE_ADMIN_ACCESS_KEY) {
+      if (req.session) {
+        req.session.remoteAdminAllowed = true;
+        return req.session.save(() => {
+          const cleanUrl = req.originalUrl.split('?')[0];
+          return res.redirect(cleanUrl);
+        });
+      }
+    }
+    const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.ip);
+    if (req.session?.remoteAdminAllowed || (isLoopback && !req.headers['x-forwarded-host'] && !req.headers['x-forwarded-for'])) {
+      return next();
+    }
+    return res.status(403).send('<!DOCTYPE html><html><head><title>Access Restricted</title></head><body style="font-family:sans-serif;padding:50px;text-align:center;"><h2>403 Forbidden</h2><p>Remote Admin access is restricted. Valid owner access key required.</p></body></html>');
+  });
+}
 
 // Mount admin router separately from customer routes
 app.use('/admin/classes', adminClassesRouter);

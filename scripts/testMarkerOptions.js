@@ -1,0 +1,116 @@
+require('./isolatedTestGuard');
+const assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
+const mongoose=require('mongoose'),{MongoMemoryServer}=require('mongodb-memory-server');
+const marker=require('../services/markerOptions'),pricing=require('../services/orderPricing');
+async function run(){
+  const mongo=await MongoMemoryServer.create({binary:{version:'7.0.14'}});
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'aep-marker-test-'));
+  process.env.PATTERN_FILES_DIR=dir;
+  let server;
+  try {
+    process.env.MONGODB_URI=mongo.getUri();
+    Object.assign(process.env,{ADMIN_USERNAME:'marker-test',ADMIN_PASSWORD:'marker-test-only',SESSION_SECRET:'marker-isolated-test-secret',NOTIFICATIONS_WORKER_ENABLED:'false'});
+    await mongoose.connect(mongo.getUri());
+    const Product=require('../models/mongo/Product'),File=require('../models/mongo/ProductFile'),Order=require('../models/mongo/Order'),delivery=require('../services/digitalDeliveryService');
+    let product=await Product.create({name:'Marker fixture',slug:'marker-fixture',base_price:100,available_sizes:['M'],mini_marker_price:25,stripes_marker_price:40,checks_marker_price:60,custom_marker_price:80});
+    server=require('../server').listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+    const origin='http://127.0.0.1:'+server.address().port;let cookie='';
+    async function request(url,body,json=false){const response=await fetch(origin+url,{method:body?'POST':'GET',redirect:'manual',headers:{cookie,...(body?{'Content-Type':json?'application/json':'application/x-www-form-urlencoded'}:{})},body:body?(json?JSON.stringify(body):new URLSearchParams(body)):undefined});if(response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];return response;}
+    assert.equal((await request('/admin/products/'+product.id+'/edit',{})).status,302);
+    await request('/admin/login',{username:'marker-test',password:'marker-test-only'});
+    const html=await (await request('/admin/products/'+product.id+'/edit')).text();
+    const token=html.match(/name="_csrf" value="([^"]+)"/)[1];
+    const update={admin_action:'activate',_csrf:token,name:product.name,slug:product.slug,active:'on',mini_marker_price:'31.25',stripes_marker_price:'45',checks_marker_price:'65',custom_marker_price:'85'};
+    assert.equal((await request('/admin/products/'+product.id+'/edit',{...update,_csrf:'bad'})).status,403);
+    assert.equal((await request('/admin/products/'+product.id+'/edit',{...update,mini_marker_price:'-1'})).status,400);
+    assert.equal((await request('/admin/products/'+product.id+'/edit',update)).status,302);
+    product=await Product.findById(product.id).lean();
+    assert.equal(product.base_price,100);assert.deepEqual([product.mini_marker_price,product.stripes_marker_price,product.checks_marker_price,product.custom_marker_price],[31.25,45,65,85]);
+    const configured={...update,pattern_configuration:'1',status:'active',available_sizes:'M, L',size_prices:'M=50\nL=70',physical_price:'50',trial_price:'125.50',trial_enabled:'on',physical_enabled:'on',printable_enabled:'on'};
+    assert.equal((await request('/admin/products/'+product._id+'/edit',configured)).status,302);
+    product=await Product.findById(product._id).lean();
+    assert.equal(product.trial_price,125.5);assert.equal(product.pattern_options.trial,true);
+    const options=require('../services/patternOptions');
+    const sample={quantity:0,printable_selected:false,trial_quantity:4,selected_sizes:['M','L']};
+    assert.equal((await request('/cart/add',{...sample,product_id:String(product._id)},true)).status,200);
+    assert.equal(options.validate(product,[],sample),'');assert.equal(pricing.itemPrice(product,[],[],sample).trial,502);
+    assert.match(options.validate({...product,available_sizes:[]},[],sample),/sizes are not configured/);
+    assert.match(options.validate({...product,trial_price:0},[],sample),/price is unavailable/);
+    assert.match(options.validate({...product,pattern_options:{trial:false}},[],sample),/unavailable/);
+    assert.match(options.validate(product,[],{...sample,selected_sizes:['38']}),/configured sizes/);
+    assert.match(options.validate(product,[],{...sample,trial_quantity:3}),/whole-number/);
+    const print={quantity:0,printable_selected:false,physical_quantity:4,physical_sizes:['M','L']};
+    assert.equal(options.validate(product,[],print),'');assert.equal(pricing.itemPrice(product,[],[],print).physical,240);
+    const uploadToken=(await (await request('/admin/products/'+product._id+'/edit')).text()).match(/name="_csrf" value="([^"]+)"/)[1];
+    const uploadFree=async(approved,size='M')=>{const data=new FormData();data.append('_csrf',uploadToken);data.append('purpose','free_basic');data.append('size',size);data.append('free_basic_approved',approved);data.append('file',new Blob(['%PDF-free-basic'],{type:'application/pdf'}),'free-basic.pdf');return fetch(origin+'/admin/products/'+product._id+'/direct-file',{method:'POST',headers:{cookie},body:data});};
+    assert.equal((await uploadFree('0')).status,400);assert.equal((await uploadFree('1','38')).status,400);assert.equal((await uploadFree('1')).status,200);
+    assert.equal(await File.countDocuments({product_id:product._id,upload_slot:'basic_pattern_pdf',free_basic_size:'M',free_basic_approved:true}),1);
+    const productHtml=await (await request('/products/'+product.slug)).text();
+    assert.ok(productHtml.includes('INR 45.00'));assert.ok(productHtml.includes('INR 65.00'));assert.ok(!productHtml.includes('INR 85.00'));
+    assert.ok(productHtml.indexOf('id="section-customize-markers"')<productHtml.indexOf('id="section-trial-sample"'));
+    assert.ok(productHtml.indexOf('id="section-trial-sample"')<productHtml.indexOf('<div class="ref-summary-box">'));
+    assert.equal((productHtml.match(/id="section-trial-sample"/g)||[]).length,1);
+    assert.ok(!productHtml.includes('Send OTP'));
+    assert.ok(productHtml.includes('data-free-size="M"'));assert.ok(!productHtml.includes('data-free-size="L"'));
+    const cache=path.join(process.env.LOCALAPPDATA,'npm-cache/_npx');
+    const candidates=await fs.readdir(cache);let playwright;
+    for(const candidate of candidates){const target=path.join(cache,candidate,'node_modules/playwright');try{await fs.access(path.join(target,'package.json'));playwright=target;break;}catch{}}
+    assert.ok(playwright,'Cached Playwright is required');
+    const browser=await require(playwright).chromium.launch({channel:'chrome',headless:true});
+    try {
+      const page=await browser.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
+      await page.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+      await page.goto(origin+'/products/'+product.slug);
+      assert.equal(await page.locator('#trial-sample-option').isDisabled(),false);
+      await page.locator('#trialSampleCard').click();
+      await page.locator('#btnSelectAllSoftSizes').click();
+      await page.locator('#trial-sample-quantity').fill('2');
+      assert.match(await page.locator('#sumTrialPrice').innerText(),/502/);
+      assert.match(await page.locator('#trialSelectedSizeDisplay').innerText(),/M, L/);
+      await page.locator('[data-soft-size="L"]').click();
+      assert.match(await page.locator('#sumTrialPrice').innerText(),/251/);
+      assert.equal(await page.locator('#trialSelectedSizeDisplay').innerText(),'M');
+      await page.locator('#physicalPrintoutCard').click();
+      await page.locator('#btnSelectAllPhysSizes').click();
+      await page.locator('#physical-copies').fill('2');
+      assert.match(await page.locator('#sumPhysicalPrice').innerText(),/240/);
+      await page.locator('#btnOpenFreePatternModal').click();
+      assert.equal(await page.locator('#freeEmailInput').isVisible(),true);
+      assert.equal(await page.locator('#btnClaimFreePattern').isDisabled(),false);
+      await page.locator('#freeEmailInput').fill('browser@example.com');await page.locator('#freePhoneInput').fill('9555555555');
+      await page.locator('#btnClaimFreePattern').click();await page.locator('#freeDownloadWrap').waitFor({state:'visible'});
+      assert.match(await page.locator('#freeDownloadLink').getAttribute('href'),/^\/free-pattern\/download\/[a-f0-9]{64}$/);
+      assert.deepEqual(errors,[]);
+    } finally {await browser.close();}
+    console.log('PASS: browser sample position/selection/size/quantity totals; Admin trial controls and free-asset approval; independent marker prices persist and render.');
+    const files=[];
+    for(const [slot,file]of [['marker_pdf','mini.pdf'],['marker_zip','mini.zip'],['basic_measurement_pdf','chart.pdf']]){await fs.writeFile(path.join(dir,file),'test binary');files.push(await File.create({product_id:product._id,upload_slot:slot,file_name:file,file_type:path.extname(file).slice(1),digital_file:file,file_price:999}));}
+    const selected=files.slice(0,2),item={printable_selected:false,quantity:1,selected_sizes:[]};
+    assert.equal(pricing.itemPrice(product,selected,[],item).total,31.25);
+    assert.equal(pricing.itemPrice(product,[],[],item).total,0);
+    assert.equal(marker.validateFiles({...product,mini_marker_price:0},selected,item).length>0,true);
+    assert.equal(require('../services/patternOptions').validate(product,selected,item),'');
+    assert.equal(await delivery.validateSelection(product,selected,item),'');
+    const response=await request('/cart/add',{...item,product_id:String(product._id),files:selected.map(f=>f.id),mini_marker_price:0},true);
+    assert.equal(response.status,200);assert.equal((await response.json()).ok,true);
+    const cartPage=await (await request('/cart')).text();assert.match(cartPage,/31.25/);
+    assert.equal((await request('/cart/add',{...item,product_id:String(product._id),files:[selected[0].id,selected[0].id]},true)).status,400);
+    const body={marker_services:'["stripes","checks","custom"]',marker_dimensions:JSON.stringify({stripes:{repeat:2,width:140},checks:{warp:3,weft:4,width:145}}),marker_notes:'Match repeats',marker_measurements:'',marker_sizes:'[]',price:0};
+    assert.match(marker.enquiry(product,body),/INR 195.00/);
+    assert.throws(()=>marker.enquiry(product,{...body,marker_services:'["stripes","stripes"]'}));
+    assert.throws(()=>marker.enquiry(product,{...body,marker_dimensions:'{}'}));
+    const order=await Order.create({customer_id:new mongoose.Types.ObjectId(),items:[{...item,product_id:product._id,selected_files:[{id:selected[0].id}]}],payment_status:'pending'});
+    assert.equal(await delivery.ensure(order.id),null);
+    await Order.updateOne({_id:order.id},{$set:{payment_status:'paid'}});assert.equal(await delivery.ensure(order.id),null);
+    await Order.updateOne({_id:order.id},{$set:{payment_status:'paid',payment_verified_at:new Date()}});
+    const granted=await delivery.ensure(order.id);assert.equal(granted.download_assets.length,1);assert.equal(granted.download_assets[0].file,'mini.pdf');
+    assert.equal(await delivery.manualGrant(order.id,[{file:'chart.pdf'}]),null);
+    assert.equal((await delivery.ensure(order.id)).download_token,granted.download_token);
+    console.log('PASS: authenticated Admin/CSRF, persisted independent prices, cart tampering and duplicates, single bundle charge, enquiry validation, verified-payment selected-only downloads.');
+  } finally {
+    if(server)await new Promise(resolve=>server.close(resolve));await mongoose.disconnect();await mongo.stop();
+    if(path.dirname(dir)!==os.tmpdir() || !path.basename(dir).startsWith('aep-marker-test-'))throw new Error('Unsafe cleanup');
+    await fs.rm(dir,{recursive:true,force:true});
+  }
+}
+run().catch(error=>{console.error(error);process.exitCode=1;});

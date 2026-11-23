@@ -734,10 +734,12 @@
             <label for="select-fit">4. Select Fit *</label>
             <select id="select-fit" required>
               <option value="Slim Fit" <%= (productForm.fit === 'Slim Fit' || !productForm.fit) ? 'selected' : '' %>>Slim Fit</option>
-              <option value="Regular Fit" <%= productForm.fit === 'Regular Fit' ? 'selected' : '' %>>Regular Fit</option>
               <option value="Relaxed Fit" <%= productForm.fit === 'Relaxed Fit' ? 'selected' : '' %>>Relaxed Fit</option>
+              <option value="Resort Fit" <%= productForm.fit === 'Resort Fit' ? 'selected' : '' %>>Resort Fit</option>
+              <option value="Oversized" <%= productForm.fit === 'Oversized' ? 'selected' : '' %>>Oversized</option>
+              <option value="Regular Fit" <%= productForm.fit === 'Regular Fit' ? 'selected' : '' %>>Regular Fit</option>
               <option value="Comfort Fit" <%= productForm.fit === 'Comfort Fit' ? 'selected' : '' %>>Comfort Fit</option>
-              <option value="Other" <%= (productForm.fit && !['Slim Fit','Regular Fit','Relaxed Fit','Comfort Fit'].includes(productForm.fit)) ? 'selected' : '' %>>Other (Custom)</option>
+              <option value="Other" <%= (productForm.fit && !['Slim Fit','Relaxed Fit','Resort Fit','Oversized','Regular Fit','Comfort Fit'].includes(productForm.fit)) ? 'selected' : '' %>>Other (Custom)</option>
             </select>
             <div id="custom-fit-wrap" style="display:none;margin-top:8px">
               <input type="text" id="custom-fit" placeholder="Enter custom fit...">
@@ -831,83 +833,31 @@
           </div>
         </header>
 
-        <!-- Product Images (Main + Gallery) Strip matching Reference Image 2 Right Side -->
-        <div style="margin-bottom:12px">
-          <h3 style="margin:0 0 10px;font-size:14.5px;font-weight:700;color:var(--admin-navy)">
-            Product Images (Main + Gallery)
-          </h3>
-
-          <div class="product-images-strip" id="ref-images-strip">
-            <!-- Card 1: Main Image Preview -->
-            <div class="ref-image-card">
-              <% const mainImg = productForm.images?.[0] || '/images/reference/blue-shirt-main.jpg'; %>
-              <img id="ref-main-img-preview" src="<%= mainImg %>" alt="Main finished garment">
-              <span class="ref-image-main-badge">Main</span>
-              <button type="button" class="ref-image-trash" title="Remove main photo" onclick="document.getElementById('file-main-image').value='';">&#128465;</button>
-            </div>
-
-            <!-- Gallery Image Cards -->
-            <% const gallery = (productForm.images || []).slice(1); %>
-            <% if (gallery.length > 0) { %>
-              <% gallery.forEach((src, idx) => { %>
-                <div class="ref-image-card">
-                  <img src="<%= src %>" alt="Gallery thumbnail <%= idx + 1 %>">
-                  <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
-                </div>
-              <% }) %>
-            <% } else { %>
-              <!-- Reference thumbnail previews matching Reference Image 2 -->
-              <div class="ref-image-card">
-                <img src="/images/reference/blue-shirt-thumb-back.jpg" alt="Back thumbnail">
-                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
-              </div>
-              <div class="ref-image-card">
-                <img src="/images/reference/blue-shirt-thumb-collar.jpg" alt="Collar thumbnail">
-                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
-              </div>
-              <div class="ref-image-card">
-                <img src="/images/reference/blue-shirt-thumb-cuff.jpg" alt="Cuff thumbnail">
-                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
-              </div>
-              <div class="ref-image-card">
-                <img src="/images/reference/pattern-pieces-thumb.jpg" alt="Schematic thumbnail">
-                <button type="button" class="ref-image-trash" title="Remove photo">&#128465;</button>
-              </div>
-            <% } %>
-
-            <!-- Direct "+ Add Image" Card matching Reference Image 2 -->
-            <label class="ref-image-add-card" for="file-gallery-images" title="Upload additional finished garment photos">
-              <span class="add-icon">+</span>
-              <span>Add Image</span>
-            </label>
+        <p>Choose up to 10 gallery photos at once. Photos upload when you Save or Publish. JPEG, PNG or WebP, up to 10 MB each.</p>
+        <div id="garment-photo-editor">
+          <div data-main-photo data-saved="<%= productForm.images?.[0] || '' %>">
+            <h3>Main garment photo</h3>
+            <input type="file" id="file-main-image" name="main_image" accept="image/jpeg,image/png,image/webp">
+            <label>Or HTTPS image URL <input type="url" name="main_image_link" placeholder="https://example.com/photo.jpg"></label>
+            <input type="hidden" name="remove_main_image" value="">
+            <button type="button" data-remove-main>Remove Main Photo</button>
+            <div data-main-preview></div>
           </div>
-
-          <!-- Real file inputs for multipart form upload -->
-          <div style="background:#F8FAFC;border:1px solid var(--admin-border);border-radius:8px;padding:14px;margin-bottom:14px">
-            <div style="margin-bottom:10px">
-              <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
-                Direct Upload: Main Garment Photo
-              </label>
-              <input type="file" id="file-main-image" name="main_image" accept="image/jpeg,image/png,image/webp" style="font-size:13px">
-              <label>Or paste a direct HTTPS image URL <input type="url" name="main_image_link" placeholder="https://example.com/photo.jpg" data-media-preview="image"></label>
-              <label><input type="checkbox" name="remove_main_image"> Remove main photo</label>
-            </div>
-            <div>
-              <label style="display:block;font-size:13px;font-weight:700;color:var(--admin-navy);margin-bottom:4px">
-                Direct Upload: Gallery Garment Photos (Multiple)
-              </label>
-              <input type="file" id="file-gallery-images" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp" style="font-size:13px">
-              <label>Or add HTTPS gallery image URLs (one per line)<textarea name="gallery_image_links" placeholder="https://example.com/photo.webp"></textarea></label>
-              <p>AI-generated finished garment photos use the same upload/link options. Uploads take priority over links.</p>
-              <% (productForm.images || []).slice(1).forEach((src, index) => { %>
-                <label style="display:inline-block">Gallery <%= index %><img src="<%= src %>" alt="Gallery preview" style="width:80px;height:80px;object-fit:contain"><input type="checkbox" name="remove_gallery_image" value="<%= index %>"> Remove</label>
-              <% }); %>
-              <label>Reorder remaining gallery images by index (for example 2,0,1; leave blank to keep order)<input name="gallery_order"></label>
+          <h3>Gallery photos</h3>
+          <input type="file" id="file-gallery-images" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp">
+          <label>Or HTTPS image URLs (one per line)<textarea name="gallery_image_links" placeholder="https://example.com/photo.jpg"></textarea></label>
+          <p data-media-status role="status" aria-live="polite"><%= typeof messageType !== 'undefined' && messageType === 'error' ? 'Save failed. Photos were not saved; select uploads again and retry.' : 'Saved photos are shown below. New selections upload on Save/Publish.' %></p>
+          <div data-gallery-preview style="display:flex;flex-wrap:wrap;gap:12px">
+            <% (productForm.images || []).slice(1).forEach((src, index) => { %>
+              <div data-saved-photo="<%= src %>" data-index="<%= index %>"></div>
+            <% }); %>
+          </div>
+          <input type="hidden" name="gallery_order" value="">
+        </div>
+        <div>
               <label>AI / sample photo upload<input type="file" name="sample_image" accept="image/jpeg,image/png,image/webp"></label>
               <label>Or HTTPS sample photo URL<input type="url" name="sample_image_link" data-media-preview="image"></label>
               <label><input type="checkbox" name="remove_sample_image"> Remove sample photo</label>
-            </div>
-          </div>
         </div>
 
         <!-- Optional Video URL -->
@@ -1000,6 +950,14 @@
                   <small>Save product sizes before uploading. Select another size to upload its separate file. Re-uploading the same format and size replaces that mapping only.</small>
                 </label>
                 <div id="mapped-pattern-files" style="grid-column:1/-1"><% (productForm.mappedFiles || []).forEach(entry=>{ %><div><%= entry.format.toUpperCase() %> / <%= entry.size %> ? <%= (entry.fileType || entry.format).toUpperCase() %> uploaded <%= entry.fileName || '' %></div><% }) %></div>
+                <div style="grid-column:1/-1">
+                  <strong>Owner-approved FREE BASIC pattern (one selected size)</strong>
+                  <p>Use the saved size selected above. Uploading here approves this PDF immediately for the free offer. Include only the basic pattern; exclude charts, tech packs, markers and premium bundles.</p>
+                  <label><input type="checkbox" id="freeBasicApproval"> I approve this single-size PDF for free delivery.</label>
+                  <input type="file" accept=".pdf" class="admin-direct-file-input" data-format="basic_pattern_pdf" data-purpose="free_basic">
+                  <div class="direct-upload-status" data-format="basic_pattern_pdf" style="display:none"></div>
+                  <% (productFiles || []).filter(file=>file.upload_slot==='basic_pattern_pdf').forEach(file=>{ %><p><%= file.free_basic_size %>: <%= file.file_name %> - <%= file.active && file.free_basic_approved ? 'Approved for free delivery' : 'Unavailable' %></p><% }) %>
+                </div>
                 <!-- DXF Upload -->
                 <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;text-align:center">
                   <span class="file-badge file-badge--dxf" style="margin-bottom:6px">DXF</span>
@@ -1407,6 +1365,24 @@
                 <small style="color:#64748B;font-size:11.5px;display:block;margin-top:4px">Accepts validated %PDF format. Displayed in customer Size Guide modal.</small>
               </div>
 
+              <!-- Upload How to Measure Guide PDF -->
+              <div style="margin-bottom:12px;background:#FFF;border:1px solid #E2E8F0;border-radius:8px;padding:10px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Upload "How to Measure" Guide PDF</label>
+                <input type="file" name="how_to_measure_pdf_file" accept=".pdf,application/pdf" style="width:100%;padding:6px 10px;border:1px solid var(--admin-border);border-radius:6px;font-size:12.5px;background:#fff">
+                <label>Or HTTPS public guide PDF link<input type="url" name="how_to_measure_pdf_link" value="<%= productForm.how_to_measure_url || '' %>"></label>
+                <p>Attach a step-by-step measuring guide PDF for customers to take accurate body measurements.</p>
+                <% if (productForm.how_to_measure_pdf || productForm.how_to_measure_pdf_name) { %>
+                  <div style="margin-top:6px;font-size:12px;color:#059669;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span>&#128196; Current Guide: <strong><%= productForm.how_to_measure_pdf_name || (productForm.how_to_measure_pdf ? productForm.how_to_measure_pdf.split('/').pop() : '') %></strong></span>
+                    <a href="<%= productForm.how_to_measure_pdf %>" target="_blank" style="color:#0284C7;text-decoration:underline;">View PDF</a>
+                    <label style="color:#DC2626;cursor:pointer;margin-left:8px;font-size:11.5px;">
+                      <input type="checkbox" name="remove_how_to_measure_pdf" value="on"> Remove Guide PDF
+                    </label>
+                  </div>
+                <% } %>
+                <small style="color:#64748B;font-size:11.5px;display:block;margin-top:4px">Accepts validated %PDF format. Displayed in customer "How to Measure" viewing option.</small>
+              </div>
+
               <!-- Size Chart Image URL -->
               <div style="margin-bottom:10px">
                 <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px">Size Chart Image URL</label>
@@ -1495,6 +1471,19 @@
           </div>
         </div>
 
+        <section class="card"><h3>Trial Fit Sample &mdash; With Available Fabric</h3>
+          <label>Trial Sample price per sample (INR)<input type="number" name="trial_price" min="0" max="1000000" step="0.01" value="<%= productForm.trial_price ?? '' %>"></label>
+          <label><input type="checkbox" name="trial_enabled" <%= productForm.pattern_options?.trial === true ? 'checked' : '' %>> Available fabric and fulfilment confirmed - enable Trial Fit Sample</label>
+          <p>Save a positive sample price, available sizes, and confirm fabric and fulfilment above. Quantity is per selected size.</p>
+          <% const trialMissing = []; if (!(Number(productForm.trial_price)>0)) trialMissing.push('positive Trial Sample price'); if (!productForm.available_sizes?.length) trialMissing.push('available sizes'); if (productForm.pattern_options?.trial !== true) trialMissing.push('fabric / fulfilment confirmation and Trial Sample enablement'); %>
+          <p><%= trialMissing.length ? 'Unavailable - missing: '+trialMissing.join('; ') : 'Trial Sample prerequisites configured.' %></p>
+        </section>
+        <section class="card"><h3>Marker Pricing</h3><p>Mini marker is an optional paid download. Customizations remain enquiries; no checkout charge. Blank or zero means price unavailable.</p>
+          <label>Fabric Consumption Mini Marker (INR)<input type="number" name="mini_marker_price" min="0" max="1000000" step="0.01" value="<%= productForm.mini_marker_price ?? '' %>"></label>
+          <label>Stripes Marker Customization (INR)<input type="number" name="stripes_marker_price" min="0" max="1000000" step="0.01" value="<%= productForm.stripes_marker_price ?? '' %>"></label>
+          <label>Checks Marker Customization (INR)<input type="number" name="checks_marker_price" min="0" max="1000000" step="0.01" value="<%= productForm.checks_marker_price ?? '' %>"></label>
+          <label>Custom Marker Specifications (INR)<input type="number" name="custom_marker_price" min="0" max="1000000" step="0.01" value="<%= productForm.custom_marker_price ?? '' %>"></label>
+        </section>
         <!-- Product Settings Toggles matching Reference Image 2 & Marker Workflow -->
         <div style="margin-bottom:20px">
           <h3 style="margin:0 0 12px;font-size:14.5px;font-weight:700;color:var(--admin-navy)">
@@ -1559,6 +1548,7 @@
     <% } %>
     <script>
     document.querySelectorAll('[data-media-preview],input[type=file][accept^="image"],input[name=product_video]').forEach(function(input) {
+      if (input.closest('#garment-photo-editor')) return;
       input.addEventListener('change', function() {
         var video = input.dataset.mediaPreview === 'video' || input.name === 'product_video';
         var preview = input.nextElementSibling;
@@ -1579,6 +1569,7 @@
 
   <%- include('../partials/footer') %>
 
+  <script src="/js/admin-product-media.js" defer></script>
   <!-- =========================================================================
        CLIENT-SIDE SCRIPT: DEPENDENT DROPDOWNS & WORKFLOW STEP PROGRESSION
        ========================================================================= -->
@@ -1587,19 +1578,19 @@
     // 1. Department -> Product Type mapping
     const taxonomyMap = {
       'Men': {
-        types: ['Shirt', 'T-Shirt', 'Trouser', 'Shorts', 'Other'],
+        types: ['Shirt', 'Shorts', 'Casual Pant', 'Denim', 'Innerwear', 'Jackets', 'T-Shirt', 'Trouser', 'Other'],
         styles: ['Formal', 'Casual', 'Business', 'Traditional', 'Other'],
-        fits: ['Slim Fit', 'Regular Fit', 'Relaxed Fit', 'Comfort Fit', 'Other']
+        fits: ['Slim Fit', 'Relaxed Fit', 'Resort Fit', 'Oversized', 'Regular Fit', 'Comfort Fit', 'Other']
       },
       'Women': {
-        types: ['Dress', 'Top', 'Kurta', 'Blouse', 'Trouser', 'Other'],
+        types: ['Dress', 'Top', 'Kurta', 'Blouse', 'Trouser', 'Shirt', 'Shorts', 'Jackets', 'Other'],
         styles: ['Casual', 'Formal', 'Traditional', 'Business', 'Other'],
-        fits: ['Slim Fit', 'Regular Fit', 'Relaxed Fit', 'Comfort Fit', 'Other']
+        fits: ['Slim Fit', 'Relaxed Fit', 'Resort Fit', 'Oversized', 'Regular Fit', 'Comfort Fit', 'Other']
       },
       'Kids': {
-        types: ['Shirt', 'T-Shirt', 'Shorts', 'Dress', 'Other'],
+        types: ['Shirt', 'Shorts', 'T-Shirt', 'Dress', 'Trouser', 'Jackets', 'Other'],
         styles: ['Casual', 'Traditional', 'Other'],
-        fits: ['Regular Fit', 'Comfort Fit', 'Relaxed Fit', 'Other']
+        fits: ['Regular Fit', 'Relaxed Fit', 'Slim Fit', 'Comfort Fit', 'Oversized', 'Other']
       }
     };
 
@@ -1797,42 +1788,6 @@
       });
     }
 
-    // 4. Instant Image Preview for main_image
-    const fileMainInput = document.getElementById('file-main-image');
-    const refMainPreview = document.getElementById('ref-main-img-preview');
-    if (fileMainInput && refMainPreview) {
-      fileMainInput.addEventListener('change', () => {
-        const file = fileMainInput.files[0];
-        if (file) {
-          refMainPreview.src = URL.createObjectURL(file);
-        }
-      });
-    }
-
-    // 5. Instant Gallery Images Preview Zone
-    const fileGalleryInput = document.getElementById('file-gallery-images');
-    const refImagesStrip = document.getElementById('ref-images-strip');
-    if (fileGalleryInput && refImagesStrip) {
-      fileGalleryInput.addEventListener('change', () => {
-        const files = Array.from(fileGalleryInput.files);
-        files.forEach(file => {
-          const card = document.createElement('div');
-          card.className = 'ref-image-card';
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          img.alt = 'Uploaded preview';
-          const trash = document.createElement('button');
-          trash.type = 'button';
-          trash.className = 'ref-image-trash';
-          trash.innerHTML = '&#128465;';
-          trash.onclick = () => card.remove();
-          card.appendChild(img);
-          card.appendChild(trash);
-          refImagesStrip.insertBefore(card, refImagesStrip.lastElementChild);
-        });
-      });
-    }
-
     // 6. Direct Pattern File Upload Handler
     const editingProductId = '<%= editingProduct ? editingProduct._id : "" %>';
     const directInputs = document.querySelectorAll('.admin-direct-file-input');
@@ -1912,7 +1867,8 @@
         const maxMB=purpose==='pattern'?30:50;
         if(file.size>maxMB*1024*1024){alert('File exceeds the '+maxMB+' MB limit.');input.value='';return;}
         const uploadSize = document.getElementById('pattern-upload-size')?.value;
-        if(purpose === 'pattern' && !uploadSize){alert('Choose a saved product size first.');input.value='';return;}
+        if(['pattern','free_basic'].includes(purpose) && !uploadSize){alert('Choose a saved product size first.');input.value='';return;}
+        if(purpose === 'free_basic' && !document.getElementById('freeBasicApproval').checked){alert('Approve this single-size free basic PDF first.');input.value='';return;}
         const statusEl = document.querySelector('.direct-upload-status[data-format="' + format + '"]');
         if (statusEl) {
           statusEl.style.display = 'block';
@@ -1921,7 +1877,8 @@
         }
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('stage', '1');
+        if(purpose !== 'free_basic') fd.append('stage', '1');
+        if(purpose === 'free_basic') fd.append('free_basic_approved', '1');
         fd.append('format', format);
         fd.append('purpose', purpose);
         fd.append('size', uploadSize || '');
@@ -1944,6 +1901,7 @@
               statusEl.style.color = '#059669';
               statusEl.textContent = 'Uploaded: ' + data.fileName + ' (' + (data.isReplacement ? 'Replaced' : 'Active') + ')';
             }
+            if(data.freeBasic) return;
             if(data.mapped){
               const list=document.getElementById('mapped-pattern-files');
               const key=data.format+'/'+data.size;

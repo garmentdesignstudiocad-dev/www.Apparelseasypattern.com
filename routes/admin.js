@@ -152,9 +152,14 @@ function parseProductPayload(body) {
       active_bundle: body?.active_bundle !== 'off' && body?.active_bundle !== false
     },
     tech_pack_price: Number(body?.tech_pack_price || 0),
+    ...(body?.mini_marker_price !== undefined ? {mini_marker_price: String(body.mini_marker_price).trim() === '' ? null : Number(body.mini_marker_price)} : {}),
+    ...(body?.stripes_marker_price !== undefined ? {stripes_marker_price: String(body.stripes_marker_price).trim() === '' ? null : Number(body.stripes_marker_price)} : {}),
+    ...(body?.checks_marker_price !== undefined ? {checks_marker_price: String(body.checks_marker_price).trim() === '' ? null : Number(body.checks_marker_price)} : {}),
+    ...(body?.custom_marker_price !== undefined ? {custom_marker_price: String(body.custom_marker_price).trim() === '' ? null : Number(body.custom_marker_price)} : {}),
     marker_service_price: Number(body?.marker_service_price || 0),
     size_chart_image: String(body?.size_chart_image || '').trim(),
     size_chart_url: String(body?.size_chart_url || '').trim(),
+    how_to_measure_url: String(body?.how_to_measure_pdf_link || body?.how_to_measure_url || '').trim(),
     size_chart_visible: body?.pattern_configuration === '1'
       ? body.size_chart_visible === 'on' || body.size_chart_visible === true || body.size_chart_visible === '1'
       : body?.size_chart_visible === undefined
@@ -841,6 +846,21 @@ router.post('/products/:productId/direct-file', adminAuth, (req,res,next)=>direc
     if (!product) return res.status(404).json({ error: 'Product not found' });
     if (!req.file || !req.file.buffer || !req.file.buffer.length) {
       return res.status(400).json({ error: 'No file uploaded' });
+    }
+    // Dedicated owner-approved free asset, never a paid document or CAD bundle fallback.
+    if (req.body.purpose === 'free_basic') {
+      const size = String(req.body.size || '');
+      if (!product.available_sizes.includes(size) || req.body.free_basic_approved !== '1') return res.status(400).json({error:'Choose a saved size and explicitly approve this free basic pattern.'});
+      const ext = require('../services/digitalUploadValidation').validate(req.file.originalname, req.file.buffer, 'pdf', req.file.mimetype);
+      if (ext !== '.pdf') return res.status(400).json({error:'Only a single-size basic pattern PDF may be approved for this offer.'});
+      const delivery = require('../services/digitalDeliveryService');
+      await fs.promises.mkdir(delivery.root(), {recursive:true});
+      const storageName = crypto.randomBytes(24).toString('hex') + '.pdf';
+      pendingPath = path.join(await delivery.privateRoot(), storageName);
+      await fs.promises.writeFile(pendingPath, req.file.buffer, {flag:'wx', mode:0o600});
+      await ProductFile.findOneAndUpdate({product_id:product._id, upload_slot:'basic_pattern_pdf', free_basic_size:size}, {$set:{file_name:req.file.originalname, file_type:'pdf', purpose:'other', digital_file:storageName, active:true, free_basic_approved:true}}, {upsert:true, runValidators:true});
+      pendingPath = null;
+      return res.json({success:true, freeBasic:true, fileName:req.file.originalname});
     }
     if (req.body.stage === '1') return res.json(await require('../services/productDocumentDraft').stage(product._id, req.body, req.file));
 

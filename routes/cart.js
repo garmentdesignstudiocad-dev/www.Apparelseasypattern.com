@@ -58,7 +58,7 @@ router.post('/cart/add', async (req, res) => {
 
 
     if(!validation.id(product_id) || !validation.ids(files) || !validation.ids(addons) || !validation.quantities(req.body)) return res.status(400).json({error:'Select a valid product, options and whole-number quantities.'});
-    const product = await Product.findById(product_id).lean();
+    const product = await Product.findById(product_id).select('+digital_file +digital_file_map').lean();
 
     if (!product || product.active === false) {
       return res.status(400).json({
@@ -74,7 +74,7 @@ router.post('/cart/add', async (req, res) => {
             _id: { $in: files },
             product_id: product._id,
             active: true
-          }).lean()
+          }).select('+digital_file').lean()
         : [];
 
 
@@ -92,6 +92,8 @@ router.post('/cart/add', async (req, res) => {
     if(selectedFiles.length!==files.length || selectedAddons.length!==addons.length) return res.status(400).json({error:'One or more selected options are unavailable for this product.'});
     const optionError=require('../services/patternOptions').validate(product,selectedFiles,req.body);
     if(optionError)return res.status(400).json({error:optionError});
+    const deliveryError=await require('../services/digitalDeliveryService').validateSelection(product,selectedFiles,req.body);
+    if(deliveryError)return res.status(400).json({error:deliveryError});
     const unitPrice =
       Number(product.base_price || 0);
 
@@ -147,7 +149,11 @@ router.post('/cart/add', async (req, res) => {
 
       name:
         product.name,
-      selected_formats: Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [],
+      selected_formats: req.body.printable_selected !== false && Array.isArray(req.body.selected_sizes) && req.body.selected_sizes.length
+        ? (await require('../services/digitalDeliveryService').availableBundleFormats(product, req.body.selected_sizes)).length > 0
+          ? await require('../services/digitalDeliveryService').availableBundleFormats(product, req.body.selected_sizes)
+          : (Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [])
+        : (Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : []),
       selected_sizes: req.body.selected_sizes || [],
       physical_sizes: req.body.physical_sizes || [],
       printable_selected: req.body.printable_selected !== false,
@@ -175,8 +181,8 @@ router.post('/cart/add', async (req, res) => {
           file_type: file.file_type,
 
           file_price:
-            Number(file.file_price || 0),
-          price_per_selected_size: file.price_per_selected_size === true
+            require('../services/markerOptions').filePrice(product,selectedFiles,file),
+          price_per_selected_size: !require('../services/markerOptions').isMarker(file) && file.price_per_selected_size === true
         })),
 
       selected_addons:
@@ -332,8 +338,8 @@ router.post('/cart/update', async (req, res) => {
       id: file._id.toString(),
       file_name: file.file_name,
       file_type: file.file_type,
-      file_price: Number(file.file_price || 0),
-      price_per_selected_size: file.price_per_selected_size === true
+      file_price: require('../services/markerOptions').filePrice(currentProduct,currentFiles,file),
+      price_per_selected_size: !require('../services/markerOptions').isMarker(file) && file.price_per_selected_size === true
     }));
     item.itemUnitTotal = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).unit;
     item.total = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).total;

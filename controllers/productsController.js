@@ -3,6 +3,7 @@ const { logError } = require('../services/safeLog');
 const Product = require('../models/mongo/Product');
 const ProductFile = require('../models/mongo/ProductFile');
 const Addon = require('../models/mongo/Addon');
+const classification = require('../services/catalogClassification');
 
 /*
 =========================================================
@@ -105,14 +106,14 @@ async function listProducts(req, res, next) {
         const sub = (p.kids_subcategory || '').toLowerCase();
         if (sub) return sub === subcatRaw;
         const n = (p.name || '').toLowerCase();
-        if (subcatRaw === 'boys') return /\\b(boy|boys)\\b/i.test(n);
-        if (subcatRaw === 'girls') return /\\b(girl|girls)\\b/i.test(n);
-        return true;
+        if (subcatRaw === 'boys') return /\b(boy|boys)\b/i.test(n);
+        if (subcatRaw === 'girls') return /\b(girl|girls)\b/i.test(n);
+        return false;
       });
     }
 
         // Dynamic selectable values supported ONLY by actual published products in this department
-    const availableTypes = [...new Set(departmentProducts.map(p => (p.category || '').trim()).filter(Boolean))];
+    const availableTypes = [...new Set(departmentProducts.map(p => classification.typeOf(p).trim()).filter(Boolean))];
     const distinctStyles = [...new Set(departmentProducts.map(p => (p.style || '').trim()).filter(Boolean))];
     const styleKeywords = ['Formal', 'Casual', 'Party', 'Sport', 'Streetwear', 'Everyday', 'Workwear'];
     const matchedStyleKeywords = styleKeywords.filter(stKw =>
@@ -120,10 +121,8 @@ async function listProducts(req, res, next) {
     );
     const availableStyles = [...new Set([...distinctStyles, ...matchedStyleKeywords])];
 
-    const fitKeywords = ['Slim Fit', 'Regular Fit', 'Relaxed Fit', 'Comfort Fit', 'Classic Fit', 'Tailored Fit'];
-    const availableFits = fitKeywords.filter(fitKw =>
-      departmentProducts.some(p => (p.name + ' ' + (p.description || '')).toLowerCase().includes(fitKw.toLowerCase()))
-    );
+    const fitProducts = typeRaw ? departmentProducts.filter(p => classification.matchesType(p, typeRaw)) : departmentProducts;
+    const availableFits = [...new Set(fitProducts.flatMap(classification.fitsOf))];
     const availableSizes = [...new Set(departmentProducts.flatMap(p => p.available_sizes || []))].filter(Boolean);
     const hasDigital = departmentProducts.some(p => p.pattern_options?.printable !== false);
     const hasPhysical = departmentProducts.some(p => p.pattern_options?.physical !== false);
@@ -132,11 +131,7 @@ async function listProducts(req, res, next) {
     let matchedProducts = departmentProducts;
 
     if (typeRaw) {
-      matchedProducts = matchedProducts.filter(p => {
-        const c = (p.category || '').toLowerCase();
-        const n = (p.name || '').toLowerCase();
-        return c === typeRaw || n.includes(typeRaw.replace('-', ' '));
-      });
+      matchedProducts = matchedProducts.filter(p => classification.matchesType(p, typeRaw));
     }
 
     if (styleRaw) {
@@ -151,12 +146,7 @@ async function listProducts(req, res, next) {
     }
 
         if (fitRaw) {
-      const fitQuery = fitRaw.replace('-', ' ');
-      matchedProducts = matchedProducts.filter(p => {
-        const n = (p.name || '').toLowerCase();
-        const d = (p.description || '').toLowerCase();
-        return n.includes(fitQuery) || d.includes(fitQuery);
-      });
+      matchedProducts = matchedProducts.filter(p => classification.matchesFit(p, fitRaw));
     }
 
     if (sizeRaw) {
@@ -211,11 +201,11 @@ async function listProducts(req, res, next) {
       products: enrichedProducts,
       category: categoryRaw,
       categories,
-      selectedType: typeRaw,
+      selectedType: classification.slug(availableTypes.find(type => classification.matchesType({product_type:type}, typeRaw)) || typeRaw),
       selectedSubcat: subcatRaw,
       selectedStyle: styleRaw,
       availableStyles,
-      selectedFit: fitRaw,
+      selectedFit: classification.slug(availableFits.find(fit => classification.matchesFit({fit}, fitRaw)) || fitRaw),
       selectedSize: sizeRaw,
       selectedFormat: formatRaw,
       availableTypes,
@@ -251,7 +241,7 @@ async function productDetails(req, res, next) {
     let product = req.adminPreviewProduct || await Product.findOne({
       slug,
       ...require('../services/patternOptions').publicFilter,
-    }).lean();
+    }).select('+digital_file +digital_file_map').lean();
 
     if (!product) {
       return res.status(404).render('error', {
@@ -262,13 +252,23 @@ async function productDetails(req, res, next) {
 
     product = publicGarmentMedia(product);
 
-    const files = await ProductFile.find({
+    let files = await ProductFile.find({
       product_id: product._id,
       active: true,
     })
       .sort({ createdAt: -1 })
+      .select('+digital_file')
       .lean();
 
+    const freeAvailableSizes = [];
+    for (const size of product.available_sizes || []) {
+      if (await require('../services/freePatternService').findBasicPatternAsset(product, size)) freeAvailableSizes.push(size);
+    }
+    files = files.filter(file => file.upload_slot !== 'basic_pattern_pdf');
+    const purchaseAvailability = await require('../services/digitalDeliveryService').purchaseAvailability(product, files);
+    files = purchaseAvailability.files;
+    delete product.digital_file;
+    delete product.digital_file_map;
     const addons = await Addon.find({
       product_id: product._id,
       active: true,
@@ -287,6 +287,9 @@ async function productDetails(req, res, next) {
     ogImage,
     productStructuredData,
     product,
+    digitalAvailability: purchaseAvailability.formats,
+    freeAvailableSizes,
+    productBreadcrumbs: classification.breadcrumbs(product),
     configuredGstRate: await require('../services/orderPricing').taxRate(),
     files,
     addons,

@@ -31,6 +31,17 @@ router.get('/consulting', asyncRoute(async(req,res)=>{
   page(res,'Garment Technology & Apparel Technical Consulting',{mode:'consulting',interest:'Consulting',services:await Model.find({active:true}).sort({name:1}).lean(),consultingQuote:item=>access.quote('consulting',item,settings)});
 }));
 router.get('/corporate-training', (req, res) => page(res, 'Corporate Garment Technology Training', { mode: 'corporate', interest: 'Corporate Training', corporate: true }));
+router.get('/custom-block', (req, res) => {
+  req.session.leadToken ||= crypto.randomBytes(32).toString('hex');
+  res.locals.csrf = req.session.leadToken;
+  res.render('custom-block', {
+    title: 'Request a Custom Block | Apparel Easy Patterns',
+    seoTitle: 'Request a Custom Block | Custom Patternmaking & CAD Fit Blocks',
+    description: 'Request custom garment fit blocks, tech packs, fit correction, and production patterns engineered to your brand specifications.',
+    values: {},
+    errors: []
+  });
+});
 router.get('/contact', (req, res) => page(res, 'Contact the Studio', { mode: 'contact', description: res.locals.siteSettings.contact_seo_description }));
 router.get('/books',(req,res)=>res.render('books-coming-soon',{title:'Books - Coming Soon | Apparel Easy Patterns',description:'Practical apparel-industry learning materials. Get notified when books become available.'}));
 router.get('/updates', asyncRoute(async (req, res) => page(res, 'Global Fashion & Garment Technology Updates', { mode: 'updates', items: await Article.find(published()).sort({ published_at: -1 }).lean(), description: 'Explore fashion industry updates, market trends and practical garment technology insights.' })));
@@ -49,9 +60,36 @@ router.post('/enquiries', asyncRoute(async (req, res, next) => {
     return res.status(403).send('Form expired. Reload the page and try again.');
   }
   let data;
-  try { data = validation.lead(req.body); if(!res.locals.visibleInterest(data.interest)) throw new Error('This service is currently unavailable. Please choose another interest.'); }
+  try {
+    if (req.body.category || req.body.service_type) {
+      if (!req.body.category || !req.body.category.trim()) throw new Error('Please select a garment category.');
+      if (!req.body.service_type || !req.body.service_type.trim()) throw new Error('Please select a service or request type.');
+      const reqText = (req.body.requirements || req.body.message || '').trim();
+      if (!reqText) throw new Error('Please enter your detailed requirements.');
+      req.body.interest = req.body.interest || 'Fit Blocks';
+      req.body.source = req.body.source || '/custom-block';
+      req.body.message = `Garment Category: ${req.body.category.trim()}\nService / Request Type: ${req.body.service_type.trim()}\nDetailed Requirements:\n${reqText}`;
+    }
+    data = validation.lead(req.body);
+    if(req.body.marker_services !== undefined) {
+      if(!require('../services/commerceValidation').id(req.body.marker_product_id))throw new Error('Choose a valid product.');
+      const product=await Product.findOne({_id:req.body.marker_product_id,...require('../services/patternOptions').publicFilter}).lean();
+      if(!product || product.status==='coming_soon')throw new Error('Product unavailable.');
+      data.message=require('../services/markerOptions').enquiry(product,req.body);
+      data.interest='Fit Blocks';
+      data.source='/product/'+product.slug+'#custom-marker';
+    } if(!res.locals.visibleInterest(data.interest)) throw new Error('This service is currently unavailable. Please choose another interest.'); }
   catch (error) {
     if (wantsJson) return res.status(400).json({ success: false, error: error.message });
+    if (req.body.source === '/custom-block' || req.body.category || req.body.service_type) {
+      return res.status(400).render('custom-block', {
+        title: 'Request a Custom Block | Apparel Easy Patterns',
+        seoTitle: 'Request a Custom Block | Custom Patternmaking & CAD Fit Blocks',
+        description: 'Request custom garment fit blocks, tech packs, fit correction, and production patterns engineered to your brand specifications.',
+        values: req.body,
+        errors: [error.message]
+      });
+    }
     return res.status(400).render('business/page', { title: 'Review Your Enquiry', description: 'Submit your requirement', mode: 'contact', items: [], values: req.body, errors: [error.message], corporate: req.body.interest === 'Corporate Training', interest: req.body.interest, source: typeof req.body.source === 'string' ? req.body.source : '' });
   }
   if (req.session.lastLeadAt && Date.now() - req.session.lastLeadAt < 30000) {
@@ -86,7 +124,13 @@ router.post('/enquiries', asyncRoute(async (req, res, next) => {
   req.session.lastLeadAt = Date.now();
   req.session.leadSent = true;
   if (wantsJson) {
-    return res.json({ success: true, message: 'Custom marker specifications saved to studio enquiries. Our technical pattern team will review your repeat measurements.' });
+    const isCustomBlock = req.body.source === '/custom-block' || req.body.category || req.body.service_type;
+    return res.json({
+      success: true,
+      message: isCustomBlock
+        ? 'Your custom block request has been submitted successfully. Our patternmaking studio team will review your requirements and reach out promptly.'
+        : 'Custom marker specifications saved to studio enquiries. Our technical pattern team will review your repeat measurements.'
+    });
   }
   res.redirect(303, '/enquiries/thank-you');
 }));

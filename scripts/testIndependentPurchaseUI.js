@@ -81,6 +81,16 @@ function fixture() {
     await ui.buy();assert.equal(ui.requests.length, 0, missing);
     assert.match(ui.get('pattern-error').textContent, /Select at least one/);
   }
+  const mini = fixture(), option = mini.get('miniMarkerOption');
+  option.dataset={price:'31.25',files:'["507f1f77bcf86cd799439012","507f1f77bcf86cd799439013"]'};
+  option.checked=true;mini.fire(option,'change');
+  assert.match(mini.get('sumSubtotal').textContent,/31.25/);
+  await mini.buy();assert.equal(mini.requests.length,1);
+  assert.equal(mini.requests[0].body.printable_selected,false);
+  assert.equal(mini.requests[0].body.files.length,2);
+  assert.equal(mini.requests[0].body.quantity,1);
+  option.checked=false;mini.fire(option,'change');assert.match(mini.get('sumSubtotal').textContent,/0$/);
+  console.log('PASS mini marker selected/deselected totals and marker-only purchase payload.');
   const ui = fixture();ui.digital();ui.print();
   ui.get('digital-option').checked=false;ui.fire(ui.get('digital-option'),'change');
   await ui.buy();assert.equal(ui.requests[0].body.quantity, 0);

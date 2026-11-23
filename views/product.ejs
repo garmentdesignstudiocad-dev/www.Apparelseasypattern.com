@@ -865,6 +865,346 @@
       opacity: 0.85;
     }
 
+    /* View badges for front & back photos */
+    .ref-view-badge-bar {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .ref-view-badge {
+      background: rgba(11, 25, 44, 0.75);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.15s ease;
+    }
+    .ref-view-badge:hover {
+      background: rgba(11, 25, 44, 0.95);
+    }
+    .ref-view-badge.active {
+      background: var(--ref-orange);
+      border-color: var(--ref-orange);
+    }
+
+    /* Lightbox Modal Enhancements */
+    .pd-modal-img-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .pd-modal-nav-bar {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .pd-modal-caption {
+      color: #FFFFFF;
+      font-size: 13.5px;
+      font-weight: 700;
+      background: rgba(11, 25, 44, 0.65);
+      padding: 5px 14px;
+      border-radius: 6px;
+    }
+    .pd-modal-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(11, 25, 44, 0.75);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      z-index: 3;
+    }
+    .pd-modal-nav-btn:hover {
+      background: var(--ref-orange);
+      border-color: var(--ref-orange);
+    }
+    .pd-modal-prev { left: -24px; }
+    .pd-modal-next { right: -24px; }
+    @media (max-width: 640px) {
+      .pd-modal-prev { left: 4px; }
+      .pd-modal-next { right: 4px; }
+    }
+    .pd-modal-thumbs {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      overflow-x: auto;
+      max-width: 100%;
+      padding: 4px;
+    }
+    .pd-modal-thumb-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      background: #FFFFFF;
+      padding: 2px;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .pd-modal-thumb-btn.active {
+      border-color: var(--ref-orange);
+      box-shadow: 0 0 0 2px var(--ref-orange);
+    }
+    .pd-modal-thumb-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Measurement Size Chart Section */
+    .pd-measurement-section {
+      margin-top: 48px;
+      margin-bottom: 24px;
+    }
+    .pd-measurement-card {
+      background: #FFFFFF;
+      border: 1px solid var(--ref-border);
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(11, 25, 44, 0.05);
+    }
+    .pd-measurement-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--ref-border);
+    }
+    .pd-measurement-header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .pd-measurement-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--ref-peach-bg);
+      color: var(--ref-orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .pd-measurement-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+    }
+    .pd-measurement-subtitle {
+      font-size: 13.5px;
+      color: var(--ref-text-muted);
+      margin: 0;
+    }
+    .pd-measurement-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .pd-measurement-notice {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      color: #166534;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .pd-measurement-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .pd-measurement-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+    .pd-measurement-subcard {
+      background: #F8FAFC;
+      border: 1px solid var(--ref-border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .pd-subcard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .pd-subcard-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ref-text-dark);
+      margin: 0;
+    }
+    .pd-unit-toggle {
+      display: flex;
+      background: #E2E8F0;
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .unit-btn {
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748B;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .unit-btn.active {
+      background: #FFFFFF;
+      color: var(--ref-text-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .pd-table-wrapper {
+      overflow-x: auto;
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid var(--ref-border);
+    }
+    .pd-spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .pd-spec-table th, .pd-spec-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .pd-spec-table th {
+      background: #F8FAFC;
+      font-weight: 700;
+      color: var(--ref-text-dark);
+      white-space: nowrap;
+    }
+    .pd-spec-table th.highlighted {
+      background: var(--ref-peach-bg);
+      color: var(--ref-orange);
+    }
+    .pd-spec-table tr:hover td {
+      background: #F8FAFC;
+    }
+    .pd-pdf-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--ref-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pd-pdf-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pd-pdf-info strong {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ref-text-dark);
+    }
+    .pd-pdf-info small {
+      font-size: 11.5px;
+      color: var(--ref-text-muted);
+    }
+    .pd-pdf-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .pd-pdf-actions .btn {
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .pd-guide-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ref-orange);
+      background: var(--ref-peach-bg);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--ref-peach-border);
+    }
+    .pd-measure-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pd-measure-step-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--ref-text-sub);
+    }
+    .pd-measure-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--ref-navy);
+      color: #FFFFFF;
+      font-size: 11.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .pd-measure-step-item strong {
+      color: var(--ref-text-dark);
+      font-weight: 700;
+    }
+
+
     /* Lightbox Modal */
     .pd-modal {
       display: none;
@@ -975,11 +1315,17 @@
     const mainImageSrc = galleryImages[0] || '';
 
     // Pricing setup
-    const basePrice = Number(product.base_price || 399);
+    const basePrice = Number(product.base_price || 0);
     const physicalPrice = Number(product.physical_price ?? 0);
-    const configuredSizes = (product.available_sizes && product.available_sizes.length) ? product.available_sizes : ['S', 'M', 'L', 'XL', 'XXL'];
-    const initialSelectedSize = configuredSizes.includes('L') ? 'L' : configuredSizes[0];
+    const configuredSizes = product.available_sizes || [];
 
+    const mappedFormats = typeof digitalAvailability !== 'undefined' ? digitalAvailability : {};
+    const initialSelectedSize = Object.values(mappedFormats).find(sizes=>sizes.length)?.[0] || configuredSizes[0];
+    const digitalReady = product.pattern_options?.printable !== false && basePrice > 0 && Object.values(mappedFormats).some(sizes=>sizes.length);
+    // Measurement purchases use their own explicit slots. `purpose: specs` is
+    // shared by legacy Tech Pack and Basic Measurement uploads, so it cannot
+    // safely determine which paid document the customer is selecting.
+    const measurementFiles = (files || []).filter(f => /^measurement(?:_|$)/.test(f.upload_slot || '') && Number(f.file_price)>0);
     // Format pricing
     const fp = product.format_pricing || {};
     const priceDxf = Number(fp.dxf || basePrice);
@@ -990,16 +1336,18 @@
     const isBundleActive = fp.active_bundle !== false;
 
     // Find separate tech pack file if present
-    const techPackFile = (files || []).find(f => f.purpose === 'tech_pack' || /tech\s*pack/i.test(f.file_name));
-    const techPackPrice = Number(product.tech_pack_price || (techPackFile ? Number(techPackFile.file_price || 0) : 0));
+    const techPackFile = (files || []).find(f => f.upload_slot === 'techpack_pdf' && Number(f.file_price) > 0) || (files || []).find(f => /^techpack(?:_|$)/.test(f.upload_slot || '') && Number(f.file_price) > 0);
+    const techPackPrice = Number(techPackFile?.file_price || 0);
 
     // Digital pattern formats available
     const hasPdfFile = true; // PDF is an independent format alongside DXF, HPGL and PLT.
 
     // Mini Marker files if present
-    const miniMarkerFiles = (files || []).filter(f => /marker|fabric/i.test(f.file_name) || /marker/i.test(f.file_type));
-    const hasPdfMarker = miniMarkerFiles.some(f => (f.file_type || '').toLowerCase().includes('pdf') || (f.file_name || '').toLowerCase().endsWith('.pdf'));
-    const hasCadMarker = miniMarkerFiles.some(f => !(f.file_type || '').toLowerCase().includes('pdf') && !(f.file_name || '').toLowerCase().endsWith('.pdf'));
+    const miniMarkerFiles = (files || []).filter(f => f.upload_slot ? /^marker(?:_|$)/.test(f.upload_slot) : /marker|fabric/i.test(f.file_name || '') || /marker/i.test(f.file_type || ''));
+
+    // Trial Fit Sample availability & pricing
+    const trialPrice = Number(product.trial_price || 0);
+    const isTrialEnabled = product.pattern_options?.trial === true && trialPrice > 0 && configuredSizes.length > 0;
 
     // GST percentage
     const gstRate = typeof configuredGstRate === 'number' ? configuredGstRate : 0;
@@ -1011,6 +1359,10 @@
       <a href="/">Home</a>
       <span class="sep">&gt;</span>
       <a href="/products">Products</a>
+      <% (typeof productBreadcrumbs !== 'undefined' ? productBreadcrumbs : []).forEach(crumb => { %>
+        <span class="sep">&gt;</span>
+        <a href="<%= crumb.href %>"><%= crumb.label %></a>
+      <% }) %>
       <span class="sep">&gt;</span>
       <span class="current"><%= product.name %></span>
     </nav>
@@ -1023,7 +1375,16 @@
         <div class="ref-image-card">
           <div class="ref-main-img-box">
             <% if(mainImageSrc){ %><img id="mainProductImage" class="ref-main-img" src="<%= mainImageSrc %>" alt="<%= product.name %>"><% }else{ %><div class="pattern-placeholder">Finished garment photo coming soon</div><% } %>
-            <button type="button" class="ref-zoom-btn" id="zoomTriggerBtn" aria-label="Zoom image" title="Enlarge image">
+            <% if (galleryImages.length > 1) { %>
+            <div class="ref-view-badge-bar" id="viewBadgeBar" role="tablist" aria-label="Garment views">
+              <button type="button" class="ref-view-badge active" data-index="0" role="tab" aria-selected="true">Front View</button>
+              <button type="button" class="ref-view-badge" data-index="1" role="tab" aria-selected="false">Back View</button>
+              <% if (galleryImages.length > 2) { %>
+                <button type="button" class="ref-view-badge" data-index="2" role="tab" aria-selected="false">Detail</button>
+              <% } %>
+            </div>
+          <% } %>
+          <button type="button" class="ref-zoom-btn" id="zoomTriggerBtn" aria-label="Zoom image" title="Enlarge image">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 3 21 3 21 9"></polyline>
                 <polyline points="9 21 3 21 3 15"></polyline>
@@ -1036,7 +1397,7 @@
           <!-- 5 Thumbnail Gallery -->
           <div class="ref-thumb-row">
             <% galleryImages.slice(0, 5).forEach((src, idx) => { %>
-              <button type="button" class="ref-thumb-btn <%= idx === 0 ? 'active' : '' %>" data-src="<%= src %>" aria-label="View <%= idx + 1 %>">
+              <button type="button" class="ref-thumb-btn <%= idx === 0 ? 'active' : '' %>" data-src="<%= src %>" data-index="<%= idx %>" data-view-label="<%= idx === 0 ? 'Front View' : idx === 1 ? 'Back View' : 'Detail View ' + (idx - 1) %>" aria-label="<%= idx === 0 ? 'Front View' : idx === 1 ? 'Back View' : 'Detail View ' + (idx - 1) %>" title="<%= idx === 0 ? 'Front View' : idx === 1 ? 'Back View' : 'Detail View ' + (idx - 1) %>">
                 <img src="<%= src %>" alt="<%= product.name %> thumbnail <%= idx + 1 %>" loading="lazy">
               </button>
             <% }) %>
@@ -1065,7 +1426,7 @@
 
         <!-- Price Display -->
         <div class="ref-price-row">
-          <span class="ref-price-main">&#8377;<%= basePrice.toLocaleString('en-IN') %></span>
+          <span class="ref-price-main"><%= basePrice > 0 ? '?' + basePrice.toLocaleString('en-IN') : 'Price not configured' %></span>
           <% if (product.compare_at_price && product.compare_at_price > basePrice) { %>
             <span class="ref-price-compare">&#8377;<%= Number(product.compare_at_price).toLocaleString('en-IN') %></span>
             <span class="ref-discount-badge"><%= Math.round((1 - basePrice / product.compare_at_price) * 100) %>% OFF</span>
@@ -1073,7 +1434,7 @@
         </div>
 
         <p class="ref-short-desc">
-          <%= product.description || 'Professional slim fit shirt pattern with multiple file formats, measurement chart and construction guide.' %>
+          <%= product.description || '' %>
         </p>
 
         <!-- Purchase Form -->
@@ -1081,109 +1442,162 @@
           <!-- Error banner -->
           <div id="pattern-error" class="ref-error-banner" role="alert"></div>
 
-          <!-- STEP 1 — FIT BLOCK PATTERN — SOFT COPY (Multi-Format & Multi-Size) -->
+          <!-- Special Trial Offer: Free Basic Pattern Size per Email and Mobile Overall -->
+          <div class="free-pattern-promo-card" id="freePatternPromoCard" style="background:linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);border:1.5px dashed #EA580C;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <div>
+                <div style="display:inline-flex;align-items:center;gap:6px;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+                  <span>★</span> Special Trial Offer
+                </div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#0B192C;">
+                  Claim 1 Free Basic Digital Pattern Size
+                </h3>
+                <p style="margin:0;font-size:12.5px;color:#475569;line-height:1.4;">
+                  One email and one mobile number can claim one free basic pattern overall, for one style and one size. Contact details are not verified.
+                </p>
+              </div>
+              <button type="button" id="btnOpenFreePatternModal" class="fashion-btn" style="background:#EA580C;color:#FFFFFF;border:none;padding:8px 16px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;align-self:center;">
+                Claim Free Size &rarr;
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 1 — FIT BLOCK PATTERN — SINGLE SOFT COPY BUNDLE -->
           <div class="ref-step-section" id="section-soft-copy">
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">1</span>
-                <span>Digital Pattern / Soft Copy &mdash; Select if needed</span>
+                <span>Fit Pattern Soft Copy Bundle &mdash; All Formats Included</span>
               </div>
             </div>
-            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 12px;">
-              <label><input type="checkbox" id="digital-option" <%= product.pattern_options?.printable === false ? 'disabled' : '' %>> Include digital pattern / soft copy</label>
-              <br>Choose one, multiple, or all formats and the digital sizes you need.
-            </p>
+
+            <!-- Digital Soft Copy Option Illustrations (Collage Images 1 & 2) -->
+            <div class="option-illustrations-row" style="display:flex;gap:12px;margin:10px 0 12px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:140px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;text-align:center;">
+                <img src="/images/options/soft_copy_bundle_cad.jpg" alt="Digital CAD Pattern Sheet (DXF/PDF)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);">CAD Tiled Sheet Layout</span>
+              </div>
+              <div style="flex:1;min-width:140px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;text-align:center;">
+                <img src="/images/options/soft_copy_bundle_roll.jpg" alt="Continuous Plotter Roll (HPGL/PLT)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);">Plotter Roll &amp; Cut Outline</span>
+              </div>
+            </div>
+
+            <!-- Single Master Soft Copy Selection Card -->
+            <label class="ref-option-card soft-copy-master-card <%= digitalReady ? '' : 'ref-option-card--disabled' %>" id="softCopyMasterCard" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;margin-bottom:12px;padding:14px;border:1.5px solid var(--ref-border);border-radius:10px;background:#FFFFFF;transition:all 0.15s ease;">
+              <div style="display:flex;align-items:flex-start;gap:10px;flex:1;">
+                <input
+                  type="checkbox"
+                  id="digital-option"
+                  <%= digitalReady ? 'checked' : 'disabled' %>
+                  style="width:18px;height:18px;margin-top:2px;accent-color:var(--ref-orange);cursor:pointer;flex-shrink:0;"
+                >
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:var(--ref-text-dark);">
+                    Fit Pattern Soft Copy Bundle
+                  </div>
+                  <div style="font-size:12px;color:var(--ref-text-muted);margin-top:3px;line-height:1.4;">
+                    Single selection automatically bundles all available, authorized formats (DXF, HPGL, PLT, PDF) for each chosen size.
+                  </div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <span class="format-price-badge" style="background:#EFF6FF;color:#1D4ED8;font-weight:700;">Included Formats</span>
+              </div>
+            </label>
 
             <!-- Base printable option linked to digital format selection -->
             <input type="checkbox" id="printable-option" checked style="display:none">
 
-            <!-- Format Cards Grid: DXF, HPGL, PLT, PDF -->
-            <div class="ref-format-grid" style="grid-template-columns: repeat(<%= hasPdfFile ? 4 : 3 %>, 1fr); margin-bottom: 14px;">
-              <!-- DXF Card -->
-              <label class="ref-format-card" id="formatCardDxf" data-format="dxf" data-price="<%= priceDxf %>">
-                <div class="format-card-top">
-                  <div class="format-checkbox-custom" id="formatCbDxf">
-                    <span style="display:none">&#10003;</span>
-                  </div>
-                  <span class="format-price-badge">&#8377;<%= priceDxf.toLocaleString('en-IN') %></span>
-                </div>
-                <input
-                  type="checkbox"
-                  class="digital-format-check"
-                  id="formatInputDxf"
-                  value="dxf"
-                  style="position:absolute;opacity:0;pointer-events:none;"
-                >
-                <div class="format-title">DXF</div>
-                <div class="format-sub">Editable DXF Pattern</div>
-              </label>
-
-              <!-- HPGL Card -->
-              <label class="ref-format-card" id="formatCardHpgl" data-format="hpgl" data-price="<%= priceHpgl %>">
-                <div class="format-card-top">
-                  <div class="format-checkbox-custom" id="formatCbHpgl">
-                    <span style="display:none">&#10003;</span>
-                  </div>
-                  <span class="format-price-badge">&#8377;<%= priceHpgl.toLocaleString('en-IN') %></span>
-                </div>
-                <input
-                  type="checkbox"
-                  class="digital-format-check"
-                  id="formatInputHpgl"
-                  value="hpgl"
-                  style="position:absolute;opacity:0;pointer-events:none;"
-                >
-                <div class="format-title">HPGL</div>
-                <div class="format-sub">HPGL Plotter File</div>
-              </label>
-
-              <!-- PLT Card -->
-              <label class="ref-format-card" id="formatCardPlt" data-format="plt" data-price="<%= pricePlt %>">
-                <div class="format-card-top">
-                  <div class="format-checkbox-custom" id="formatCbPlt">
-                    <span style="display:none">&#10003;</span>
-                  </div>
-                  <span class="format-price-badge">&#8377;<%= pricePlt.toLocaleString('en-IN') %></span>
-                </div>
-                <input
-                  type="checkbox"
-                  class="digital-format-check"
-                  id="formatInputPlt"
-                  value="plt"
-                  style="position:absolute;opacity:0;pointer-events:none;"
-                >
-                <div class="format-title">PLT</div>
-                <div class="format-sub">Standard Plotter</div>
-              </label>
-
-              <!-- PDF Card -->
-              <% if (hasPdfFile) { %>
-                <label class="ref-format-card" id="formatCardPdf" data-format="pdf" data-price="<%= pricePdf %>">
-                  <div class="format-card-top">
-                    <div class="format-checkbox-custom" id="formatCbPdf">
-                      <span style="display:none">&#10003;</span>
-                    </div>
-                    <span class="format-price-badge">&#8377;<%= pricePdf.toLocaleString('en-IN') %></span>
+            <!-- Included Formats Strip (replaces individual format checkboxes in customer view) -->
+            <div class="soft-copy-formats-strip" style="background:var(--ref-bg-light);border:1px solid var(--ref-border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ref-text-dark);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ref-orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span>All Available Formats Included with Soft Copy:</span>
+              </div>
+              <div class="ref-format-grid" style="margin-bottom:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+                <!-- DXF Card -->
+                <label class="ref-format-card <%= mappedFormats.dxf?.length ? 'checked' : 'disabled' %>" id="formatCardDxf" data-format="dxf" data-price="<%= priceDxf %>" style="cursor:pointer;">
+                  <div class="format-card-top" style="justify-content:space-between;">
+                    <span style="font-size:11px;font-weight:700;color:var(--ref-orange);">&#10003; Included</span>
+                    <span class="format-price-badge"><%= mappedFormats.dxf?.length ? 'Ready' : 'Unavailable' %></span>
                   </div>
                   <input
                     type="checkbox"
                     class="digital-format-check"
-                    id="formatInputPdf"
-                    value="pdf"
+                    id="formatInputDxf"
+                    value="dxf" data-available="<%= mappedFormats.dxf?.length ? 'true' : 'false' %>" <%= mappedFormats.dxf?.length ? '' : 'disabled' %>
                     style="position:absolute;opacity:0;pointer-events:none;"
                   >
-                  <div class="format-title">PDF</div>
-                  <div class="format-sub">Approved Pattern PDF</div>
+                  <div class="format-checkbox-custom" id="formatCbDxf" style="display:none;"><span style="display:none">&#10003;</span></div>
+                  <div class="format-title" style="font-size:13px;font-weight:700;">DXF</div>
+                  <div class="format-sub" style="font-size:11px;">Editable DXF Pattern</div>
                 </label>
-              <% } %>
+
+                <!-- HPGL Card -->
+                <label class="ref-format-card <%= mappedFormats.hpgl?.length ? 'checked' : 'disabled' %>" id="formatCardHpgl" data-format="hpgl" data-price="<%= priceHpgl %>" style="cursor:pointer;">
+                  <div class="format-card-top" style="justify-content:space-between;">
+                    <span style="font-size:11px;font-weight:700;color:var(--ref-orange);">&#10003; Included</span>
+                    <span class="format-price-badge"><%= mappedFormats.hpgl?.length ? 'Ready' : 'Unavailable' %></span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="digital-format-check"
+                    id="formatInputHpgl"
+                    value="hpgl" data-available="<%= mappedFormats.hpgl?.length ? 'true' : 'false' %>" <%= mappedFormats.hpgl?.length ? '' : 'disabled' %>
+                    style="position:absolute;opacity:0;pointer-events:none;"
+                  >
+                  <div class="format-checkbox-custom" id="formatCbHpgl" style="display:none;"><span style="display:none">&#10003;</span></div>
+                  <div class="format-title" style="font-size:13px;font-weight:700;">HPGL</div>
+                  <div class="format-sub" style="font-size:11px;">HPGL Pattern File</div>
+                </label>
+
+                <!-- PLT Card -->
+                <label class="ref-format-card <%= mappedFormats.plt?.length ? 'checked' : 'disabled' %>" id="formatCardPlt" data-format="plt" data-price="<%= pricePlt %>" style="cursor:pointer;">
+                  <div class="format-card-top" style="justify-content:space-between;">
+                    <span style="font-size:11px;font-weight:700;color:var(--ref-orange);">&#10003; Included</span>
+                    <span class="format-price-badge"><%= mappedFormats.plt?.length ? 'Ready' : 'Unavailable' %></span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="digital-format-check"
+                    id="formatInputPlt"
+                    value="plt" data-available="<%= mappedFormats.plt?.length ? 'true' : 'false' %>" <%= mappedFormats.plt?.length ? '' : 'disabled' %>
+                    style="position:absolute;opacity:0;pointer-events:none;"
+                  >
+                  <div class="format-checkbox-custom" id="formatCbPlt" style="display:none;"><span style="display:none">&#10003;</span></div>
+                  <div class="format-title" style="font-size:13px;font-weight:700;">PLT</div>
+                  <div class="format-sub" style="font-size:11px;">Standard Plotter</div>
+                </label>
+
+                <!-- PDF Card -->
+                <% if (hasPdfFile) { %>
+                  <label class="ref-format-card <%= mappedFormats.pdf?.length ? 'checked' : 'disabled' %>" id="formatCardPdf" data-format="pdf" data-price="<%= pricePdf %>" style="cursor:pointer;">
+                    <div class="format-card-top" style="justify-content:space-between;">
+                      <span style="font-size:11px;font-weight:700;color:var(--ref-orange);">&#10003; Included</span>
+                      <span class="format-price-badge"><%= mappedFormats.pdf?.length ? 'Ready' : 'Unavailable' %></span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      class="digital-format-check"
+                      id="formatInputPdf"
+                      value="pdf" data-available="<%= mappedFormats.pdf?.length ? 'true' : 'false' %>" <%= mappedFormats.pdf?.length ? '' : 'disabled' %>
+                      style="position:absolute;opacity:0;pointer-events:none;"
+                    >
+                    <div class="format-checkbox-custom" id="formatCbPdf" style="display:none;"><span style="display:none">&#10003;</span></div>
+                    <div class="format-title" style="font-size:13px;font-weight:700;">PDF</div>
+                    <div class="format-sub" style="font-size:11px;">Approved Pattern PDF</div>
+                  </label>
+                <% } %>
+              </div>
             </div>
 
             <!-- Soft Copy Size Selection -->
             <div id="digitalSizeSelection" style="background:var(--ref-bg-light);border:1px solid var(--ref-border);border-radius:10px;padding:14px;margin-top:10px;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                 <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
-                  <span>Select Digital Sizes</span>
-                  <span style="font-size:11.5px;font-weight:500;color:var(--ref-text-muted);" id="softSizeCountLabel">(1 size selected)</span>
+                  <span>Select Digital / Document / Trial Sizes</span>
+                  <span style="font-size:11.5px;font-weight:500;color:var(--ref-text-muted);" id="softSizeCountLabel">(<%= configuredSizes.length ? 1 : 0 %> size selected)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <button type="button" id="btnSelectAllSoftSizes" class="size-action-link" style="background:none;border:none;color:var(--ref-orange);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">
@@ -1227,16 +1641,53 @@
             </small>
           </div>
 
-          <!-- STEP 2 — BASIC CONSTRUCTION TECH PACK -->
-          <div class="ref-step-section">
+          <!-- STEP 2 — SPEC SHEET / MEASUREMENT CHART (Owner PowerPoint Slide 9 & 15) -->
+          <div class="ref-step-section" id="section-spec-sheet">
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">2</span>
+                <span>SPEC SHEET / MEASUREMENT CHART</span>
+              </div>
+            </div>
+
+            <!-- Measurement Chart Illustration (Collage Image 3) -->
+            <div style="margin:10px 0 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;max-width:280px;">
+              <img src="/images/options/measurement_chart.jpg" alt="Measurement Chart Specification" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+              <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);display:block;text-align:center;">Body Measurement Spec Guide</span>
+            </div>
+
+            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 10px;">Optional technical measurement documents. Select the document you want to purchase.</p>
+            <% if (!measurementFiles.length) { %>
+              <div class="ref-option-card ref-option-card--disabled" style="opacity:0.6;cursor:not-allowed;">
+                <span class="format-price-badge" style="background:#F1F5F9;color:#64748B;">Unavailable</span>
+                <span style="font-size:12.5px;color:var(--ref-text-muted);">Technical Measurement Chart document is not configured for purchase.</span>
+              </div>
+            <% } %>
+            <% measurementFiles.forEach(file => { %>
+              <label class="ref-option-card">
+                <input type="checkbox" class="measurement-file" value="<%= file._id %>" data-price="<%= file.file_price %>" data-per-size="<%= file.price_per_selected_size === true %>">
+                <span><%= file.file_name %> &mdash; &#8377;<%= Number(file.file_price).toLocaleString('en-IN') %><%= file.price_per_selected_size ? ' per selected size' : '' %></span>
+              </label>
+            <% }) %>
+            <a href="#measurement-size-chart-section">View size reference</a>
+          </div>
+
+          <!-- STEP 3 — BASIC CONSTRUCTION TECH PACK (Owner PowerPoint Slide 9) -->
+          <div class="ref-step-section" id="section-tech-pack">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">3</span>
                 <span>BASIC CONSTRUCTION TECH PACK</span>
               </div>
             </div>
 
-            <label class="ref-option-card <%= (techPackFile || techPackPrice > 0) ? '' : 'disabled-add' %>" id="techPackCard">
+            <!-- Basic Construction Tech Pack Illustration (Collage Image 4) -->
+            <div style="margin:10px 0 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;max-width:280px;">
+              <img src="/images/options/tech_pack.jpg" alt="Basic Construction Tech Pack" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+              <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);display:block;text-align:center;">Garment Construction Details &amp; POM</span>
+            </div>
+
+            <label class="ref-option-card <%= techPackFile ? '' : 'disabled-add' %>" id="techPackCard">
               <div class="ref-card-cb" id="techPackCheckMark">
                 <span style="display:none">&#10003;</span>
               </div>
@@ -1245,8 +1696,8 @@
                 class="pattern-file"
                 id="techPackInput"
                 value="<%= techPackFile ? techPackFile._id : '' %>"
-                data-price="<%= techPackPrice %>"
-                <%= (techPackFile || techPackPrice > 0) ? '' : 'disabled' %>
+                data-price="<%= techPackPrice %>" data-per-size="<%= techPackFile?.price_per_selected_size === true %>"
+                <%= techPackFile ? '' : 'disabled' %>
                 style="position:absolute;opacity:0;pointer-events:none;"
               >
               <div class="ref-card-icon">
@@ -1260,7 +1711,7 @@
               </div>
               <div class="ref-card-text">
                 <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                  <strong>Add Tech Pack &mdash; <%= techPackPrice > 0 ? '₹' + techPackPrice.toLocaleString('en-IN') : 'Included where configured' %></strong>
+                  <strong>Add Tech Pack &mdash; <%= techPackPrice > 0 ? '₹' + techPackPrice.toLocaleString('en-IN') : 'Unavailable' %></strong>
                   <% if (techPackPrice > 0) { %>
                     <span class="format-price-badge">&#8377;<%= techPackPrice.toLocaleString('en-IN') %></span>
                   <% } %>
@@ -1270,16 +1721,16 @@
             </label>
           </div>
 
-          <!-- STEP 3 — PHYSICAL PATTERN — HARD COPY (BROWN SHEET) -->
+          <!-- STEP 4 — PHYSICAL PATTERN — HARD COPY (BROWN SHEET) (Owner PowerPoint Slide 9 & 10) -->
           <div class="ref-step-section" id="section-physical-pattern">
             <div class="ref-step-header">
               <div class="ref-step-title">
-                <span class="ref-step-num">3</span>
-                <span>Physical Pattern Printout &mdash; Select if needed</span>
+                <span class="ref-step-num">4</span>
+                <span>PATTERN HARD COPY &mdash; Physical Printout</span>
               </div>
             </div>
 
-            <% const isPhysicalEnabled = product.pattern_options?.physical !== false; %>
+            <% const isPhysicalEnabled = product.pattern_options?.physical !== false && configuredSizes.length > 0 && configuredSizes.every(size => Number(product.size_prices?.find(row=>row.size===size)?.price ?? physicalPrice)>0); %>
             <label class="ref-option-card <%= !isPhysicalEnabled ? 'ref-option-card--disabled' : '' %>" id="physicalPrintoutCard" style="margin-bottom:12px;<%= !isPhysicalEnabled ? 'opacity:0.6;cursor:not-allowed;' : '' %>">
               <div class="ref-card-cb" id="physicalPrintoutCheckMark">
                 <span style="display:none">&#10003;</span>
@@ -1346,50 +1797,30 @@
             </div>
           </div>
 
-          <!-- STEP 4 — FABRIC CONSUMPTION MARKERS -->
-          <div class="ref-step-section">
+          <!-- STEP 5 — FABRIC CONSUMPTION MINI MARKER (Owner PowerPoint Slide 9 & 11) -->
+          <div class="ref-step-section" id="section-mini-marker">
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">5</span>
-                <span>FABRIC CONSUMPTION MARKERS</span>
+                <span>FABRIC CONSUMPTION MINI MARKER &mdash; Solid (Default)</span>
               </div>
             </div>
             <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 10px;">
               Basic solid-fabric consumption markers for the selected garment and size.
             </p>
 
-            <div class="marker-files-grid">
-              <div class="marker-file-card">
-                <span class="marker-file-badge">PDF</span>
-                <div>
-                  <strong style="font-size:13px;display:block;color:var(--ref-text-dark);">PDF Mini Marker</strong>
-                  <span style="font-size:11.5px;color:<%= hasPdfMarker ? '#10B981' : '#64748B' %>;">
-                    <%= hasPdfMarker ? '✓ Available for download' : 'Upload pending (available on request)' %>
-                  </span>
-                </div>
-              </div>
-              <div class="marker-file-card">
-                <span class="marker-file-badge">CAD</span>
-                <div>
-                  <strong style="font-size:13px;display:block;color:var(--ref-text-dark);">CAD Mini Marker</strong>
-                  <span style="font-size:11.5px;color:<%= hasCadMarker ? '#10B981' : '#64748B' %>;">
-                    <%= hasCadMarker ? '✓ Available for download' : 'Upload pending (available on request)' %>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="marker-notice-box">
-              <strong>Notice:</strong> Fabric consumption is calculated strictly from verified marker data. Mini marker files are included in release assets where uploaded.
-            </div>
+            <label class="marker-file-card"><input type="checkbox" id="miniMarkerOption" data-price="<%= product.mini_marker_price || 0 %>" data-files="<%= JSON.stringify(miniMarkerFiles.map(f=>String(f._id))) %>" <%= miniMarkerFiles.length && product.mini_marker_price > 0 ? '' : 'disabled' %>>
+              <strong>Fabric Consumption Mini Marker</strong>
+              <span><%= product.mini_marker_price > 0 ? 'INR '+Number(product.mini_marker_price).toFixed(2) : 'Price not configured' %><%= miniMarkerFiles.length ? '' : ' - Upload pending' %></span>
+            </label><p class="marker-notice-box">Optional PDF/CAD marker bundle. Downloads are available only after verified payment.</p>
           </div>
 
-          <!-- STEP 6 — CUSTOMIZE MARKERS -->
-          <div class="ref-step-section">
+          <!-- SEPARATE ENQUIRY SECTION — CUSTOMIZE MARKERS (Owner PowerPoint Slide 9, 11) -->
+          <div class="ref-step-section" id="section-customize-markers" style="margin-top:24px;border-top:1.5px dashed #CBD5E1;padding-top:18px;">
             <div class="ref-step-header">
               <div class="ref-step-title">
-                <span class="ref-step-num">6</span>
-                <span>CUSTOMIZE MARKERS</span>
+                <span style="display:inline-block;padding:2px 8px;background:#F1F5F9;border-radius:4px;font-size:11.5px;font-weight:800;color:#475569;letter-spacing:0.04em;">ENQUIRY</span>
+                <span class="ref-step-num">6</span><span>Stripe / Check Marker Customization</span>
               </div>
             </div>
             <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 12px;">
@@ -1407,6 +1838,7 @@
 
             <!-- Option A: Stripes Panel -->
             <div class="custom-marker-panel active" id="panelStripes" role="tabpanel">
+              <label><input type="checkbox" class="marker-service-option" value="stripes" data-price="<%= product.stripes_marker_price || 0 %>" <%= product.stripes_marker_price > 0 ? '' : 'disabled' %>> Stripes Marker Customization &mdash; <%= product.stripes_marker_price > 0 ? 'INR '+Number(product.stripes_marker_price).toFixed(2) : 'Price not configured' %> (enquiry only)</label>
               <h5 style="margin:0 0 10px;font-size:13.5px;color:var(--ref-text-dark);font-weight:700;">
                 A. CUSTOMIZE MARKERS FOR STRIPES
               </h5>
@@ -1426,6 +1858,7 @@
 
             <!-- Option B: Checks Panel -->
             <div class="custom-marker-panel" id="panelChecks" role="tabpanel">
+              <label><input type="checkbox" class="marker-service-option" value="checks" data-price="<%= product.checks_marker_price || 0 %>" <%= product.checks_marker_price > 0 ? '' : 'disabled' %>> Checks Marker Customization &mdash; <%= product.checks_marker_price > 0 ? 'INR '+Number(product.checks_marker_price).toFixed(2) : 'Price not configured' %> (enquiry only)</label>
               <h5 style="margin:0 0 10px;font-size:13.5px;color:var(--ref-text-dark);font-weight:700;">
                 B. CUSTOMIZE MARKERS FOR CHECKS
               </h5>
@@ -1451,52 +1884,91 @@
             <div class="marker-notice-box" style="margin-top:10px;">
               <strong>Customization Workflow:</strong> Entered repeat dimensions are submitted with your order enquiry. Automated instant CAD generation is subject to verified marker engine integration.
             </div>
+          </div>
 
-            <!-- Live Studio Marker Specification Enquiry -->
-            <div class="marker-enquiry-box" style="margin-top:14px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:14px;">
-              <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);margin-bottom:6px;">
-                Submit Custom Marker Specifications to Pattern Studio
+          <!-- ORDER SUMMARY with Dynamic Multi-Size & Multi-Format Breakdown -->
+          <!-- STEP 7 — TRIAL FIT SAMPLE (Owner PowerPoint Slide 9 & 12) -->
+          <div class="ref-step-section" id="section-trial-sample">
+            <div class="ref-step-header">
+              <div class="ref-step-title">
+                <span class="ref-step-num">7</span>
+                <span>Trial Fit Sample &mdash; With Available Fabric</span>
               </div>
-              <p style="font-size:12px;color:var(--ref-text-muted);margin:0 0 10px;">
-                Provide custom size measurements or marker specifications / notes (at least one), and your contact details. Our CAD pattern engineering team will review and prepare your custom marker.
-              </p>
-              <div class="marker-field-group" style="margin-bottom:10px;">
-                <label for="markerCustomMeasurements">Custom Size Measurements (cm)</label>
-                <textarea id="markerCustomMeasurements" rows="3" maxlength="2000" placeholder="Enter measurement names and values in centimetres. Optional when marker specifications or notes are provided."></textarea>
+            </div>
+            <p style="font-size:12.5px;color:var(--ref-text-muted);margin:0 0 10px;">
+              Physical trial fit sample constructed with available fabric based on selected style and fit, allowing customers to inspect construction, finishing, and overall garment balance before production. Delivered by courier.
+            </p>
+
+            <!-- Complete Trial Fit Sample Illustration (Collage Image 7) -->
+            <div class="trial-sample-illustration-card" style="margin:10px 0 14px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;">
+              <div style="width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;">
+                <img
+                  src="/images/options/trial_fit_sample.jpg"
+                  alt="Demo Illustration — Trial Fit Sample"
+                  style="width:100%;height:auto;max-height:360px;object-fit:contain;display:block;border-radius:6px;"
+                  loading="lazy"
+                >
               </div>
-              <div class="marker-field-group" style="margin-bottom:10px;">
-                <label for="markerSpecifications">Custom Marker Specifications / Notes</label>
-                <textarea id="markerSpecifications" rows="3" maxlength="2000" placeholder="Describe your marker requirements. Optional when custom measurements are provided."></textarea>
+              <span style="font-size:12px;font-weight:700;color:var(--ref-text-dark);margin-top:8px;">
+                Demo Illustration &mdash; Trial Fit Sample
+              </span>
+              <span style="font-size:11.5px;color:var(--ref-text-muted);text-align:center;margin-top:3px;">
+                Physical prototype sewn with available fabric to verify silhouette, balance, and proportions before production.
+              </span>
+            </div>
+
+            <label class="ref-option-card <%= !isTrialEnabled ? 'ref-option-card--disabled' : '' %>" id="trialSampleCard" style="margin-bottom:12px;<%= !isTrialEnabled ? 'opacity:0.6;cursor:not-allowed;' : '' %>">
+              <div class="ref-card-cb" id="trialSampleCheckMark">
+                <span style="display:none">&#10003;</span>
               </div>
-              <div class="marker-field-row" style="margin-bottom:10px;">
-                <div class="marker-field-group">
-                  <label for="markerLeadName" style="font-size:11.5px;">Your Name *</label>
-                  <input type="text" id="markerLeadName" placeholder="Full name" style="height:36px;font-size:13px;" value="<%= typeof user !== 'undefined' && user?.name ? user.name : '' %>">
+              <input
+                type="checkbox"
+                id="trial-sample-option"
+                data-price="<%= trialPrice %>"
+                <%= !isTrialEnabled ? 'disabled' : '' %>
+                style="position:absolute;opacity:0;pointer-events:none;"
+              >
+              <div class="ref-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"></path>
+                </svg>
+              </div>
+              <div class="ref-card-text">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                  <strong>Trial Fit Sample - With Available Fabric<% if (!isTrialEnabled) { %> <span style="font-size:11.5px;color:#ef4444;font-weight:600;">(Currently Unavailable)</span><% } %></strong>
+                  <span class="format-price-badge">&#8377;<%= trialPrice > 0 ? trialPrice.toLocaleString('en-IN') : 'N/A' %> / Sample</span>
                 </div>
-                <div class="marker-field-group">
-                  <label for="markerLeadEmail" style="font-size:11.5px;">Email Address *</label>
-                  <input type="email" id="markerLeadEmail" placeholder="name@domain.com" style="height:36px;font-size:13px;" value="<%= typeof user !== 'undefined' && user?.email ? user.email : '' %>">
-                </div>
-                <div class="marker-field-group">
-                  <label for="markerLeadWhatsapp" style="font-size:11.5px;">WhatsApp Number *</label>
-                  <input type="tel" id="markerLeadWhatsapp" placeholder="+91 98765 43210" style="height:36px;font-size:13px;">
-                </div>
+                <small>Physical prototype sewn with available fabric to verify silhouette, proportions, and ease. Dispatched to customer address via courier.</small>
               </div>
-              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                <button type="button" id="btnSubmitMarkerEnquiry" style="display:inline-flex;align-items:center;gap:6px;background:var(--ref-orange);color:#FFFFFF;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
-                  <span>Submit Marker Specifications</span> &rarr;
-                </button>
-                <span id="markerSubmitStatus" style="font-size:12.5px;font-weight:600;display:none;" role="status"></span>
+            </label>
+
+            <!-- Trial Quantity Controls -->
+            <div id="trialSampleControls" style="display:none;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:12px;margin-bottom:12px;">
+              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <label style="font-size:12.5px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
+                  <span>Trial Sample Quantity:</span>
+                  <input type="number" id="trial-sample-quantity" min="1" max="10" value="1" style="width:65px;padding:4px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:13px;font-weight:700;">
+                </label>
+                <span style="font-size:12px;color:var(--ref-text-muted);">
+                  Constructed for the selected size (<span id="trialSelectedSizeDisplay"><%= initialSelectedSize %></span>).
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- ORDER SUMMARY with Dynamic Multi-Size & Multi-Format Breakdown -->
           <div class="ref-summary-box">
-            <h4>Order Summary</h4>
+            <h4>8. Order Summary / Final Quote</h4>
             <div class="ref-summary-row">
               <span>Selected Product</span>
               <strong style="text-align:right;"><%= product.name %></strong>
+            </div>
+            <div class="ref-summary-row" id="sumSpecSheetRow" style="display:flex;">
+              <span>Basic Size Guide &amp; Fit Specs</span>
+              <span style="font-size:12px;font-weight:700;color:#047857;">Included</span>
+            </div>
+            <div class="ref-summary-row" id="sumMeasurementRow" style="display:none;">
+              <span>Measurement Chart Document</span>
+              <strong id="sumMeasurementPrice">&#8377;0</strong>
             </div>
             <div class="ref-summary-row" id="sumSoftCopyRow">
               <span id="sumSoftCopyLabel">Soft Copy (1 size &times; 1 format)</span>
@@ -1512,7 +1984,11 @@
             </div>
             <div class="ref-summary-row" id="sumMarkerRow">
               <span>Marker Service</span>
-              <span id="sumMarkerStatus" style="font-size:12px;color:var(--ref-text-muted);">Solid mini marker included</span>
+              <span id="sumMarkerStatus" style="font-size:12px;color:var(--ref-text-muted);">No mini marker selected</span>
+            </div>
+            <div class="ref-summary-row" id="sumTrialRow" style="display:none">
+              <span id="sumTrialLabel">Trial Fit Sample (0 samples)</span>
+              <strong id="sumTrialPrice">&#8377;0</strong>
             </div>
             <div class="ref-summary-divider"></div>
             <div class="ref-summary-row">
@@ -1554,6 +2030,186 @@
             </button>
           </div>
         </form>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         MEASUREMENT SIZE CHART & HOW TO MEASURE SECTION
+         Distinct from Basic Measurement Chart & digital pattern CAD options
+         ========================================================================= -->
+    <section class="pd-measurement-section" id="measurement-size-chart-section" aria-labelledby="measurementSectionTitle">
+      <div class="pd-measurement-card">
+        <header class="pd-measurement-header">
+          <div class="pd-measurement-header-left">
+            <div class="pd-measurement-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.3 8.7l-2-2-1.4 1.4 2 2M16.5 13.5l-2-2-1.4 1.4 2 2M11.7 18.3l-2-2-1.4 1.4 2 2"></path>
+                <path d="M2 22l20-20"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 id="measurementSectionTitle" class="pd-measurement-title">Measurement Size Chart</h2>
+              <p class="pd-measurement-subtitle">
+                Standard Garment Specifications &amp; Fit Guide (Industrial Measurements) &bull; Reference Only
+              </p>
+            </div>
+          </div>
+          <div class="pd-measurement-header-right">
+            <span class="pd-measurement-badge">&#10003; Reference Guide</span>
+          </div>
+        </header>
+
+        <!-- Informational Notice: Distinct from Basic Measurement Chart -->
+        <div class="pd-measurement-notice">
+          <strong>Standard Sizing Reference:</strong> Use only the product-specific reference supplied below; size labels from different systems are not interchangeable.
+          <em>(Distinct from the optional downloadable <strong>Basic Measurement Chart</strong> CAD/CSV file in Digital Pattern Options, which is delivered securely after payment.)</em>
+        </div>
+
+        <div class="pd-measurement-grid">
+          <!-- Left Sub-card: Measurement Size Chart Table & PDF -->
+          <div class="pd-measurement-subcard">
+            <div class="pd-subcard-header">
+              <h3 class="pd-subcard-title">Size Chart Specifications</h3>
+              <div class="pd-unit-toggle" id="unitToggle">
+                <button type="button" class="unit-btn active" data-unit="cm">CM</button>
+                <button type="button" class="unit-btn" data-unit="in">INCHES</button>
+              </div>
+            </div>
+
+            <% if (product.size_information) { %>
+              <p style="white-space:pre-line"><%= product.size_information %></p>
+            <% } else { %>
+              <p>Product measurements are not configured. Confirm the size against the supplied product-specific reference before ordering.</p>
+            <% } %>
+
+            <!-- Size Chart PDF Attachment Controls -->
+            <% if (product.size_chart_pdf) { %>
+              <div class="pd-pdf-card" style="margin-top:16px;">
+                <div class="pd-pdf-info">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  <div>
+                    <strong><%= product.size_chart_pdf_name || 'Size Chart Guide (PDF)' %></strong>
+                    <small>Official Production Specification Sheet</small>
+                  </div>
+                </div>
+                <div class="pd-pdf-actions">
+                  <a href="<%= product.size_chart_pdf %>" target="_blank" rel="noopener noreferrer" class="btn ghost small">
+                    View PDF &nearr;
+                  </a>
+                  <a href="<%= product.size_chart_pdf %>" download="<%= product.size_chart_pdf_name || 'Size-Chart.pdf' %>" class="btn ghost small">
+                    Download PDF &darr;
+                  </a>
+                  <button type="button" class="btn ghost small btn-toggle-pdf-preview" data-target="sizeChartEmbedBox">
+                    Preview &darr;
+                  </button>
+                </div>
+              </div>
+              <div id="sizeChartEmbedBox" class="pd-pdf-embed-box" style="display:none;margin-top:12px;">
+                <iframe src="<%= product.size_chart_pdf %>#toolbar=1" width="100%" height="380" style="border:1px solid #E2E8F0;border-radius:8px;" title="Size Chart PDF Preview"></iframe>
+              </div>
+            <% } %>
+
+            <% if (product.size_chart_image || product.size_chart_url) { %>
+              <div style="margin-top:14px;border-radius:8px;overflow:hidden;border:1px solid #E2E8F0;">
+                <img src="<%= product.size_chart_image || product.size_chart_url %>" alt="Size Chart Visual" style="width:100%;height:auto;display:block;">
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Right Sub-card: "How to Measure" PDF Viewing Option -->
+          <div class="pd-measurement-subcard">
+            <div class="pd-subcard-header">
+              <h3 class="pd-subcard-title">How to Measure</h3>
+              <span class="pd-guide-badge">Fit Guide</span>
+            </div>
+            <p style="font-size:13px;color:#64748B;margin:0 0 16px;line-height:1.5;">
+              Follow these simple steps with a flexible tape measure to find your accurate garment size:
+            </p>
+
+            <div class="pd-measure-steps">
+              <div class="pd-measure-step-item">
+                <div class="pd-measure-step-num">1</div>
+                <div>
+                  <strong>Chest / Bust:</strong>
+                  <span>Measure horizontally around the fullest part of your chest, keeping the tape snug under your armpits.</span>
+                </div>
+              </div>
+              <div class="pd-measure-step-item">
+                <div class="pd-measure-step-num">2</div>
+                <div>
+                  <strong>Waist:</strong>
+                  <span>Measure around your natural waistline, where your trousers typically rest, keeping one finger between tape and body.</span>
+                </div>
+              </div>
+              <div class="pd-measure-step-item">
+                <div class="pd-measure-step-num">3</div>
+                <div>
+                  <strong>Across Shoulder:</strong>
+                  <span>Measure from the tip of one shoulder bone across the back curve to the other shoulder tip.</span>
+                </div>
+              </div>
+              <div class="pd-measure-step-item">
+                <div class="pd-measure-step-num">4</div>
+                <div>
+                  <strong>Collar / Neck:</strong>
+                  <span>Measure around the base of the neck where the collar sits comfortably with one finger allowance.</span>
+                </div>
+              </div>
+              <div class="pd-measure-step-item">
+                <div class="pd-measure-step-num">5</div>
+                <div>
+                  <strong>Sleeve Length:</strong>
+                  <span>Measure from the top shoulder point down along the outer arm to the wrist bone.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- "How to Measure" PDF Viewing Option -->
+            <div class="pd-pdf-card" style="margin-top:18px;">
+              <div class="pd-pdf-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA580C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <div>
+                  <strong><%= product.how_to_measure_pdf_name || 'How to Measure Guide (PDF)' %></strong>
+                  <small>Illustrated Body Measurement Tutorial</small>
+                </div>
+              </div>
+              <div class="pd-pdf-actions">
+                <% if (product.how_to_measure_pdf) { %>
+                  <a href="<%= product.how_to_measure_pdf %>" target="_blank" rel="noopener noreferrer" class="btn ghost small">
+                    View PDF &nearr;
+                  </a>
+                  <a href="<%= product.how_to_measure_pdf %>" download="<%= product.how_to_measure_pdf_name || 'How-To-Measure.pdf' %>" class="btn ghost small">
+                    Download PDF &darr;
+                  </a>
+                  <button type="button" class="btn ghost small btn-toggle-pdf-preview" data-target="howToMeasureEmbedBox">
+                    Preview &darr;
+                  </button>
+                <% } else { %>
+                  <a href="<%= product.size_chart_pdf || '#measurement-size-chart-section' %>" target="_blank" rel="noopener noreferrer" class="btn ghost small">
+                    View Illustrated Guide &nearr;
+                  </a>
+                <% } %>
+              </div>
+            </div>
+            <% if (product.how_to_measure_pdf) { %>
+              <div id="howToMeasureEmbedBox" class="pd-pdf-embed-box" style="display:none;margin-top:12px;">
+                <iframe src="<%= product.how_to_measure_pdf %>#toolbar=1" width="100%" height="380" style="border:1px solid #E2E8F0;border-radius:8px;" title="How to Measure PDF Preview"></iframe>
+              </div>
+            <% } %>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1619,11 +2275,85 @@
     </div>
     <% } %>
 
-    <!-- Fullscreen Image Zoom Lightbox Modal -->
+    <!-- Fullscreen Image Zoom Lightbox Modal with Multi-Photo & Front/Back Navigation -->
+    <!-- FREE BASIC PATTERN MODAL (One Claim Overall Per Email and Mobile) -->
+    <div id="free-pattern-backdrop" class="modal-backdrop-custom" style="display:none;" aria-hidden="true"></div>
+    <div id="free-pattern-modal" class="size-guide-modal" role="dialog" aria-modal="true" aria-labelledby="freePatternTitle" style="display:none;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 id="freePatternTitle" style="margin:0;font-size:18px;font-weight:700;color:#0B192C;">
+          Claim Free Basic Pattern
+        </h3>
+        <button type="button" id="closeFreePatternBtn" class="size-guide-close" style="font-size:24px;background:none;border:none;cursor:pointer;">&times;</button>
+      </div>
+
+      <p style="font-size:13px;color:#475569;margin-bottom:16px;line-height:1.4;">
+        Select <strong>one free size</strong> for this <strong><%= product.fit || '' %> <%= product.product_type || 'Style' %></strong>. One free claim overall per email and mobile number. Contact details are not verified; this does not prevent all duplicate identities.
+      </p>
+
+      <!-- Step A: Size Selection -->
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:#0B192C;margin-bottom:6px;">1. Choose Your Free Size</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="freeSizeSelectGroup">
+          <% const freeSizes = typeof freeAvailableSizes !== 'undefined' ? freeAvailableSizes : []; %>
+          <% if (!freeSizes.length) { %><p>Unavailable: no owner-approved free basic pattern file for this style and size.</p><% } %>
+          <% freeSizes.forEach(sz => { %>
+            <label class="ref-size-pill free-size-pill" data-free-size="<%= sz %>" style="cursor:pointer;padding:6px 14px;border:1px solid #CBD5E1;border-radius:6px;font-size:12px;font-weight:700;">
+              <input type="radio" name="free_claimed_size" value="<%= sz %>" style="display:none;">
+              <span><%= sz %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px"><label for="freePhoneInput">2. Mobile Number</label>
+        <input type="tel" id="freePhoneInput" autocomplete="tel" placeholder="+91 98765 43210" required></div>
+      <div style="margin-bottom:16px"><label for="freeEmailInput">3. Email Address</label>
+        <input type="email" id="freeEmailInput" autocomplete="email" required></div>
+
+      <!-- Error / Success Alert -->
+      <div id="freePatternAlert" style="display:none;padding:10px 12px;border-radius:8px;font-size:12.5px;margin-bottom:16px;" role="alert"></div>
+
+      <!-- Action Button -->
+      <button type="button" id="btnClaimFreePattern" <%= freeSizes.length ? '' : 'disabled' %> class="fashion-btn" style="width:100%;background:#EA580C;color:#FFFFFF;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">
+        Claim Free Basic Pattern
+      </button>
+
+      <!-- Download Button Container (Shown on Success) -->
+      <div id="freeDownloadWrap" style="display:none;text-align:center;margin-top:16px;">
+        <a id="freeDownloadLink" href="#" class="fashion-btn" style="display:inline-block;width:100%;background:#10B981;color:#FFFFFF;padding:12px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
+          &#11015; Download Your Free Basic Pattern
+        </a>
+        <small style="display:block;font-size:11px;color:#64748B;margin-top:6px;">Link active for 24 hours. Keep your downloaded file safe.</small>
+      </div>
+
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #E2E8F0;font-size:11px;color:#94A3B8;line-height:1.4;">
+        * Note: Paid CAD pattern files (DXF/HPGL/PLT), Construction Tech Pack, and Measurement Charts remain independent paid options.
+      </div>
+    </div>
     <div id="imageLightboxModal" class="pd-modal" role="dialog" aria-modal="true" aria-label="Garment image preview">
       <div class="pd-modal-content">
         <button type="button" class="pd-modal-close" id="closeLightboxBtn" aria-label="Close preview">&times;</button>
-        <img id="lightboxImg" class="pd-modal-img" src="" alt="Garment enlarged preview">
+        <div class="pd-modal-nav-bar">
+          <span id="lightboxCaption" class="pd-modal-caption">Front View (1 of <%= galleryImages.length || 1 %>)</span>
+        </div>
+        <div class="pd-modal-img-wrap">
+          <% if (galleryImages.length > 1) { %>
+            <button type="button" class="pd-modal-nav-btn pd-modal-prev" id="prevLightboxBtn" aria-label="Previous image">&lang;</button>
+          <% } %>
+          <img id="lightboxImg" class="pd-modal-img" src="" alt="Garment enlarged preview">
+          <% if (galleryImages.length > 1) { %>
+            <button type="button" class="pd-modal-nav-btn pd-modal-next" id="nextLightboxBtn" aria-label="Next image">&rang;</button>
+          <% } %>
+        </div>
+        <% if (galleryImages.length > 1) { %>
+          <div class="pd-modal-thumbs" id="lightboxThumbsBar">
+            <% galleryImages.forEach((src, idx) => { %>
+              <button type="button" class="pd-modal-thumb-btn <%= idx === 0 ? 'active' : '' %>" data-index="<%= idx %>" data-src="<%= src %>" aria-label="Photo <%= idx + 1 %>">
+                <img src="<%= src %>" alt="Thumbnail <%= idx + 1 %>">
+              </button>
+            <% }) %>
+          </div>
+        <% } %>
       </div>
     </div>
 
@@ -1647,6 +2377,7 @@
     <script id="pattern-config" type="application/ld+json"><%- JSON.stringify({
       id: String(product._id),
       base: basePrice,
+      digitalAvailability: mappedFormats,
       extra: Number(product.additional_size_price || 0),
       physical: physicalPrice,
       trial: Number(product.trial_price || 0),
@@ -1667,48 +2398,177 @@
   <!-- Interactive Client-side Logic -->
   <script>
   (() => {
-    // 1. Gallery Thumbnail Switching
+    // 1. Multi-Photo Gallery & Front/Back Switching
     const mainImg = document.getElementById('mainProductImage');
     const thumbs = document.querySelectorAll('.ref-thumb-btn');
+    const viewBadges = document.querySelectorAll('.ref-view-badge');
+    const gallerySources = Array.from(thumbs).map(t => t.dataset.src).filter(Boolean);
+    let currentImageIndex = 0;
 
-    thumbs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const newSrc = btn.dataset.src;
-        if (!newSrc || !mainImg) return;
-        mainImg.style.opacity = '0.35';
-        thumbs.forEach(t => t.classList.remove('active'));
-        btn.classList.add('active');
-        const pre = new Image();
-        pre.onload = () => {
-          mainImg.src = newSrc;
-          mainImg.style.opacity = '1';
-        };
-        pre.src = newSrc;
+    function getPhotoLabel(idx) {
+      if (idx === 0) return 'Front View';
+      if (idx === 1) return 'Back View';
+      return 'Detail View ' + (idx - 1);
+    }
+
+    function switchPhoto(index) {
+      if (index < 0 || index >= gallerySources.length || !mainImg) return;
+      currentImageIndex = index;
+      const targetSrc = gallerySources[index];
+      mainImg.style.opacity = '0.35';
+
+      thumbs.forEach((t, i) => {
+        if (i === index) t.classList.add('active');
+        else t.classList.remove('active');
       });
+
+      viewBadges.forEach((b, i) => {
+        if (i === index) {
+          b.classList.add('active');
+          b.setAttribute('aria-selected', 'true');
+        } else {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      const pre = new Image();
+      pre.onload = () => {
+        mainImg.src = targetSrc;
+        mainImg.style.opacity = '1';
+      };
+      pre.src = targetSrc;
+      updateLightboxDisplay();
+    }
+
+    thumbs.forEach((btn, idx) => {
+      btn.addEventListener('click', () => switchPhoto(idx));
     });
 
-    // 2. Image Zoom Lightbox
+    viewBadges.forEach((badge, idx) => {
+      badge.addEventListener('click', () => switchPhoto(idx));
+    });
+
+    // 2. Click-to-Enlarge / Full-screen Image Lightbox
     const modal = document.getElementById('imageLightboxModal');
     const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const prevLightboxBtn = document.getElementById('prevLightboxBtn');
+    const nextLightboxBtn = document.getElementById('nextLightboxBtn');
     const zoomBtn = document.getElementById('zoomTriggerBtn');
     const closeBtn = document.getElementById('closeLightboxBtn');
+    const lightboxThumbs = document.querySelectorAll('.pd-modal-thumb-btn');
+
+    function updateLightboxDisplay() {
+      if (!lightboxImg || !gallerySources.length) return;
+      const src = gallerySources[currentImageIndex] || mainImg?.src || '';
+      lightboxImg.src = src;
+      if (lightboxCaption) {
+        lightboxCaption.textContent = getPhotoLabel(currentImageIndex) + ' (' + (currentImageIndex + 1) + ' of ' + gallerySources.length + ')';
+      }
+      lightboxThumbs.forEach((tb, i) => {
+        if (i === currentImageIndex) tb.classList.add('active');
+        else tb.classList.remove('active');
+      });
+    }
 
     function openModal() {
       if (!modal || !lightboxImg || !mainImg) return;
-      lightboxImg.src = mainImg.src;
+      updateLightboxDisplay();
       modal.classList.add('is-open');
       document.body.style.overflow = 'hidden';
     }
+
     function closeModal() {
       if (!modal) return;
       modal.classList.remove('is-open');
       document.body.style.overflow = '';
     }
+
+    function prevPhoto() {
+      if (!gallerySources.length) return;
+      const nextIdx = (currentImageIndex - 1 + gallerySources.length) % gallerySources.length;
+      switchPhoto(nextIdx);
+    }
+
+    function nextPhoto() {
+      if (!gallerySources.length) return;
+      const nextIdx = (currentImageIndex + 1) % gallerySources.length;
+      switchPhoto(nextIdx);
+    }
+
     zoomBtn?.addEventListener('click', openModal);
     mainImg?.addEventListener('click', openModal);
     closeBtn?.addEventListener('click', closeModal);
+    prevLightboxBtn?.addEventListener('click', (e) => { e.stopPropagation(); prevPhoto(); });
+    nextLightboxBtn?.addEventListener('click', (e) => { e.stopPropagation(); nextPhoto(); });
     modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    lightboxThumbs.forEach((btn, idx) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchPhoto(idx);
+      });
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (!modal?.classList.contains('is-open')) return;
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === 'ArrowLeft') prevPhoto();
+      else if (e.key === 'ArrowRight') nextPhoto();
+    });
+
+    // Touch Swipe for Mobile Lightbox
+    let touchStartX = 0;
+    lightboxImg?.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    lightboxImg?.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const diff = touchEndX - touchStartX;
+      if (Math.abs(diff) > 40) {
+        if (diff > 0) prevPhoto();
+        else nextPhoto();
+      }
+    }, { passive: true });
+
+    // 2b. Measurement Size Chart: Unit Toggle (CM / INCHES) & Highlight
+    const unitBtns = document.querySelectorAll('#unitToggle .unit-btn');
+    const specCells = document.querySelectorAll('#measurementTable .sz-val');
+    unitBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const unit = btn.dataset.unit;
+        unitBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        specCells.forEach(td => {
+          const val = td.dataset[unit];
+          if (val) td.textContent = val + ' ' + unit;
+        });
+      });
+    });
+
+    // Toggle PDF In-page Preview
+    document.querySelectorAll('.btn-toggle-pdf-preview').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const box = document.getElementById(targetId);
+        if (!box) return;
+        if (box.style.display === 'none' || !box.style.display) {
+          box.style.display = 'block';
+          btn.textContent = 'Hide Preview ↑';
+        } else {
+          box.style.display = 'none';
+          btn.textContent = 'Preview ↓';
+        }
+      });
+    });
+
+    function highlightSizeInTable(sz) {
+      document.querySelectorAll('#measurementTable .sz-col').forEach(th => {
+        if (th.dataset.sizeCol === sz) th.classList.add('highlighted');
+        else th.classList.remove('highlighted');
+      });
+    }
 
     // 3. Size Guide Modal
     const btnSizeGuide = document.getElementById('btn-size-guide');
@@ -1746,11 +2606,11 @@
     const stickySizeBadge = document.getElementById('stickySizeBadge');
 
     function getSelectedSoftSizes() {
-      if (!digitalInput?.checked) return [];
+      if (!digitalInput?.checked && !document.getElementById('trial-sample-option')?.checked && !Array.from(document.querySelectorAll('.measurement-file')).some(input=>input.checked) && !document.getElementById('techPackInput')?.checked) return [];
       const selected = [];
       softPills.forEach(pill => {
         const input = pill.querySelector('input.soft-size-check');
-        if (input && input.checked) selected.push(pill.dataset.softSize);
+        if (input && input.checked && !input.disabled) selected.push(pill.dataset.softSize);
       });
       return selected;
     }
@@ -1787,7 +2647,7 @@
     btnSelectAllSoft?.addEventListener('click', () => {
       softPills.forEach(pill => {
         const input = pill.querySelector('input.soft-size-check');
-        if (input) input.checked = true;
+        if (input && !input.disabled) input.checked = true;
       });
       updateSoftSizePillStates();
     });
@@ -1808,15 +2668,31 @@
       { card: 'formatCardPdf', input: 'formatInputPdf', cb: 'formatCbPdf' }
     ];
 
-    // Default select DXF, HPGL, PLT if present
-    ['formatCardDxf', 'formatCardHpgl', 'formatCardPlt'].forEach(id => {
-      const el = document.getElementById(id);
-      const inp = el ? el.querySelector('input') : null;
-      const mark = el ? el.querySelector('.format-checkbox-custom span') : null;
-      if (inp) inp.checked = true;
-      if (el) el.classList.add('checked');
-      if (mark) mark.style.display = 'inline';
-    });
+    // Auto-bundle all available, authorized formats for soft copy
+    function selectBundledFormats() {
+      const cfg = JSON.parse(document.getElementById('pattern-config')?.textContent || '{}');
+      const formatPricing = cfg.formatPricing || {};
+      const availableItems = formatConfigs.filter(item => {
+        const inp = document.getElementById(item.input);
+        if (!inp || inp.dataset.available === 'false') return false;
+        if (Object.keys(formatPricing).length > 0 && !formatPricing[inp.value]) {
+          return false;
+        }
+        return true;
+      });
+      availableItems.forEach(item => {
+        const el = document.getElementById(item.card);
+        const inp = document.getElementById(item.input);
+        const mark = document.getElementById(item.cb)?.querySelector('span');
+        if (inp) { inp.disabled = false; inp.checked = true; }
+        if (el) el.classList.add('checked');
+        if (mark) mark.style.display = 'inline';
+      });
+    }
+
+    if (digitalInput && digitalInput.checked) {
+      selectBundledFormats();
+    }
 
     formatConfigs.forEach(item => {
       const cardEl = document.getElementById(item.card);
@@ -1842,7 +2718,7 @@
       if (!digitalInput?.checked) return [];
       return formatConfigs
         .map(item => document.getElementById(item.input))
-        .filter(inp => inp && inp.checked)
+        .filter(inp => inp && inp.checked && !inp.disabled)
         .map(inp => inp.value);
     }
 
@@ -1850,15 +2726,17 @@
       formatConfigs.forEach(item => {
         const input = document.getElementById(item.input);
         const card = document.getElementById(item.card);
-        if (input) input.disabled = !digitalInput?.checked;
+        if (input) input.disabled = !digitalInput?.checked || input.dataset.available === 'false';
         if (card) {
           card.style.opacity = digitalInput?.checked ? '1' : '0.45';
           card.setAttribute('aria-disabled', String(!digitalInput?.checked));
         }
       });
-      if (techPackInput) techPackInput.disabled = !digitalInput?.checked || !techPackAvailable;
-      if (sumTechPackRow) sumTechPackRow.style.display = digitalInput?.checked && techPackInput?.checked ? 'flex' : 'none';
-      const enabled = getSelectedDigitalFormats().length > 0;
+      if (techPackInput) techPackInput.disabled = !techPackAvailable;
+      if (sumTechPackRow) sumTechPackRow.style.display = techPackInput?.checked ? 'flex' : 'none';
+      const formats = getSelectedDigitalFormats();
+      const availability = JSON.parse(document.getElementById('pattern-config').textContent || '{}').digitalAvailability || {};
+      const enabled = formats.length > 0 || document.getElementById('trial-sample-option')?.checked || techPackInput?.checked || Array.from(document.querySelectorAll('.measurement-file')).some(input=>input.checked);
       const selection = document.getElementById('digitalSizeSelection');
       if (selection) {
         selection.classList.toggle('is-disabled', !enabled);
@@ -1867,14 +2745,28 @@
       softPills.forEach(pill => {
         const input = pill.querySelector('input.soft-size-check');
         if (input) {
-          input.disabled = !enabled;
+          input.disabled = !enabled || (Object.keys(availability).length > 0 && formats.some(format => !(availability[format] || []).includes(input.value)));
         }
       });
       if (btnSelectAllSoft) btnSelectAllSoft.disabled = !enabled;
       if (btnClearSoft) btnClearSoft.disabled = !enabled;
       updateSoftSizePillStates();
     }
-    digitalInput?.addEventListener('change', syncDigitalSizeAvailability);
+    digitalInput?.addEventListener('change', () => {
+      if (digitalInput.checked) {
+        selectBundledFormats();
+      } else {
+        formatConfigs.forEach(item => {
+          const el = document.getElementById(item.card);
+          const inp = document.getElementById(item.input);
+          const mark = el ? el.querySelector('.format-checkbox-custom span') : null;
+          if (inp) inp.checked = false;
+          if (el) el.classList.remove('checked');
+          if (mark) mark.style.display = 'none';
+        });
+      }
+      syncDigitalSizeAvailability();
+    });
 
     // 6. STEP 2 — Tech Pack (Separate Optional Card)
     const techPackCard = document.getElementById('techPackCard');
@@ -1900,7 +2792,7 @@
         if (mark) mark.style.display = 'none';
         if (sumTechPackRow) sumTechPackRow.style.display = 'none';
       }
-      recalculateTotals();
+      syncDigitalSizeAvailability();
     });
 
     // 7. STEP 3 — Physical Printout & Independent Physical Sizes
@@ -2077,19 +2969,8 @@
     function updateMarkerSummary() {
       const sumMarker = document.getElementById('sumMarkerStatus');
       if (!sumMarker) return;
-      const sRep = inpStripesRep?.value.trim();
-      const sCut = inpStripesCut?.value.trim();
-      const cWarp = inpChecksWarp?.value.trim();
-      const cWeft = inpChecksWeft?.value.trim();
-      const cCut = inpChecksCut?.value.trim();
-
-      if (sRep && sCut && Number(sRep) > 0 && Number(sCut) > 0) {
-        sumMarker.textContent = `Stripes custom repeat: ${sRep}cm (${sCut}cm width) — Enquiry request`;
-      } else if (cWarp && cWeft && cCut && Number(cWarp) > 0 && Number(cWeft) > 0 && Number(cCut) > 0) {
-        sumMarker.textContent = `Checks custom repeat: ${cWarp}×${cWeft}cm (${cCut}cm width) — Enquiry request`;
-      } else {
-        sumMarker.textContent = 'Solid mini marker included';
-      }
+      const mini = document.getElementById('miniMarkerOption');
+      sumMarker.textContent = mini?.checked ? 'Fabric Consumption Mini Marker: INR '+Number(mini.dataset.price).toFixed(2) : 'No mini marker selected';
     }
 
     // 8. Dynamic Subtotal, Tax (18% GST), and Total Calculation
@@ -2111,23 +2992,13 @@
       const isPhysical = Boolean(physicalInput && physicalInput.checked);
       const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
       const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
-      const hasTechPack = Boolean(digitalInput?.checked && techPackInput && techPackInput.checked);
+      const hasTechPack = Boolean(techPackInput && techPackInput.checked && !techPackInput.disabled);
 
       // 1. Soft Copy Calculation
       let softCopyCost = 0;
       if (hasDigital) {
-        const fp = config.formatPricing || {};
-        let perSizeRate = 0;
-        const isBundle = config.isBundleActive && (selectedFormats.length >= 3 || (selectedFormats.includes('dxf') && selectedFormats.includes('hpgl') && selectedFormats.includes('plt')));
-        if (isBundle && config.bundlePrice > 0) {
-          perSizeRate = config.bundlePrice;
-        } else {
-          for (const fmt of selectedFormats) {
-            const fmtRate = fp[fmt] || config['price' + fmt.charAt(0).toUpperCase() + fmt.slice(1)] || basePrice;
-            perSizeRate += fmtRate;
-          }
-        }
-        softCopyCost = perSizeRate * selectedSoftSizes.length;
+        const extraPerSize = config.extra !== undefined ? Number(config.extra) : Number(config.bundlePrice ?? basePrice);
+        softCopyCost = (Math.round(basePrice * 100) + Math.max(0, selectedSoftSizes.length - 1) * Math.round(extraPerSize * 100)) / 100;
       }
 
       const sumSoftCopyRow = document.getElementById('sumSoftCopyRow');
@@ -2136,7 +3007,7 @@
       if (sumSoftCopyRow) {
         if (hasDigital) {
           sumSoftCopyRow.style.display = 'flex';
-          if (sumSoftCopyLabel) sumSoftCopyLabel.textContent = 'Soft Copy (' + selectedSoftSizes.length + ' size' + (selectedSoftSizes.length === 1 ? '' : 's') + ' × ' + selectedFormats.length + ' format' + (selectedFormats.length === 1 ? '' : 's') + ')';
+          if (sumSoftCopyLabel) sumSoftCopyLabel.textContent = 'Soft Copy Bundle (' + selectedSoftSizes.length + ' size' + (selectedSoftSizes.length === 1 ? '' : 's') + ' × ' + selectedFormats.length + ' format' + (selectedFormats.length === 1 ? '' : 's') + ')';
           if (sumSoftCopyPrice) sumSoftCopyPrice.textContent = '₹' + softCopyCost.toLocaleString('en-IN');
         } else {
           if (sumSoftCopyLabel) sumSoftCopyLabel.textContent = 'Soft Copy (0 sizes selected)';
@@ -2165,11 +3036,47 @@
       // 3. Tech Pack Calculation
       let techPackCost = 0;
       if (hasTechPack) {
-        techPackCost = Number(techPackInput.dataset.price || config.techPackPrice || 0);
+        techPackCost = Number(techPackInput.dataset.price || 0) * (techPackInput.dataset.perSize === 'true' ? selectedSoftSizes.length : 1);
+        if (sumTechPackPrice) sumTechPackPrice.textContent = '₹' + techPackCost.toLocaleString('en-IN');
+      }
+
+      const trialSizeDisplay = document.getElementById('trialSelectedSizeDisplay');
+      if (trialSizeDisplay) trialSizeDisplay.textContent = selectedSoftSizes.join(', ') || 'Select a size';
+      // 4. Trial Fit Sample Calculation
+      const trialCheck = document.getElementById('trial-sample-option');
+      const trialQtyInput = document.getElementById('trial-sample-quantity');
+      const trialControls = document.getElementById('trialSampleControls');
+      const sumTrialRow = document.getElementById('sumTrialRow');
+      const sumTrialLabel = document.getElementById('sumTrialLabel');
+      const sumTrialPrice = document.getElementById('sumTrialPrice');
+      const hasTrial = Boolean(trialCheck && trialCheck.checked && !trialCheck.disabled);
+      let trialQty = 0;
+      let trialCost = 0;
+      if (hasTrial) {
+        trialQty = Number(trialQtyInput?.value || 1) * selectedSoftSizes.length;
+        trialCost = trialQty * (Number(trialCheck.dataset.price) || config.trial || 0);
+        if (trialControls) trialControls.style.display = 'block';
+        if (sumTrialRow) {
+          sumTrialRow.style.display = 'flex';
+          if (sumTrialLabel) sumTrialLabel.textContent = 'Trial Fit Sample (' + trialQty + ' sample' + (trialQty > 1 ? 's' : '') + ')';
+          if (sumTrialPrice) sumTrialPrice.textContent = '₹' + trialCost.toLocaleString('en-IN');
+        }
+      } else {
+        if (trialControls) trialControls.style.display = 'none';
+        if (sumTrialRow) sumTrialRow.style.display = 'none';
       }
 
       // Subtotal calculation
-      const subtotal = softCopyCost + physicalCost + techPackCost;
+      const mini = document.getElementById('miniMarkerOption');
+      const miniCost = mini?.checked ? Number(mini.dataset.price) : 0;
+      const measurementCost = Array.from(document.querySelectorAll('.measurement-file')).filter(input=>input.checked).reduce((sum,input)=>sum + Number(input.dataset.price) * (input.dataset.perSize === 'true' ? selectedSoftSizes.length : 1),0);
+      const measurementSummary = document.getElementById('sumMeasurementPrice');
+      const measurementRow = document.getElementById('sumMeasurementRow');
+      if (measurementSummary) measurementSummary.textContent = '₹' + measurementCost.toLocaleString('en-IN');
+      if (measurementRow) measurementRow.style.display = measurementCost > 0 ? 'flex' : 'none';
+      const subtotal = softCopyCost + physicalCost + techPackCost + miniCost + trialCost + measurementCost;
+      const markerSummary = document.getElementById('sumMarkerStatus');
+      if(markerSummary) markerSummary.textContent = miniCost ? 'Fabric Consumption Mini Marker: INR '+miniCost.toFixed(2) : 'No mini marker selected';
 
       // 18% GST calculation
       const tax = Math.round(subtotal * gstRate) / 100;
@@ -2183,6 +3090,31 @@
       if (patternTax) patternTax.textContent = '₹' + tax.toLocaleString('en-IN');
     }
 
+    document.querySelectorAll('.measurement-file').forEach(input=>input.addEventListener('change', syncDigitalSizeAvailability));
+    document.getElementById('miniMarkerOption')?.addEventListener('change', recalculateTotals);
+    const trialCard = document.getElementById('trialSampleCard');
+    const trialCheck = document.getElementById('trial-sample-option');
+    const trialCheckMark = document.getElementById('trialSampleCheckMark');
+    trialCard?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (trialCheck?.disabled) return;
+      trialCheck.checked = !trialCheck.checked;
+      const mark = trialCheckMark?.querySelector('span');
+      if (trialCheck.checked) {
+        trialCard.classList.add('checked');
+        if (mark) mark.style.display = 'inline';
+      } else {
+        trialCard.classList.remove('checked');
+        if (mark) mark.style.display = 'none';
+      }
+      syncDigitalSizeAvailability();
+    });
+    document.getElementById('trial-sample-quantity')?.addEventListener('input', recalculateTotals);
+    document.querySelectorAll('.marker-service-option').forEach(input=>input.addEventListener('change',()=>{
+      const total=Array.from(document.querySelectorAll('.marker-service-option')).filter(i=>i.checked).reduce((sum,i)=>sum+Number(i.dataset.price),0);
+      const markerTotalEl = document.getElementById('markerEnquiryTotal');
+      if (markerTotalEl) markerTotalEl.textContent='Selected enquiry services: INR '+total.toFixed(2)+'. Not charged at checkout.';
+    }));
     syncDigitalSizeAvailability();
 
     // 9. Sticky Buy Bar Scroll Trigger
@@ -2247,10 +3179,17 @@
       const isPhysical = Boolean(physicalInput && physicalInput.checked);
       const selectedPhysSizes = isPhysical ? getSelectedPhysSizes() : [];
       const hasPhysical = isPhysical && selectedPhysSizes.length > 0;
-      const hasTechPack = Boolean(digitalInput?.checked && techPackInput && techPackInput.checked);
+      const hasTechPack = Boolean(techPackInput && techPackInput.checked && !techPackInput.disabled);
 
-      const selectionError = !digitalInput?.checked && !isPhysical
-        ? 'Select Physical Pattern Printout, Digital Pattern / Soft Copy, or both.'
+      const hasMiniMarker = Boolean(document.getElementById('miniMarkerOption')?.checked);
+      const trialCheckInBuy = document.getElementById('trial-sample-option');
+      const hasTrial = Boolean(trialCheckInBuy && trialCheckInBuy.checked && !trialCheckInBuy.disabled);
+      const trialCopies = Number(document.getElementById('trial-sample-quantity')?.value || 1);
+      const trialQty = hasTrial ? trialCopies * selectedSoftSizes.length : 0;
+
+      const measurementInputs = Array.from(document.querySelectorAll('.measurement-file')).filter(input=>input.checked);
+      const selectionError = hasTrial && (!selectedSoftSizes.length || !Number.isInteger(trialCopies) || trialCopies < 1 || trialCopies > 1000) ? 'Select sizes and a whole-number trial quantity per size.' : !digitalInput?.checked && !isPhysical && !hasMiniMarker && !hasTrial && !hasTechPack && !measurementInputs.length
+        ? 'Select Physical Pattern Printout, Digital Pattern / Soft Copy, mini marker, or trial fit sample to proceed.'
         : digitalInput?.checked && !hasDigital
           ? 'Select at least one digital format and size.'
           : isPhysical && (!hasPhysical || !getPhysicalCopies())
@@ -2267,7 +3206,7 @@
       if (btnAdd) btnAdd.disabled = true;
       if (btnBuy) btnBuy.disabled = true;
 
-      const filesPayload = [];
+      const filesPayload = (hasMiniMarker ? JSON.parse(document.getElementById('miniMarkerOption').dataset.files) : []).concat(measurementInputs.map(input=>input.value));
       if (hasTechPack && techPackInput.value) {
         filesPayload.push(techPackInput.value);
       }
@@ -2278,9 +3217,9 @@
         physical_sizes: selectedPhysSizes,
         printable_selected: hasDigital,
         selected_formats: selectedFormats,
-        quantity: hasDigital || hasTechPack ? 1 : 0,
+        quantity: hasDigital || hasTechPack || hasMiniMarker || measurementInputs.length ? 1 : 0,
         physical_quantity: selectedPhysSizes.length * (isPhysical ? getPhysicalCopies() : 0),
-        trial_quantity: 0,
+        trial_quantity: hasTrial ? trialQty : 0,
         files: filesPayload,
         addons: []
       };
@@ -2306,100 +3245,6 @@
       }
     }
 
-    // 11. Custom Marker Enquiry Submission
-    const btnSubmitMarker = document.getElementById('btnSubmitMarkerEnquiry');
-    const markerStatus = document.getElementById('markerSubmitStatus');
-    const leadNameInp = document.getElementById('markerLeadName');
-    const leadEmailInp = document.getElementById('markerLeadEmail');
-    const leadWhatsappInp = document.getElementById('markerLeadWhatsapp');
-    const customMeasurementsInp = document.getElementById('markerCustomMeasurements');
-    const markerSpecificationsInp = document.getElementById('markerSpecifications');
-    let markerSubmitting = false;
-    let submittedMarkerPayload = '';
-
-    btnSubmitMarker?.addEventListener('click', async () => {
-      if (markerSubmitting) return;
-      markerStatus.style.display = 'inline-block';
-      markerStatus.style.color = '#B45309';
-      markerStatus.textContent = 'Submitting specifications...';
-
-      const activeTabIsStripes = tabBtnStripes && tabBtnStripes.classList.contains('active');
-      let specDetails = '';
-
-      const dimensions = activeTabIsStripes
-        ? [[inpStripesRep, errStripesRep, 0.1, 'Repeat Width'], [inpStripesCut, errStripesCut, 1, 'Fabric Cuttable Width']]
-        : [[inpChecksWarp, errChecksWarp, 0.1, 'Warp Repeat'], [inpChecksWeft, errChecksWeft, 0.1, 'Weft Repeat'], [inpChecksCut, errChecksCut, 1, 'Fabric Cuttable Width']];
-      const enteredDimensions = dimensions.filter(([input]) => input?.value.trim());
-      if (enteredDimensions.some(([input, error, minimum]) => !validateMarkerNumber(input, error, minimum))) {
-        markerStatus.style.color = '#DC2626';
-        markerStatus.textContent = 'Enter valid positive centimetre values for any fabric dimensions provided.';
-        return;
-      }
-      if (enteredDimensions.length) {
-        specDetails = (activeTabIsStripes ? 'Stripes Marker: ' : 'Checks Marker: ') + enteredDimensions.map(([input, , , label]) => label + ' = ' + input.value.trim() + ' cm').join(', ');
-      }
-
-      const name = leadNameInp?.value.trim();
-      const email = leadEmailInp?.value.trim();
-      const whatsapp = leadWhatsappInp?.value.trim();
-
-      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '') || !/^[+\d ()-]{7,30}$/.test(whatsapp || '') || whatsapp.replace(/\D/g, '').length < 7) {
-        markerStatus.style.color = '#DC2626';
-        markerStatus.textContent = 'Enter your name, a valid email address and WhatsApp number with country code.';
-        return;
-      }
-
-      const selectedSizes = [...new Set([...getSelectedSoftSizes(), ...(physicalInput?.checked ? getSelectedPhysSizes() : [])])];
-      const customMeasurements = customMeasurementsInp?.value.trim() || '';
-      const markerSpecifications = markerSpecificationsInp?.value.trim() || '';
-      if (!customMeasurements && !markerSpecifications && !specDetails) {
-        markerStatus.style.color = '#DC2626';
-        markerStatus.textContent = 'Enter custom size measurements (cm) or custom marker specifications / notes. At least one is required.';
-        return;
-      }
-      markerSubmitting = true;
-      btnSubmitMarker.disabled = true;
-
-      try {
-        const csrfToken = "<%= typeof csrf !== 'undefined' ? csrf : '' %>";
-        const productName = <%- JSON.stringify(product.name).replace(/</g, '\\u003c') %>;
-        const source = <%- JSON.stringify('/product/' + product.slug + '#custom-marker').replace(/</g, '\\u003c') %>;
-        const messageBody = `Product: ${productName}\nSelected Sizes: ${selectedSizes.join(', ') || 'Custom'}\n${customMeasurements ? 'Custom measurements (cm): ' + customMeasurements + '\n' : ''}${markerSpecifications ? 'Custom marker specifications / notes: ' + markerSpecifications + '\n' : ''}${specDetails}\nRequested via Customer Product Details Page.`;
-        const payload = new URLSearchParams({_csrf:csrfToken,name,email,whatsapp,interest:'Fit Blocks',source,message:messageBody}).toString();
-        if (payload === submittedMarkerPayload) {
-          markerStatus.style.color = '#16A34A';
-          markerStatus.textContent = 'These specifications have already been submitted successfully.';
-          return;
-        }
-
-        const res = await fetch('/enquiries', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: payload
-        });
-
-        const result = await res.json().catch(() => null);
-        if (!result) throw new Error(res.status === 429 ? 'Too many enquiries. Please wait before trying again.' : `The server could not confirm your enquiry (HTTP ${res.status}). Please reload and try again.`);
-        if (!res.ok || !result.success) {
-          throw new Error(result.error || 'Failed to submit specifications. Please try again.');
-        }
-
-        markerStatus.style.color = '#16A34A';
-        submittedMarkerPayload = payload;
-        markerStatus.textContent = '\u2713 ' + (result.message || 'Custom marker specifications saved to studio enquiries.');
-      } catch (err) {
-        markerStatus.style.color = '#DC2626';
-        markerStatus.textContent = err.message || 'Submission error.';
-      } finally {
-        markerSubmitting = false;
-        btnSubmitMarker.disabled = false;
-      }
-    });
-
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       handlePurchase('/cart');
@@ -2409,6 +3254,115 @@
       e.preventDefault();
       handlePurchase('/checkout');
     });
+  })();
+  </script>
+  <!-- Free Basic Pattern Modal Handler -->
+  <script id="free-pattern-script">
+  (function() {
+// ========================================================
+    // Free Basic Pattern Modal Handler
+    // ========================================================
+    const btnOpenFree = document.getElementById('btnOpenFreePatternModal');
+    const freeBackdrop = document.getElementById('free-pattern-backdrop');
+    const freeModal = document.getElementById('free-pattern-modal');
+    const btnCloseFree = document.getElementById('closeFreePatternBtn');
+    const btnClaimFree = document.getElementById('btnClaimFreePattern');
+    const freePhoneInput = document.getElementById('freePhoneInput');
+    const freeAlert = document.getElementById('freePatternAlert');
+    const freeDlWrap = document.getElementById('freeDownloadWrap');
+    const freeDlLink = document.getElementById('freeDownloadLink');
+    let selectedFreeSize = '';
+
+    function showFreeAlert(msg, isSuccess = false) {
+      if (!freeAlert) return;
+      freeAlert.style.display = 'block';
+      freeAlert.style.background = isSuccess ? '#ECFDF5' : '#FEF2F2';
+      freeAlert.style.color = isSuccess ? '#065F46' : '#991B1B';
+      freeAlert.style.border = '1px solid ' + (isSuccess ? '#A7F3D0' : '#FECACA');
+      freeAlert.textContent = msg;
+    }
+
+    function hideFreeAlert() {
+      if (freeAlert) freeAlert.style.display = 'none';
+    }
+
+    function openFreeModal() {
+      if (freeBackdrop) { freeBackdrop.style.display = 'block'; freeBackdrop.classList.add('is-visible'); freeBackdrop.setAttribute('aria-hidden', 'false'); }
+      if (freeModal) { freeModal.style.display = 'block'; freeModal.classList.add('is-visible'); }
+      hideFreeAlert();
+    }
+
+    function closeFreeModal() {
+      if (freeBackdrop) { freeBackdrop.style.display = 'none'; freeBackdrop.classList.remove('is-visible'); freeBackdrop.setAttribute('aria-hidden', 'true'); }
+      if (freeModal) { freeModal.style.display = 'none'; freeModal.classList.remove('is-visible'); }
+    }
+
+    btnOpenFree?.addEventListener('click', openFreeModal);
+    btnCloseFree?.addEventListener('click', closeFreeModal);
+    freeBackdrop?.addEventListener('click', closeFreeModal);
+
+    document.querySelectorAll('.free-size-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.free-size-pill').forEach(p => {
+          p.classList.remove('selected');
+          p.style.background = '#FFFFFF';
+          p.style.borderColor = '#CBD5E1';
+          p.style.color = '#334155';
+        });
+        pill.classList.add('selected');
+        pill.style.background = '#0B192C';
+        pill.style.borderColor = '#0B192C';
+        pill.style.color = '#FFFFFF';
+        selectedFreeSize = pill.dataset.freeSize || '';
+      });
+    });
+
+    // Default select first size
+    const firstFreePill = document.querySelector('.free-size-pill');
+    if (firstFreePill) firstFreePill.click();
+
+    btnClaimFree?.addEventListener('click', async () => {
+      hideFreeAlert();
+      const phone = freePhoneInput?.value?.trim();
+      const emailInput = document.getElementById('freeEmailInput');
+      const email = emailInput.value.trim();
+      if (!selectedFreeSize) return showFreeAlert('Please select a free size.');
+      if (!phone) return showFreeAlert('Please enter your mobile number.');
+      if (!email || !emailInput.checkValidity()) return showFreeAlert('Enter a valid email address.');
+
+      btnClaimFree.disabled = true;
+      btnClaimFree.textContent = 'Claiming...';
+      try {
+        const res = await fetch('/free-pattern/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone,
+            product_id: '<%= product._id %>',
+            size: selectedFreeSize,
+            email
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Claim failed.');
+        }
+        showFreeAlert(data.message || 'Free pattern unlocked!', true);
+        btnClaimFree.style.display = 'none';
+        if (freePhoneInput) freePhoneInput.disabled = true;
+        if (freeDlWrap && freeDlLink) {
+          freeDlWrap.style.display = 'block';
+          freeDlLink.href = data.download_url;
+        }
+      } catch (err) {
+        showFreeAlert(err.message);
+      } finally {
+        btnClaimFree.disabled = false;
+        btnClaimFree.textContent = 'Claim Free Basic Pattern';
+      }
+    });
+
+
   })();
   </script>
 </body>

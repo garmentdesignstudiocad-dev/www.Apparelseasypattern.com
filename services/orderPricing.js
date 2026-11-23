@@ -11,9 +11,10 @@ function filePricePaise(file, item) {
   return paise(file.file_price) * sizeCount;
 }
 function itemPrice(product, files, addons, item) {
+  const {isMarker}=require('./markerOptions');
   const quantity = Number(item.quantity ?? 1);
   const extraSizes = Math.max(0, (item.selected_sizes || []).length - 1);
-  const digital = (item.printable_selected===false ? 0 : paise(product.base_price) + extraSizes * paise(product.additional_size_price)) + files.reduce((n,f)=>n+filePricePaise(f,item),0);
+  const digital = (item.printable_selected===false ? 0 : paise(product.base_price) + extraSizes * paise(product.additional_size_price)) + files.filter(f=>!isMarker(f)).reduce((n,f)=>n+filePricePaise(f,item),0) + (files.some(isMarker) ? paise(product.mini_marker_price) : 0);
   const addon = addons.reduce((n,a)=>n+paise(a.price),0);
   const chosen=item.selected_sizes || [];
   const physicalChosen = (Array.isArray(item.physical_sizes) && item.physical_sizes.length) ? item.physical_sizes : chosen;

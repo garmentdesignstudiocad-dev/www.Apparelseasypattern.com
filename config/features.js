@@ -43,7 +43,7 @@ function helpers(settings = defaults, origin = '') {
       classes:'online_classes', 'my-courses':'online_classes', courses:'courses',
       'garment-technology':'courses', 'corporate-training':'courses', 'course-bookings':'courses',
       webinars:'webinars', 'webinar-registrations':'webinars', books:'books', 'book-purchases':'books',
-      consulting:'consulting', 'consultation-bookings':'consulting', updates:'updates', enquiries:'leads', 'pattern-updates':'leads',
+      consulting:'consulting', 'consultation-bookings':'consulting', updates:'updates', enquiries:'leads', 'pattern-updates':'leads', 'custom-block':'leads',
     };
     if (groups[first] && !enabled(groups[first])) return false;
     if(path==='/books/notify')return enabled('books') && enabled('leads');

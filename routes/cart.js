@@ -155,6 +155,7 @@ router.post('/cart/add', async (req, res) => {
           : (Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : [])
         : (Array.isArray(req.body.selected_formats) ? [...new Set(req.body.selected_formats.filter(f => ['dxf','hpgl','plt','pdf'].includes(f)))] : []),
       selected_sizes: req.body.selected_sizes || [],
+      trial_sizes: req.body.trial_sizes && typeof req.body.trial_sizes === 'object' ? req.body.trial_sizes : null,
       physical_sizes: req.body.physical_sizes || [],
       printable_selected: req.body.printable_selected !== false,
       additional_size_price: Number(product.additional_size_price || 0),
@@ -214,6 +215,8 @@ router.post('/cart/add', async (req, res) => {
     };
 
 
+    const trialError = require('../services/trialQuantity').validateItems([...cart, cartItem]);
+    if (trialError) return res.status(400).json({error:trialError});
     cart.push(cartItem);
 
 
@@ -293,8 +296,7 @@ router.post('/cart/update', async (req, res) => {
     }
 
 
-    const item =
-      cart[index];
+    const item = { ...cart[index] };
 
 
     item.quantity =
@@ -316,14 +318,10 @@ router.post('/cart/update', async (req, res) => {
       );
 
 
-    item.trial_quantity =
-      Math.max(
-        0,
-        Number(
-          trial_quantity ??
-          item.trial_quantity
-        )
-      );
+    item.trial_quantity = Number(trial_quantity ?? item.trial_quantity);
+    if (req.body.trial_sizes && typeof req.body.trial_sizes === 'object') {
+      item.trial_sizes = req.body.trial_sizes;
+    }
 
 
     if(!validation.quantities(item)) return res.status(400).json({error:'Keep at least one digital, physical or trial item. Remove the row to remove all items.'});
@@ -344,6 +342,9 @@ router.post('/cart/update', async (req, res) => {
     item.itemUnitTotal = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).unit;
     item.total = pricing.itemPrice(currentProduct,currentFiles,currentAddons,item).total;
 
+    const trialError = require('../services/trialQuantity').validateItems(cart.map((row, i) => i === index ? item : row));
+    if (trialError) return res.status(400).json({error:trialError});
+    cart[index] = item;
     req.session.cart =
       cart;
 

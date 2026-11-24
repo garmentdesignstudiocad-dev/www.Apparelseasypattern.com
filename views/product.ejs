@@ -1300,6 +1300,27 @@
       font-weight: 800;
       color: var(--ref-orange);
     }
+    /* Trial Sample Dynamic Responsive Grid */
+    .trial-sample-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    @media (max-width: 640px) {
+      .trial-sample-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+    .trial-size-card {
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .trial-size-card:hover {
+      border-color: #94A3B8;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
   </style>
 </head>
 
@@ -1474,11 +1495,11 @@
             <!-- Digital Soft Copy Option Illustrations (Collage Images 1 & 2) -->
             <div class="option-illustrations-row" style="display:flex;gap:12px;margin:10px 0 12px;flex-wrap:wrap;">
               <div style="flex:1;min-width:140px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;text-align:center;">
-                <img src="/images/options/soft_copy_bundle_cad.jpg" alt="Digital CAD Pattern Sheet (DXF/PDF)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+                <% if (product.option_images?.digital_1) { %><img src="<%= product.option_images.digital_1 %>" alt="Digital CAD Pattern Sheet (DXF/PDF)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;"><% } else { %><p>No illustration configured.</p><% } %>
                 <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);">CAD Tiled Sheet Layout</span>
               </div>
               <div style="flex:1;min-width:140px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;text-align:center;">
-                <img src="/images/options/soft_copy_bundle_roll.jpg" alt="Continuous Plotter Roll (HPGL/PLT)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+                <% if (product.option_images?.digital_2) { %><img src="<%= product.option_images.digital_2 %>" alt="Continuous Plotter Roll (HPGL/PLT)" style="width:100%;max-height:160px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;"><% } else { %><p>No illustration configured.</p><% } %>
                 <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);">Plotter Roll &amp; Cut Outline</span>
               </div>
             </div>
@@ -1652,7 +1673,7 @@
 
             <!-- Measurement Chart Illustration (Collage Image 3) -->
             <div style="margin:10px 0 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;max-width:280px;">
-              <img src="/images/options/measurement_chart.jpg" alt="Measurement Chart Specification" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+              <% if (product.option_images?.measurement) { %><img src="<%= product.option_images.measurement %>" alt="Measurement Chart Specification" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;"><% } else { %><p>No illustration configured.</p><% } %>
               <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);display:block;text-align:center;">Body Measurement Spec Guide</span>
             </div>
 
@@ -1683,7 +1704,7 @@
 
             <!-- Basic Construction Tech Pack Illustration (Collage Image 4) -->
             <div style="margin:10px 0 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:8px;max-width:280px;">
-              <img src="/images/options/tech_pack.jpg" alt="Basic Construction Tech Pack" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;">
+              <% if (product.option_images?.tech_pack) { %><img src="<%= product.option_images.tech_pack %>" alt="Basic Construction Tech Pack" style="width:100%;max-height:175px;object-fit:contain;border-radius:4px;display:block;margin:0 auto 6px;"><% } else { %><p>No illustration configured.</p><% } %>
               <span style="font-size:11.5px;font-weight:600;color:var(--ref-text-muted);display:block;text-align:center;">Garment Construction Details &amp; POM</span>
             </div>
 
@@ -1723,6 +1744,7 @@
 
           <!-- STEP 4 — PHYSICAL PATTERN — HARD COPY (BROWN SHEET) (Owner PowerPoint Slide 9 & 10) -->
           <div class="ref-step-section" id="section-physical-pattern">
+<% if (product.option_images?.physical) { %><img src="<%= product.option_images.physical %>" alt="physical illustration" style="width:100%;max-height:175px;object-fit:contain"><% } else { %><p>No illustration configured.</p><% } %>
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">4</span>
@@ -1799,6 +1821,7 @@
 
           <!-- STEP 5 — FABRIC CONSUMPTION MINI MARKER (Owner PowerPoint Slide 9 & 11) -->
           <div class="ref-step-section" id="section-mini-marker">
+<% if (product.option_images?.mini_marker) { %><img src="<%= product.option_images.mini_marker %>" alt="mini marker illustration" style="width:100%;max-height:175px;object-fit:contain"><% } else { %><p>No illustration configured.</p><% } %>
             <div class="ref-step-header">
               <div class="ref-step-title">
                 <span class="ref-step-num">5</span>
@@ -1902,12 +1925,12 @@
             <!-- Complete Trial Fit Sample Illustration (Collage Image 7) -->
             <div class="trial-sample-illustration-card" style="margin:10px 0 14px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;">
               <div style="width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;">
-                <img
-                  src="/images/options/trial_fit_sample.jpg"
+                <% if (product.option_images?.trial) { %><img
+                  src="<%= product.option_images.trial %>"
                   alt="Demo Illustration — Trial Fit Sample"
                   style="width:100%;height:auto;max-height:360px;object-fit:contain;display:block;border-radius:6px;"
                   loading="lazy"
-                >
+                ><% } else { %><p>No illustration configured.</p><% } %>
               </div>
               <span style="font-size:12px;font-weight:700;color:var(--ref-text-dark);margin-top:8px;">
                 Demo Illustration &mdash; Trial Fit Sample
@@ -1943,15 +1966,37 @@
             </label>
 
             <!-- Trial Quantity Controls -->
-            <div id="trialSampleControls" style="display:none;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:12px;margin-bottom:12px;">
-              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                <label style="font-size:12.5px;font-weight:700;color:var(--ref-text-dark);display:flex;align-items:center;gap:8px;">
-                  <span>Trial Sample Quantity:</span>
-                  <input type="number" id="trial-sample-quantity" min="1" max="10" value="1" style="width:65px;padding:4px 8px;border:1px solid #CBD5E1;border-radius:6px;font-size:13px;font-weight:700;">
-                </label>
-                <span style="font-size:12px;color:var(--ref-text-muted);">
-                  Constructed for the selected size (<span id="trialSelectedSizeDisplay"><%= initialSelectedSize %></span>).
-                </span>
+            <div id="trialSampleControls" style="display:none;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:8px;padding:14px;margin-bottom:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:13px;font-weight:700;color:var(--ref-text-dark);">
+                  Trial Sample Quantity per Size
+                </div>
+                <p id="trial-limit" style="margin:0;font-size:11.5px;color:var(--ref-text-muted);font-weight:600;">
+                  Maximum 2 trial samples per size.
+                </p>
+              </div>
+              <div style="font-size:12px;color:var(--ref-text-muted);margin-bottom:10px;">
+                Constructed for selected size(s): <span id="trialSelectedSizeDisplay" style="font-weight:700;color:var(--ref-text-dark);"><%= initialSelectedSize %></span>
+              </div>
+              <div id="trialSamplePerSizeContainer" class="trial-sample-grid">
+                <% configuredSizes.forEach(size => { %>
+                  <div class="trial-size-card trial-size-row" id="trial-size-row-<%= size.toLowerCase() %>" data-size="<%= size %>" style="display:none;background:#FFFFFF;border:1.5px solid #CBD5E1;border-radius:8px;padding:12px;box-sizing:border-box;flex-direction:column;gap:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                      <span style="font-size:14px;font-weight:700;color:var(--ref-text-dark);">Size <%= size %></span>
+                      <span style="font-size:11px;font-weight:700;color:#0284C7;background:#E0F2FE;padding:2px 8px;border-radius:12px;letter-spacing:0.3px;">SAMPLE</span>
+                    </div>
+                    <label for="trial-select-<%= size.toLowerCase() %>" style="font-size:12px;font-weight:600;color:var(--ref-text-muted);margin:0;cursor:pointer;">
+                      Sample Quantity:
+                    </label>
+                    <select class="trial-size-select" id="trial-select-<%= size.toLowerCase() %>" data-size="<%= size %>" style="width:100%;padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:6px;font-size:13.5px;font-weight:700;color:#0B192C;background:#FFFFFF;cursor:pointer;outline:none;">
+                      <option value="1" selected>1</option>
+                      <option value="2">2</option>
+                    </select>
+                  </div>
+                <% }); %>
+              </div>
+              <div id="trialSampleEmptyWarning" style="display:none;font-size:12px;color:#ef4444;margin-top:8px;">
+                Please select at least one Pattern Hard Copy size above.
               </div>
             </div>
           </div>
@@ -3040,11 +3085,8 @@
         if (sumTechPackPrice) sumTechPackPrice.textContent = '₹' + techPackCost.toLocaleString('en-IN');
       }
 
-      const trialSizeDisplay = document.getElementById('trialSelectedSizeDisplay');
-      if (trialSizeDisplay) trialSizeDisplay.textContent = selectedSoftSizes.join(', ') || 'Select a size';
       // 4. Trial Fit Sample Calculation
       const trialCheck = document.getElementById('trial-sample-option');
-      const trialQtyInput = document.getElementById('trial-sample-quantity');
       const trialControls = document.getElementById('trialSampleControls');
       const sumTrialRow = document.getElementById('sumTrialRow');
       const sumTrialLabel = document.getElementById('sumTrialLabel');
@@ -3052,12 +3094,58 @@
       const hasTrial = Boolean(trialCheck && trialCheck.checked && !trialCheck.disabled);
       let trialQty = 0;
       let trialCost = 0;
+
+      // When Pattern Hard Copy is selected, Trial Fit Sample sizes STRICTLY follow Hard Copy selected sizes.
+      // If Hard Copy is not selected, fallback to selectedSoftSizes for independent trial purchases.
+      const trialTargetSizes = (isPhysical && selectedPhysSizes.length > 0)
+        ? selectedPhysSizes
+        : (isPhysical ? [] : selectedSoftSizes);
+
+      const trialSizeDisplay = document.getElementById('trialSelectedSizeDisplay');
+      if (trialSizeDisplay) {
+        trialSizeDisplay.textContent = trialTargetSizes.length > 0 ? trialTargetSizes.join(', ') : 'None';
+      }
+
       if (hasTrial) {
-        trialQty = Number(trialQtyInput?.value || 1) * selectedSoftSizes.length;
-        trialCost = trialQty * (Number(trialCheck.dataset.price) || config.trial || 0);
         if (trialControls) trialControls.style.display = 'block';
+        const warning = document.getElementById('trialSampleEmptyWarning');
+        const container = document.getElementById('trialSamplePerSizeContainer');
+        const rows = document.querySelectorAll('.trial-size-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+          const size = row.dataset.size;
+          if (trialTargetSizes.includes(size)) {
+            row.style.display = 'flex';
+            visibleCount++;
+            if (container && container.appendChild) {
+              container.appendChild(row);
+            }
+          } else {
+            row.style.display = 'none';
+          }
+        });
+        if (warning) {
+          if (visibleCount === 0) {
+            warning.textContent = isPhysical
+              ? 'Please select at least one Pattern Hard Copy size above.'
+              : 'Please select at least one size above.';
+            warning.style.display = 'block';
+          } else {
+            warning.style.display = 'none';
+          }
+        }
+
+        trialTargetSizes.forEach(size => {
+          const sel = document.getElementById('trial-select-' + size.toLowerCase());
+          const raw = sel ? sel.value : '';
+          const val = raw === '' ? NaN : Number(raw);
+          const validVal = (Number.isInteger(val) && val >= 1 && val <= 2) ? val : 0;
+          trialQty += validVal;
+        });
+
+        trialCost = trialQty * (Number(trialCheck.dataset.price) || config.trial || 0);
         if (sumTrialRow) {
-          sumTrialRow.style.display = 'flex';
+          sumTrialRow.style.display = trialQty > 0 ? 'flex' : 'none';
           if (sumTrialLabel) sumTrialLabel.textContent = 'Trial Fit Sample (' + trialQty + ' sample' + (trialQty > 1 ? 's' : '') + ')';
           if (sumTrialPrice) sumTrialPrice.textContent = '₹' + trialCost.toLocaleString('en-IN');
         }
@@ -3109,7 +3197,9 @@
       }
       syncDigitalSizeAvailability();
     });
-    document.getElementById('trial-sample-quantity')?.addEventListener('input', recalculateTotals);
+    document.querySelectorAll('.trial-size-select').forEach(sel => {
+      sel.addEventListener('change', recalculateTotals);
+    });
     document.querySelectorAll('.marker-service-option').forEach(input=>input.addEventListener('change',()=>{
       const total=Array.from(document.querySelectorAll('.marker-service-option')).filter(i=>i.checked).reduce((sum,i)=>sum+Number(i.dataset.price),0);
       const markerTotalEl = document.getElementById('markerEnquiryTotal');
@@ -3184,11 +3274,31 @@
       const hasMiniMarker = Boolean(document.getElementById('miniMarkerOption')?.checked);
       const trialCheckInBuy = document.getElementById('trial-sample-option');
       const hasTrial = Boolean(trialCheckInBuy && trialCheckInBuy.checked && !trialCheckInBuy.disabled);
-      const trialCopies = Number(document.getElementById('trial-sample-quantity')?.value || 1);
-      const trialQty = hasTrial ? trialCopies * selectedSoftSizes.length : 0;
+      const trialTargetSizes = (isPhysical && selectedPhysSizes.length > 0)
+        ? selectedPhysSizes
+        : (isPhysical ? [] : selectedSoftSizes);
+      let trialQty = 0;
+      const trialSizes = {};
+      let trialInvalid = false;
+      if (hasTrial) {
+        if (!trialTargetSizes.length) {
+          trialInvalid = true;
+        } else {
+          trialTargetSizes.forEach(size => {
+            const sel = document.getElementById('trial-select-' + size.toLowerCase());
+            const raw = sel ? sel.value : '';
+            const val = raw === '' ? NaN : Number(raw);
+            if (!Number.isInteger(val) || val < 1 || val > 2) trialInvalid = true;
+            trialSizes[size] = val;
+            trialQty += val;
+          });
+        }
+      }
 
       const measurementInputs = Array.from(document.querySelectorAll('.measurement-file')).filter(input=>input.checked);
-      const selectionError = hasTrial && (!selectedSoftSizes.length || !Number.isInteger(trialCopies) || trialCopies < 1 || trialCopies > 1000) ? 'Select sizes and a whole-number trial quantity per size.' : !digitalInput?.checked && !isPhysical && !hasMiniMarker && !hasTrial && !hasTechPack && !measurementInputs.length
+      const selectionError = hasTrial && trialInvalid
+        ? (isPhysical && !selectedPhysSizes.length ? 'Select at least one Pattern Hard Copy size for your trial fit sample.' : 'Maximum 2 trial samples per size. Select sizes and quantity 1 or 2.')
+        : !digitalInput?.checked && !isPhysical && !hasMiniMarker && !hasTrial && !hasTechPack && !measurementInputs.length
         ? 'Select Physical Pattern Printout, Digital Pattern / Soft Copy, mini marker, or trial fit sample to proceed.'
         : digitalInput?.checked && !hasDigital
           ? 'Select at least one digital format and size.'
@@ -3220,6 +3330,7 @@
         quantity: hasDigital || hasTechPack || hasMiniMarker || measurementInputs.length ? 1 : 0,
         physical_quantity: selectedPhysSizes.length * (isPhysical ? getPhysicalCopies() : 0),
         trial_quantity: hasTrial ? trialQty : 0,
+        trial_sizes: hasTrial ? trialSizes : null,
         files: filesPayload,
         addons: []
       };

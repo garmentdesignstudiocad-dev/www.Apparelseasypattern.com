@@ -1,6 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 const ProductSchema = new Schema({
+  option_images: { type: Schema.Types.Mixed, default: undefined },
   editor_draft: { type: Schema.Types.Mixed, select: false },
   editor_documents: { type: [Schema.Types.Mixed], default: undefined, select: false },
   name: { type: String, required: true },

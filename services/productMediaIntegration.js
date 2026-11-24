@@ -43,7 +43,7 @@ function publicGarmentMedia(product) {
     }
   };
   const images = Array.isArray(p.images) ? p.images : [];
-  return { ...p, images: [photo(images[0]), ...images.slice(1).map(photo).filter(Boolean)], sample_image_url: photo(p.sample_image_url) };
+  return { ...p, option_images: require('./optionIllustrations').resolve(p), images: [photo(images[0]), ...images.slice(1).map(photo).filter(Boolean)], sample_image_url: photo(p.sample_image_url) };
 }
 
 function getFiles(files, field) {
@@ -192,6 +192,7 @@ function collectMediaUpdate(existingProduct, body = {}, files = {}) {
 
   return {
     images,
+    option_images: require('./optionIllustrations').collect(existingProduct, body, files),
     finished_garment_images: [...new Set([
       ...asStrings(existingProduct.finished_garment_images),
       ...[body.main_image_link && mainImage, body.sample_image_link && sampleImage, ...linkedGallery].filter(Boolean),

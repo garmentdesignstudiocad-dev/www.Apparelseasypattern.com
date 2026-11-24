@@ -7,6 +7,7 @@ const express = require('express');
 const multer = require('multer');
 const notificationService = require('../services/notificationService');
 const router = express.Router();
+router.use((req,res,next) => { res.locals.optionIllustrations = require('../services/optionIllustrations'); next(); });
 router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
 for(const param of ['id','productId','fileId','addonId']) router.param(param,(req,res,next,value)=>/^[a-f\d]{24}$/i.test(value)?next():res.status(404).render('error',{title:'Not Found',message:'The requested record was not found.'}));
 const adminAuth = require('../middleware/adminAuth');

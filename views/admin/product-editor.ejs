@@ -834,6 +834,17 @@
         </header>
 
         <p>Choose up to 10 gallery photos at once. Photos upload when you Save or Publish. JPEG, PNG or WebP, up to 10 MB each.</p>
+        <section id="option-illustrations"><h2>Product Option Illustrations</h2>
+          <p>JPG, PNG or WebP, up to 10 MB each. Save Draft preserves live images; Publish applies changes. Removal clears only this slot and keeps the original asset.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+          <% const optionImages = optionIllustrations.resolve(productForm); optionIllustrations.slots.forEach(([key,label]) => { %>
+            <div><h3><%= label %></h3>
+              <% if (optionImages[key]) { %><img src="<%= optionImages[key] %>" alt="<%= label %> saved image" style="width:100%;height:150px;object-fit:contain"><p>Currently saved image</p><% } else { %><p>No illustration configured.</p><% } %>
+              <label>Upload / Replace<input type="file" name="option_image_<%= key %>" accept="image/jpeg,image/png,image/webp"></label>
+              <label><input type="checkbox" name="remove_option_image_<%= key %>" value="on"> Remove this image slot</label>
+            </div>
+          <% }); %></div>
+        </section>
         <div id="garment-photo-editor">
           <div data-main-photo data-saved="<%= productForm.images?.[0] || '' %>">
             <h3>Main garment photo</h3>

@@ -227,6 +227,55 @@ test("Isolated Admin upload lifecycle, failed-save preservation and public priva
     assert.equal(product.images.length,3);
     assert.deepEqual(product.finished_garment_images,product.images);
     const original=[...product.images], edit='/admin/products/'+product._id+'/edit';
+    const slots=require('../services/optionIllustrations').slots;
+    const otherProduct=await Product.create({name:'Other options',slug:'other-options'});
+    for(const [key] of slots) {
+      const before=await Product.findById(product._id).lean();
+      data=form();data.set('admin_action','save');photo(data,'option_image_'+key,key+'.png');
+      assert.equal((await request(edit,data)).status,302);
+      const draft=await Product.findById(product._id).select('+editor_draft').lean();
+      assert.deepEqual(draft.option_images,before.option_images);
+      const uploaded=draft.editor_draft.option_images[key];
+      assert.equal((await request(edit,form())).status,302);
+      for(let refresh=0;refresh<2;refresh++)assert((await (await request('/product/photo-fixture')).text()).includes(uploaded));
+      data=form();photo(data,'option_image_'+key,'replace.png');
+      assert.equal((await request(edit,data)).status,302);
+      const replaced=await Product.findById(product._id).lean();assert.notEqual(replaced.option_images[key],uploaded);
+      data=form();data.set('admin_action','save');data.set('remove_option_image_'+key,'on');
+      assert.equal((await request(edit,data)).status,302);
+      assert.deepEqual((await Product.findById(product._id).lean()).option_images,replaced.option_images);
+      assert.equal((await request(edit,form())).status,302);
+      const removed=await Product.findById(product._id).lean();assert.equal(removed.option_images[key],'');
+      for(const [k] of slots)if(k!==key)assert.equal(removed.option_images[k],replaced.option_images[k]);
+      assert.deepEqual(removed.images,original);assert.equal((await request(uploaded)).status,200);
+      data=form();photo(data,'option_image_'+key,'fake.png',Buffer.from('fake'));
+      assert.equal((await request(edit,data)).status,400);
+    }
+    assert.equal((await Product.findById(otherProduct._id).lean()).option_images,undefined);
+    await Product.updateOne({_id:product._id},{$set:{trial_price:100,available_sizes:['S','M'],pattern_options:{trial:true,printable:false,physical:false}}});
+    const cartPost=(url,body)=>fetch(origin+url,{method:'POST',headers:{cookie,'content-type':'application/json'},body:JSON.stringify(body)});
+    const selection={product_id:String(product._id),quantity:0,printable_selected:false,selected_sizes:['S'],trial_quantity:1};
+    for(const q of [3,4])assert.equal((await cartPost('/cart/add',{...selection,trial_quantity:q})).status,400);
+    assert.equal((await cartPost('/cart/add',selection)).status,200);
+    assert.equal((await cartPost('/cart/add',selection)).status,200);
+    assert.equal((await cartPost('/cart/add',selection)).status,400);
+    const cartHtml=await (await request('/cart')).text();
+    const itemId=cartHtml.match(/data-item-id="([^"]+)"/)[1];
+    for(const trial_quantity of [2,3,4,-1])assert.equal((await cartPost('/cart/update',{itemId,trial_quantity})).status,400);
+    assert.equal((await cartPost('/cart/update',{itemId,trial_quantity:1})).status,200,'Rejected updates preserve the prior cart');
+    const Customer=require('../models/mongo/Customer');
+    const customer=await Customer.create({name:'Isolated quantity test',email:'quantity@example.test'});
+    const checkout=require('../controllers/checkoutController');
+    for(const items of [[{...selection,trial_quantity:3}],[{...selection,trial_quantity:4}],[{...selection,trial_quantity:2},selection]]) {
+      let status=200,payload;
+      const res={status(n){status=n;return this;},json(v){payload=v;return this;}};
+      await checkout.postCheckout({body:{items},session:{customerId:String(customer._id)}},res,e=>{throw e;});
+      assert.equal(status,400);assert.match(payload.error,/Maximum 2/);
+    }
+    assert.equal(await require('../models/mongo/Order').countDocuments(),0,'Rejected checkout never creates an order');
+
+    assert.equal((await cartPost('/cart/add',{...selection,selected_sizes:['M'],trial_quantity:2})).status,200);
+
     assert.equal((await request(original[0])).status,200);
     data=form();photo(data,'main_image','replacement.png');
     assert.equal((await request(edit,data)).status,302);

@@ -11,6 +11,8 @@ function filePricePaise(file, item) {
   return paise(file.file_price) * sizeCount;
 }
 function itemPrice(product, files, addons, item) {
+  const trialError = require('./trialQuantity').validateItems([item]);
+  if (trialError) throw new Error(trialError);
   const {isMarker}=require('./markerOptions');
   const quantity = Number(item.quantity ?? 1);
   const extraSizes = Math.max(0, (item.selected_sizes || []).length - 1);

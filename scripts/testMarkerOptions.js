@@ -64,7 +64,8 @@ async function run(){
       assert.equal(await page.locator('#trial-sample-option').isDisabled(),false);
       await page.locator('#trialSampleCard').click();
       await page.locator('#btnSelectAllSoftSizes').click();
-      await page.locator('#trial-sample-quantity').fill('2');
+      await page.locator('#trial-select-m').selectOption('2');
+      await page.locator('#trial-select-l').selectOption('2');
       assert.match(await page.locator('#sumTrialPrice').innerText(),/502/);
       assert.match(await page.locator('#trialSelectedSizeDisplay').innerText(),/M, L/);
       await page.locator('[data-soft-size="L"]').click();

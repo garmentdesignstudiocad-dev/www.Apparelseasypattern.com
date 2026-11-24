@@ -88,6 +88,8 @@ async function getCheckoutPage(
       ? req.session.cart
       : [];
 
+  const trialLimitError = require('../services/trialQuantity').validateItems(cart);
+  if (trialLimitError) return res.status(400).send(trialLimitError);
   res.render(
     'checkout',
     {
@@ -177,6 +179,8 @@ async function postCheckout(
 
 
     if(!Array.isArray(items) || items.length>100 || items.some(item=>!item || !validation.id(item.product_id) || !validation.quantities(item) || ['selected_files','selected_addons'].some(key=>item[key]!==undefined && (!Array.isArray(item[key]) || !validation.ids(item[key].map(value=>value && typeof value==='object'?value.id:value)))))) return res.status(400).json({error:'Select valid products, options and whole-number quantities.'});
+    const trialLimitError = require('../services/trialQuantity').validateItems(items);
+    if (trialLimitError) return res.status(400).json({error:trialLimitError});
 
 
     /*

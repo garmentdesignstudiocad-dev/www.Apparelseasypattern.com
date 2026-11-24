@@ -22,7 +22,7 @@ const allowed = {
 const limits = {
   fieldSize: 1024 * 1024,
   fileSize: 100 * 1024 * 1024,
-  files: 15,
+  files: 24,
   fields: 150,
   parts: 170
 };
@@ -113,6 +113,7 @@ const upload = multer({
 });
 
 const fields = upload.fields([
+  ...require('../services/optionIllustrations').slots.map(([key]) => ({name:'option_image_' + key, maxCount:1})),
   { name: "main_image", maxCount: 1 },
   { name: "gallery_images", maxCount: 10 },
   { name: "sample_image", maxCount: 1 },
